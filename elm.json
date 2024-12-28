@@ -1,7 +1,7 @@
 {
     "type": "package",
     "name": "lue-bird/elm-syntax-to-fsharp",
-    "summary": "transpile elm to fsharp",
+    "summary": "transpile elm to F#",
     "license": "MIT",
     "version": "1.0.0",
     "exposed-modules": [
