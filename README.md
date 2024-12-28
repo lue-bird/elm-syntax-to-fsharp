@@ -26,8 +26,9 @@ plus2 n =
 Ok """namespace global
 module rec Elm
 
-    samplePlus2 (n : float) : float =
-        basics_add (n) (List.sum ([ 2 ]))
+    samplePlus2 : float -> float =
+        fun n ->
+            basics_add n (List.sum [ 2 ])
 
     ..and some default declarations..
 """
