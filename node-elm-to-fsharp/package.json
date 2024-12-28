@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "name": "elm-to-fsharp",
+  "devDependencies": {
+    "@lue-bird/elm-state-interface-experimental": "^4.0.0",
+    "elm-esm": "^1.1.4",
+    "elm-optimize-level-2": "^0.3.5",
+    "esbuild": "0.24.0",
+    "postject": "^1.0.0-alpha.6"
+  },
+  "overrides": {
+    "cross-spawn": ">=7.0.3"
+  },
+  "bin": "./dist/elm-to-fsharp",
+  "scripts": {
+    "build": "node build.js && esbuild src/index.js --bundle --minify --platform=node --outfile=dist/index.cjs && node --experimental-sea-config sea-config.json && cp $(command -v node) dist/elm-to-fsharp && postject dist/elm-to-fsharp NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
+    "build-debug": "elm-esm make src/Main.elm --output=src/elmMain.js && esbuild src/index.js --bundle --minify --platform=node --outfile=dist/index.cjs && node --experimental-sea-config sea-config.json && cp $(command -v node) dist/elm-to-fsharp && postject dist/elm-to-fsharp NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
+    "start": "node build.js && node src/index.js"
+  }
+}
