@@ -1,0 +1,26 @@
+node_modules
+elm-stuff
+VerifyExamples
+zombie
+package-lock.json
+compare-with-elm-format/examples
+compare-with-elm-format/pre
+compare-with-elm-format/post
+elm.js
+main.js
+elmMain.js
+dist
+
+testing.fs
+Elm.fs
+obj
+fable_modules
+bin
+
+# Editors
+.idea/
+ElmjutsuDumMyM0DuL3.elm
+.vscode
+.editorconfig
+
+.fake
