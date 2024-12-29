@@ -45,9 +45,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
     -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`
     -   ports, glsl, the prefix operator functions `(>>)` and `(<<)`
-    -   `++` will default to `List.append` unless one of the arguments is a string literal. So e.g. use `a ++ b ++ ""` to append string variables (which is also faster in elm).
-        Similarly, sorting operations `<`, `>`, `<=` `>=`, `Basics.min`, `Basics.max`, `Basics.compare`, `List.sort` will only work on numbers,
-        and `^` will not work if either argument is a concrete `Int` (not `Float` or `number` variable)
+    -   `++` will default to `List.append` unless one of the arguments is a string literal. So e.g. use `a ++ b ++ ""` to append string variables (which is also faster in elm)
     -   extensible record types. For example, these declarations won't work (at let or module level):
         ```elm
         -- inferred { r | name : name } -> name
@@ -58,12 +56,12 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         setName new r =
             { r | name = new }
         
-        -- even if used in explicit annotation!
+        -- even if used in explicit annotation
         getName : { r | name : name } -> name
         getName =
             .name
         
-        -- even if the extensible record type is "fully constructed
+        -- even if the extensible record type is "fully constructed"
         type alias Named otherFields =
             { otherFields | name : String }
         
