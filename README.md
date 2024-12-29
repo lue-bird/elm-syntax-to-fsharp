@@ -10,6 +10,7 @@ import ElmSyntaxToFsharp
 
 """module Sample exposing (..)
 
+plus2 : Int -> Int
 plus2 n =
     n + ([ 2 ] |> List.sum)
 """
