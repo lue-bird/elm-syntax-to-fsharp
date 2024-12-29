@@ -3620,13 +3620,11 @@ expression context (Elm.Syntax.Node.Node _ syntaxExpression) =
                 calledNode :: argument0Node :: argument1UpNodes ->
                     Result.map3
                         (\called argument0 argument1Up ->
-                            FsharpExpressionCall
-                                (condenseExpressionCall
-                                    { called = called
-                                    , argument0 = argument0
-                                    , argument1Up = argument1Up
-                                    }
-                                )
+                            condenseExpressionCall
+                                { called = called
+                                , argument0 = argument0
+                                , argument1Up = argument1Up
+                                }
                         )
                         (calledNode |> expression context)
                         (argument0Node |> expression context)
@@ -3640,13 +3638,11 @@ expression context (Elm.Syntax.Node.Node _ syntaxExpression) =
                 "|>" ->
                     Result.map2
                         (\argument called ->
-                            FsharpExpressionCall
-                                (condenseExpressionCall
-                                    { called = called
-                                    , argument0 = argument
-                                    , argument1Up = []
-                                    }
-                                )
+                            condenseExpressionCall
+                                { called = called
+                                , argument0 = argument
+                                , argument1Up = []
+                                }
                         )
                         (leftNode |> expression context)
                         (rightNode |> expression context)
@@ -3654,13 +3650,11 @@ expression context (Elm.Syntax.Node.Node _ syntaxExpression) =
                 "<|" ->
                     Result.map2
                         (\called argument ->
-                            FsharpExpressionCall
-                                (condenseExpressionCall
-                                    { called = called
-                                    , argument0 = argument
-                                    , argument1Up = []
-                                    }
-                                )
+                            condenseExpressionCall
+                                { called = called
+                                , argument0 = argument
+                                , argument1Up = []
+                                }
                         )
                         (leftNode |> expression context)
                         (rightNode |> expression context)
@@ -4252,26 +4246,43 @@ condenseExpressionCall :
     , argument0 : FsharpExpression
     , argument1Up : List FsharpExpression
     }
-    ->
-        { called : FsharpExpression
-        , argument0 : FsharpExpression
-        , argument1Up : List FsharpExpression
-        }
+    -> FsharpExpression
 condenseExpressionCall call =
     case call.called of
         FsharpExpressionCall calledCall ->
-            { called = calledCall.called
-            , argument0 = calledCall.argument0
-            , argument1Up =
-                calledCall.argument1Up
-                    ++ (call.argument0 :: call.argument1Up)
-            }
+            condenseExpressionCall
+                { called = calledCall.called
+                , argument0 = calledCall.argument0
+                , argument1Up =
+                    calledCall.argument1Up
+                        ++ (call.argument0 :: call.argument1Up)
+                }
+
+        FsharpExpressionRecordAccessFunction field ->
+            case call.argument1Up of
+                [] ->
+                    FsharpExpressionRecordAccess
+                        { record = call.argument0
+                        , field = field
+                        }
+
+                argument1 :: argument2Up ->
+                    FsharpExpressionCall
+                        { called =
+                            FsharpExpressionRecordAccess
+                                { record = call.argument0
+                                , field = field
+                                }
+                        , argument0 = argument1
+                        , argument1Up = argument2Up
+                        }
 
         calledNotCall ->
-            { called = calledNotCall
-            , argument0 = call.argument0
-            , argument1Up = call.argument1Up
-            }
+            FsharpExpressionCall
+                { called = calledNotCall
+                , argument0 = call.argument0
+                , argument1Up = call.argument1Up
+                }
 
 
 fsharpExpressionIsDefinitelyOfTypeString : FsharpExpression -> Bool
