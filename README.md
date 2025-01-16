@@ -25,9 +25,8 @@ plus2 n =
         )
 -->
 Ok """namespace global
-module rec Elm
-
-    samplePlus2 : float -> float =
+module rec Elm =
+    let samplePlus2 : float -> float =
         fun n ->
             basics_add n (List.sum [ 2 ])
 
@@ -81,13 +80,13 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         Incidentally, avoiding extensible record types
         also tends to improve your elm code because it's simpler and makes the compiler errors more concrete
     -   potential future candidates: `Basics.(<<)`, `Basics.(>>)`, `Basics.clamp`, `Basics.degrees`, `Basics.turns`,
-        `Basics.radians`, `Basics.logBase`, `Basics.atan2`, `Basics.toPolar`, `Basics.fromPolar`, `Basics.never`, `String.reverse`, `List.map5`, `List.map4`, `Char.toLocaleLower`, `Char.toLocaleUpper`, `Char.isAlpha`, `Char.isAlphaNum`, `Char.isDigit`, `Char.isOctDigit`, `Char.isHexDigit`, `List.head`, `List.tail`, `List.unzip`, `List.partition`, `Dict.update`, `Dict.merge`, `Dict.intersect`, `Bitwise`, `Set`, `Array`. Any help appreciated!
+        `Basics.radians`, `Basics.logBase`, `Basics.atan2`, `Basics.toPolar`, `Basics.fromPolar`, `Basics.never`, `String.reverse`, `List.map5`, `List.map4`, `Char.toLocaleLower`, `Char.toLocaleUpper`, `Char.isAlpha`, `Char.isAlphaNum`, `Char.isDigit`, `Char.isOctDigit`, `Char.isHexDigit`, `List.head`, `List.tail`, `List.unzip`, `Dict.update`, `Dict.merge`, `Dict.intersect`, `Bitwise`, `Set`, `Array`. Any help appreciated!
 -   no checks are performed before transpiling to fsharp. So if you don't add a compile check of your elm input,
     you might e.g. get a running program that circumvents an elm opaque type or phantom type, or a fsharp program that can't be run
 -   not much care has been put into making the resulting code readable or even conventionally formatted
     and comments are not preserved
 
-Please [report any issues](https://github.com/lue-bird/elm-syntax-format/issues/new) you notice <3
+Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new) you notice <3
 
 ### why F#?
 -   it runs decently fast and can directly target Wasm
