@@ -26,7 +26,6 @@ import Elm.Syntax.Range
 import Elm.Syntax.Type
 import Elm.Syntax.TypeAlias
 import Elm.Syntax.TypeAnnotation
-import ElmSyntaxToFsharp exposing (FsharpExpression(..))
 import ElmSyntaxTypeInfer
 import FastDict
 import FastSet
@@ -7818,7 +7817,7 @@ defaultDeclarations =
 
     let string_right (takenElementCount: float) (string: string): string = 
         string.Substring(
-            String.length string - int takenElementCount - 1,
+            String.length string - int takenElementCount,
             int takenElementCount
         )
 
@@ -7836,7 +7835,7 @@ defaultDeclarations =
 
     let string_dropLeft (skippedElementCount: float) (string: string): string = 
         string.Substring(
-            int skippedElementCount - 1,
+            int skippedElementCount,
             String.length string - int skippedElementCount
         )
 
