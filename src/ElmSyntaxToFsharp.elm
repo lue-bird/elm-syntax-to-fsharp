@@ -2083,7 +2083,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "string_isEmpty" }
 
                 "length" ->
-                    Just { moduleOrigin = Just "String", name = "length" }
+                    Just { moduleOrigin = Nothing, name = "string_length" }
 
                 "append" ->
                     Just { moduleOrigin = Nothing, name = "string_concat" }
@@ -2134,7 +2134,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "String", name = "map" }
 
                 "repeat" ->
-                    Just { moduleOrigin = Just "String", name = "replicate" }
+                    Just { moduleOrigin = Nothing, name = "replicate" }
 
                 "split" ->
                     Just { moduleOrigin = Nothing, name = "string_split" }

@@ -1,15 +1,17 @@
 {
     "type": "package",
-    "name": "lue-bird/elm-syntax-to-fsharp",
+    "name": "lue-bird/elm-to-fsharp",
     "summary": "transpile elm to F#",
     "license": "MIT",
     "version": "1.0.0",
     "exposed-modules": [
-        "ElmSyntaxToFsharp"
+        "ElmToFsharp"
     ],
     "elm-version": "0.19.1 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.5 <= v < 2.0.0",
+        "guida-lang/graph": "1.0.1 <= v < 2.0.0",
+        "lue-bird/elm-syntax-type-infer": "1.0.0 <= v < 2.0.0",
         "miniBill/elm-fast-dict": "1.2.1 <= v < 2.0.0",
         "miniBill/elm-unicode": "1.1.1 <= v < 2.0.0",
         "stil4m/elm-syntax": "7.3.6 <= v < 8.0.0"
