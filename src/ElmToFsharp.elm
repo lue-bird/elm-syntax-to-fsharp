@@ -5903,11 +5903,23 @@ condenseExpressionCall call =
                                 , arguments = argument1 :: argument2Up
                                 }
 
-                -- ( (FsharpPatternVariable "generated_0") :: _, FsharpExpressionCall variantCall ) ->
-                --     FsharpExpressionCall
-                --         { called = variantCall.called
-                --         , arguments = call.argument0 :: call.argument1Up
-                --         }
+                ( (FsharpPatternVariable "generated_0") :: _, FsharpExpressionCall variantCall ) ->
+                    FsharpExpressionCall
+                        { called = variantCall.called
+                        , arguments =
+                            [ case call.argument1Up of
+                                [] ->
+                                    call.argument0
+
+                                callArgument1 :: callArgument2Up ->
+                                    FsharpExpressionTuple
+                                        { part0 = call.argument0
+                                        , part1 = callArgument1
+                                        , part2Up = callArgument2Up
+                                        }
+                            ]
+                        }
+
                 _ ->
                     FsharpExpressionCall
                         { called = FsharpExpressionLambda calledLambda
@@ -7342,7 +7354,13 @@ printFsharpLetDestructuring letDestructuring =
     printParenthesized
         { opening = "("
         , closing = ")"
-        , inner = letDestructuring.pattern |> printFsharpPatternNotParenthesized
+        , inner =
+            letDestructuring.pattern
+                |> printFsharpPatternNotParenthesized
+                |> Print.followedBy
+                    (Print.exactly ": ")
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4 patternTypePrint)
         }
         |> Print.followedBy (Print.exactly " =")
         |> Print.followedBy
@@ -7351,14 +7369,6 @@ printFsharpLetDestructuring letDestructuring =
                     |> Print.followedBy
                         (printFsharpExpressionNotParenthesized letDestructuring.expression)
                 )
-            )
-        |> Print.followedBy
-            (Print.exactly ": ")
-        |> Print.followedBy
-            (Print.withIndentAtNextMultipleOf4 patternTypePrint)
-        |> Print.followedBy
-            (Print.spaceOrLinebreakIndented
-                (patternTypePrint |> Print.lineSpread)
             )
 
 
