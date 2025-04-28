@@ -15,7 +15,7 @@ import Elm.Syntax.Module
 import Elm.Syntax.ModuleName
 import Elm.Syntax.Node
 import Elm.Version
-import ElmToFsharp
+import ElmSyntaxToFsharp
 import FastDict
 import FastSet
 import Json.Decode
@@ -168,7 +168,7 @@ runningInterface state =
         let
             transpiledDeclarationsAndErrors =
                 state.parsedModules
-                    |> ElmToFsharp.modules
+                    |> ElmSyntaxToFsharp.modules
         in
         [ Node.standardOutWrite
             ((transpiledDeclarationsAndErrors.errors
@@ -189,7 +189,7 @@ runningInterface state =
             { path = "src/Elm.fs"
             , content =
                 transpiledDeclarationsAndErrors.declarations
-                    |> ElmToFsharp.fsharpDeclarationsToModuleString
+                    |> ElmSyntaxToFsharp.fsharpDeclarationsToModuleString
                     -- TODO remove for general use
                     |> String.replace
                         "listExtra_uniqueHelp<'a>"

@@ -3,6 +3,8 @@ module ElmSyntaxToFsharpTests exposing (suite)
 import Elm.Parser
 import ElmSyntaxToFsharp
 import Expect
+import FastDict
+import FastSet
 import Test exposing (Test)
 
 
@@ -425,7 +427,26 @@ expectTranspiledToFsharpStringAs expected source =
                 transpiledResult :
                     { errors : List String
                     , declarations :
-                        List ElmSyntaxToFsharp.FsharpDeclaration
+                        { valuesAndFunctions :
+                            FastDict.Dict
+                                String
+                                { result : ElmSyntaxToFsharp.FsharpExpression
+                                , type_ : ElmSyntaxToFsharp.FsharpType
+                                }
+                        , typeAliases :
+                            FastDict.Dict
+                                String
+                                { parameters : List String
+                                , type_ : ElmSyntaxToFsharp.FsharpType
+                                }
+                        , recordTypes : FastSet.Set (List String)
+                        , enumTypes :
+                            FastDict.Dict
+                                String
+                                { parameters : List String
+                                , variants : FastDict.Dict String (Maybe ElmSyntaxToFsharp.FsharpType)
+                                }
+                        }
                     }
                 transpiledResult =
                     parsedModules |> ElmSyntaxToFsharp.modules

@@ -1,4 +1,4 @@
-module ElmToFsharp exposing
+module ElmSyntaxToFsharp exposing
     ( modules, fsharpDeclarationsToModuleString
     , FsharpLetDeclaration(..), FsharpExpression(..), FsharpPattern(..), FsharpType(..)
     )
