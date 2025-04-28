@@ -25,10 +25,10 @@ plus2 n =
         )
 -->
 Ok """namespace global
-module rec Elm =
+module Elm =
     let samplePlus2 : float -> float =
         fun n ->
-            basics_add n (List.sum [ 2 ])
+            basics_add n (List.sum [ 2.0 ])
 
     ..and some default declarations..
 """
