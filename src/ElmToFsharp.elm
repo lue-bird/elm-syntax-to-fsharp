@@ -6178,44 +6178,114 @@ printFsharpValueOrFunctionDeclaration :
     }
     -> Print
 printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
-    Print.exactly
-        (fsharpValueOrFunctionDeclaration.name
-            ++ (fsharpValueOrFunctionDeclaration.type_
-                    |> fsharpTypeContainedVariables
-                    |> FastSet.toList
-                    |> fsharpTypeParametersToString
-               )
-        )
-        |> Print.followedBy
-            (Print.withIndentAtNextMultipleOf4
-                ((let
-                    typePrint : Print
-                    typePrint =
-                        printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
-
-                    fullLineSpread : Print.LineSpread
-                    fullLineSpread =
-                        typePrint |> Print.lineSpread
-                  in
-                  Print.exactly ":"
-                    |> Print.followedBy
-                        (Print.withIndentAtNextMultipleOf4
-                            (Print.spaceOrLinebreakIndented fullLineSpread
-                                |> Print.followedBy typePrint
+    case fsharpValueOrFunctionDeclaration.result of
+        FsharpExpressionLambda function ->
+            let
+                parameterPrints : List Print
+                parameterPrints =
+                    function.parameters
+                        |> List.map
+                            (\parameter ->
+                                let
+                                    parameterTypePrint : Print
+                                    parameterTypePrint =
+                                        printFsharpTypeParenthesizedIfSpaceSeparated
+                                            parameter.type_
+                                in
+                                Print.exactly "("
+                                    |> Print.followedBy
+                                        (parameter.pattern
+                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
+                                        )
+                                    |> Print.followedBy (Print.exactly ":")
+                                    |> Print.followedBy
+                                        (Print.withIndentIncreasedBy 1
+                                            (Print.withIndentAtNextMultipleOf4
+                                                (Print.spaceOrLinebreakIndented
+                                                    (parameterTypePrint |> Print.lineSpread)
+                                                    |> Print.followedBy
+                                                        parameterTypePrint
+                                                )
+                                            )
+                                        )
+                                    |> Print.followedBy
+                                        (Print.exactly ")")
                             )
+
+                parametersLineSpread : Print.LineSpread
+                parametersLineSpread =
+                    parameterPrints
+                        |> Print.lineSpreadListMapAndCombine
+                            Print.lineSpread
+            in
+            Print.exactly
+                (fsharpValueOrFunctionDeclaration.name
+                    ++ (fsharpValueOrFunctionDeclaration.type_
+                            |> fsharpTypeContainedVariables
+                            |> FastSet.toList
+                            |> fsharpTypeParametersToString
+                       )
+                )
+                |> Print.followedBy
+                    (Print.withIndentIncreasedBy 4
+                        (parameterPrints
+                            |> Print.listMapAndIntersperseAndFlatten
+                                (\parameterPrint -> parameterPrint)
+                                (Print.spaceOrLinebreakIndented parametersLineSpread)
                         )
-                 )
-                    |> Print.followedBy
-                        (Print.exactly " =")
-                    |> Print.followedBy
-                        (Print.linebreakIndented
+                    )
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        (Print.exactly " ="
                             |> Print.followedBy
-                                (printFsharpExpressionParenthesizedIfWithLetDeclarations
-                                    fsharpValueOrFunctionDeclaration.result
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                            function.result
+                                        )
                                 )
                         )
+                    )
+
+        resultNotFunction ->
+            Print.exactly
+                (fsharpValueOrFunctionDeclaration.name
+                    ++ (fsharpValueOrFunctionDeclaration.type_
+                            |> fsharpTypeContainedVariables
+                            |> FastSet.toList
+                            |> fsharpTypeParametersToString
+                       )
                 )
-            )
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        ((let
+                            typePrint : Print
+                            typePrint =
+                                printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
+
+                            fullLineSpread : Print.LineSpread
+                            fullLineSpread =
+                                typePrint |> Print.lineSpread
+                          in
+                          Print.exactly ":"
+                            |> Print.followedBy
+                                (Print.withIndentAtNextMultipleOf4
+                                    (Print.spaceOrLinebreakIndented fullLineSpread
+                                        |> Print.followedBy typePrint
+                                    )
+                                )
+                         )
+                            |> Print.followedBy
+                                (Print.exactly " =")
+                            |> Print.followedBy
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                            resultNotFunction
+                                        )
+                                )
+                        )
+                    )
 
 
 printFsharpLocalLetValueOrFunctionDeclaration :
@@ -6225,38 +6295,102 @@ printFsharpLocalLetValueOrFunctionDeclaration :
     }
     -> Print
 printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
-    Print.exactly
-        fsharpValueOrFunctionDeclaration.name
-        |> Print.followedBy
-            (Print.withIndentAtNextMultipleOf4
-                ((let
-                    typePrint : Print
-                    typePrint =
-                        printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
-
-                    fullLineSpread : Print.LineSpread
-                    fullLineSpread =
-                        typePrint |> Print.lineSpread
-                  in
-                  Print.exactly ":"
-                    |> Print.followedBy
-                        (Print.withIndentAtNextMultipleOf4
-                            (Print.spaceOrLinebreakIndented fullLineSpread
-                                |> Print.followedBy typePrint
+    case fsharpValueOrFunctionDeclaration.result of
+        FsharpExpressionLambda function ->
+            let
+                parameterPrints : List Print
+                parameterPrints =
+                    function.parameters
+                        |> List.map
+                            (\parameter ->
+                                let
+                                    parameterTypePrint : Print
+                                    parameterTypePrint =
+                                        printFsharpTypeParenthesizedIfSpaceSeparated
+                                            parameter.type_
+                                in
+                                Print.exactly "("
+                                    |> Print.followedBy
+                                        (parameter.pattern
+                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
+                                        )
+                                    |> Print.followedBy (Print.exactly ":")
+                                    |> Print.followedBy
+                                        (Print.withIndentIncreasedBy 1
+                                            (Print.withIndentAtNextMultipleOf4
+                                                (Print.spaceOrLinebreakIndented
+                                                    (parameterTypePrint |> Print.lineSpread)
+                                                    |> Print.followedBy
+                                                        parameterTypePrint
+                                                )
+                                            )
+                                        )
+                                    |> Print.followedBy
+                                        (Print.exactly ")")
                             )
+
+                parametersLineSpread : Print.LineSpread
+                parametersLineSpread =
+                    parameterPrints
+                        |> Print.lineSpreadListMapAndCombine
+                            Print.lineSpread
+            in
+            Print.exactly
+                fsharpValueOrFunctionDeclaration.name
+                |> Print.followedBy
+                    (Print.withIndentIncreasedBy 4
+                        (parameterPrints
+                            |> Print.listMapAndIntersperseAndFlatten
+                                (\parameterPrint -> parameterPrint)
+                                (Print.spaceOrLinebreakIndented parametersLineSpread)
                         )
-                 )
-                    |> Print.followedBy
-                        (Print.exactly " =")
-                    |> Print.followedBy
-                        (Print.linebreakIndented
+                    )
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        (Print.exactly " ="
                             |> Print.followedBy
-                                (printFsharpExpressionParenthesizedIfWithLetDeclarations
-                                    fsharpValueOrFunctionDeclaration.result
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                            function.result
+                                        )
                                 )
                         )
-                )
-            )
+                    )
+
+        resultNotFunction ->
+            Print.exactly
+                fsharpValueOrFunctionDeclaration.name
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        ((let
+                            typePrint : Print
+                            typePrint =
+                                printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
+
+                            fullLineSpread : Print.LineSpread
+                            fullLineSpread =
+                                typePrint |> Print.lineSpread
+                          in
+                          Print.exactly ":"
+                            |> Print.followedBy
+                                (Print.withIndentAtNextMultipleOf4
+                                    (Print.spaceOrLinebreakIndented fullLineSpread
+                                        |> Print.followedBy typePrint
+                                    )
+                                )
+                         )
+                            |> Print.followedBy
+                                (Print.exactly " =")
+                            |> Print.followedBy
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                            resultNotFunction
+                                        )
+                                )
+                        )
+                    )
 
 
 type FsharpValueOrFunctionDependencyBucket element
