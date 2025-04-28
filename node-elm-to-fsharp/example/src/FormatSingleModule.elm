@@ -8,7 +8,6 @@ formatSingleModule : String -> String
 formatSingleModule originalSource =
     case
         originalSource
-        
             |> ElmSyntaxParserLenient.run ElmSyntaxParserLenient.module_
     of
         Just syntaxModule ->
