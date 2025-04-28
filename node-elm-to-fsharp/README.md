@@ -13,3 +13,8 @@ To instead run it once
 ```bash
 npm run start
 ```
+
+To compile the resulting F# to an executable, run
+```bash
+dotnet publish -c release
+```
