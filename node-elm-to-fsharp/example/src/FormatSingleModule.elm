@@ -14,6 +14,6 @@ formatSingleModule originalSource =
             syntaxModule
                 |> ElmSyntaxPrint.module_
                 |> ElmSyntaxPrint.toString
-        
+
         Nothing ->
             originalSource
