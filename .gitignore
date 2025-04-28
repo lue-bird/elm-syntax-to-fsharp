@@ -10,6 +10,8 @@ elm.js
 main.js
 elmMain.js
 dist
+target
+*.lock
 
 testing.fs
 Elm.fs
