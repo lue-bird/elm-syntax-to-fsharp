@@ -13,6 +13,7 @@ dist
 
 testing.fs
 Elm.fs
+*.fs.rs
 obj
 fable_modules
 bin
