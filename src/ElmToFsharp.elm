@@ -6797,14 +6797,15 @@ printFsharpExpressionTuple parts =
     in
     Print.exactly "( "
         |> Print.followedBy
-            (Print.withIndentIncreasedBy 2
-                ((part0Print :: part1Print :: part2UpPrints)
-                    |> Print.listIntersperseAndFlatten
-                        (Print.exactly ","
-                            |> Print.followedBy
-                                (Print.spaceOrLinebreakIndented lineSpread)
-                        )
-                )
+            ((part0Print :: part1Print :: part2UpPrints)
+                |> Print.listMapAndIntersperseAndFlatten
+                    (\partPrint ->
+                        Print.withIndentIncreasedBy 2 partPrint
+                    )
+                    (Print.spaceOrLinebreakIndented lineSpread
+                        |> Print.followedBy
+                            (Print.exactly ", ")
+                    )
             )
         |> Print.followedBy
             (Print.spaceOrLinebreakIndented lineSpread)
@@ -7783,40 +7784,34 @@ module Elm =
 defaultDeclarations : String
 defaultDeclarations =
     """
-    let basics_always (result: 'result) (_: '_ignored) : 'result = result
+    let inline basics_always (result: 'result) (_: '_ignored) : 'result = result
 
-    let basics_eq (a: 'a) (b: 'a) = a = b
-    let basics_neq (a: 'a) (b: 'a) = a <> b
-    let basics_lt (a: float) (b: float) : bool = a < b
-    let basics_le (a: float) (b: float) : bool = a <= b
-    let basics_gt (a: float) (b: float) : bool = a > b
-    let basics_ge (a: float) (b: float) : bool = a >= b
+    let inline basics_eq (a: 'a) (b: 'a) = a = b
+    let inline basics_neq (a: 'a) (b: 'a) = a <> b
+    let inline basics_lt (a: float) (b: float) : bool = a < b
+    let inline basics_le (a: float) (b: float) : bool = a <= b
+    let inline basics_gt (a: float) (b: float) : bool = a > b
+    let inline basics_ge (a: float) (b: float) : bool = a >= b
 
     type Basics_Order =
         | Basics_LT
         | Basics_EQ
         | Basics_GT
 
-    let basics_compare (a: 'a) (b: 'a) : Basics_Order =
+    let inline basics_compare (a: 'a) (b: 'a) : Basics_Order =
         let comparisonMagnitude = compare a b
 
         if comparisonMagnitude = 0 then Basics_EQ
         else if comparisonMagnitude < 0 then Basics_LT
         else Basics_GT
 
-    let basics_negate (float: float) : float = -float
-
-    let basics_add (a: float) (b: float) : float = a + b
-
-    let basics_sub (a: float) (b: float) : float = a - b
-
-    let basics_mul (a: float) (b: float) : float = a * b
-
-    let basics_fdiv (a: float) (b: float) : float = a / b
-
-    let basics_idiv (a: float) (b: float) : float = truncate (a / b)
-
-    let basics_remainderBy (divisor: float) (toDivide: float) : float =
+    let inline basics_negate (float: float) : float = -float
+    let inline basics_add (a: float) (b: float) : float = a + b
+    let inline basics_sub (a: float) (b: float) : float = a - b
+    let inline basics_mul (a: float) (b: float) : float = a * b
+    let inline basics_fdiv (a: float) (b: float) : float = a / b
+    let inline basics_idiv (a: float) (b: float) : float = truncate (a / b)
+    let inline basics_remainderBy (divisor: float) (toDivide: float) : float =
         toDivide % divisor
 
     let basics_modBy (divisor: float) (toDivide: float) : float =
@@ -7831,16 +7826,15 @@ defaultDeclarations =
         else
             remainder
 
-    let basics_pow (a: float) (b: float) : float = a ** b
+    let inline basics_pow (a: float) (b: float) : float = a ** b
 
-    let basics_and (a: bool) (b: bool) = a && b
+    let inline basics_and (a: bool) (b: bool) = a && b
+    let inline basics_or (a: bool) (b: bool) = a || b
 
-    let basics_or (a: bool) (b: bool) = a || b
-
-    let char_isHexDigit (ch : char) : bool =
+    let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)
 
-    let string_isEmpty (stringToCheck: string) : bool = stringToCheck = ""
+    let inline string_isEmpty (stringToCheck: string) : bool = stringToCheck = ""
 
     let string_length (str: string) =
         float(String.length(str))
@@ -7854,13 +7848,13 @@ defaultDeclarations =
     let string_fromList (chars: list<char>) =
         new string (List.toArray chars)
 
-    let string_contains (substring: string) (string: string) : bool =
+    let inline string_contains (substring: string) (string: string) : bool =
         string.Contains(substring)
 
-    let string_startsWith (start: string) (string: string) : bool =
+    let inline string_startsWith (start: string) (string: string) : bool =
         string.StartsWith(start)
 
-    let string_endsWith (ending: string) (string: string) : bool =
+    let inline string_endsWith (ending: string) (string: string) : bool =
         string.EndsWith(ending)
 
     let string_foldl
@@ -7877,11 +7871,9 @@ defaultDeclarations =
         : 'folded =
         Array.foldBack reduce (string.ToCharArray()) initialFolded
 
-    let string_trim (string: string) : string = string.Trim()
-
-    let string_trimLeft (string: string) : string = string.TrimStart()
-
-    let string_trimRight (string: string) : string = string.TrimEnd()
+    let inline string_trim (string: string) : string = string.Trim()
+    let inline string_trimLeft (string: string) : string = string.TrimStart()
+    let inline string_trimRight (string: string) : string = string.TrimEnd()
 
     let string_right (takenElementCount: float) (string: string): string = 
         string.Substring(
@@ -7890,10 +7882,7 @@ defaultDeclarations =
         )
 
     let string_left (skippedElementCount: float) (string: string): string = 
-        string.Substring(
-            0,
-            int skippedElementCount
-        )
+        string.Substring(0, int skippedElementCount)
     
     let string_dropRight (skippedElementCount: float) (string: string): string = 
         string.Substring(
@@ -7907,9 +7896,8 @@ defaultDeclarations =
             String.length string - int skippedElementCount
         )
 
-    let string_append (early: string) (late: string) : string = early + late
-
-    let string_fromChar (char: char) : string = string char
+    let inline string_append (early: string) (late: string) : string = early + late
+    let inline string_fromChar (char: char) : string = string char
 
     let string_cons (newHeadChar: char) (late: string) : string =
         string_fromChar newHeadChar + late
@@ -7927,16 +7915,15 @@ defaultDeclarations =
     let string_reverse (string: string) : string =
         new string (Array.rev (string.ToCharArray()))
 
-    let string_replace
+    let inline string_replace
         (toReplace: string)
         (replacement: string)
         (string: string)
         : string =
         string.Replace(toReplace, replacement)
 
-    let string_toUpper (string: string) : string = string.ToUpper()
-
-    let string_toLower (string: string) : string = string.ToLower()
+    let inline string_toUpper (string: string) : string = string.ToUpper()
+    let inline string_toLower (string: string) : string = string.ToLower()
 
     let string_concat (separator: string) (strings: list<string>) : string =
         String.concat "" strings
@@ -8013,7 +8000,7 @@ defaultDeclarations =
     let list_product (list: list<float>) : float =
         List.fold basics_mul 1 list
 
-    let list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
+    let inline list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
         newHead :: tail
     
     let list_drop (skippedElementCount: float) (list: list<'a>): list<'a> =
@@ -8060,7 +8047,7 @@ defaultDeclarations =
         : 'state =
         List.foldBack reduce list initialState
 
-    let list_range (startFloat: float) (endFloat: float) : list<float> =
+    let inline list_range (startFloat: float) (endFloat: float) : list<float> =
         [ startFloat..endFloat ]
 
     let dict_size dict =
