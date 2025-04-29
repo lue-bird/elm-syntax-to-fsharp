@@ -5293,14 +5293,25 @@ expression context expressionTypedNode =
                                             }
                                         )
                             then
-                                FsharpExpressionCall
-                                    { called =
-                                        FsharpExpressionReference
-                                            { moduleOrigin = Nothing
-                                            , name = "string_append"
-                                            }
-                                    , arguments = [ left, right ]
-                                    }
+                                case left of
+                                    FsharpExpressionString "" ->
+                                        right
+
+                                    leftNotStringEmpty ->
+                                        case right of
+                                            FsharpExpressionString "" ->
+                                                leftNotStringEmpty
+
+                                            rightNotStringEmpty ->
+                                                FsharpExpressionCall
+                                                    { called =
+                                                        FsharpExpressionReference
+                                                            { moduleOrigin = Nothing
+                                                            , name = "string_append"
+                                                            }
+                                                    , arguments =
+                                                        [ leftNotStringEmpty, rightNotStringEmpty ]
+                                                    }
 
                             else
                                 FsharpExpressionCall
@@ -5315,7 +5326,7 @@ expression context expressionTypedNode =
                         (infixOperation.left |> expression context)
                         (infixOperation.right |> expression context)
 
-                otherOperatorSymbol ->
+                _ ->
                     Result.map3
                         (\operationFunctionReference left right ->
                             FsharpExpressionCall
