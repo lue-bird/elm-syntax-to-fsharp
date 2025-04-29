@@ -1766,7 +1766,8 @@ printFsharpString stringContent =
                     )
                     ""
     in
-    Print.exactly ("\"" ++ singleDoubleQuotedStringContentEscaped ++ "\"")
+    -- TODO integrate more nicely
+    Print.exactly ("(StringRopeOne \"" ++ singleDoubleQuotedStringContentEscaped ++ "\")")
 
 
 singleDoubleQuotedStringCharToEscaped : Char -> String
@@ -2450,7 +2451,7 @@ typeConstructReferenceToCoreFsharp reference =
         [ "String" ] ->
             case reference.name of
                 "String" ->
-                    Just { moduleOrigin = Nothing, name = "string" }
+                    Just { moduleOrigin = Nothing, name = "StringRope" }
 
                 _ ->
                     Nothing
@@ -2656,19 +2657,19 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "string_toList" }
 
                 "join" ->
-                    Just { moduleOrigin = Just "String", name = "concat" }
+                    Just { moduleOrigin = Nothing, name = "string_join" }
 
                 "filter" ->
-                    Just { moduleOrigin = Just "String", name = "filter" }
+                    Just { moduleOrigin = Nothing, name = "string_filter" }
 
                 "any" ->
-                    Just { moduleOrigin = Just "String", name = "exists" }
+                    Just { moduleOrigin = Nothing, name = "string_any" }
 
                 "all" ->
-                    Just { moduleOrigin = Just "String", name = "forall" }
+                    Just { moduleOrigin = Nothing, name = "string_all" }
 
                 "map" ->
-                    Just { moduleOrigin = Just "String", name = "map" }
+                    Just { moduleOrigin = Nothing, name = "string_map" }
 
                 "repeat" ->
                     Just { moduleOrigin = Nothing, name = "string_repeat" }
@@ -2692,10 +2693,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "string_toFloat" }
 
                 "fromInt" ->
-                    Just { moduleOrigin = Nothing, name = "string" }
+                    Just { moduleOrigin = Nothing, name = "string_fromFloat" }
 
                 "fromFloat" ->
-                    Just { moduleOrigin = Nothing, name = "string" }
+                    Just { moduleOrigin = Nothing, name = "string_fromFloat" }
 
                 "contains" ->
                     Just { moduleOrigin = Nothing, name = "string_contains" }
@@ -7853,131 +7854,259 @@ defaultDeclarations =
 
     let inline basics_pow (a: float) (b: float) : float = a ** b
 
-    let inline basics_and (a: bool) (b: bool) = a && b
-    let inline basics_or (a: bool) (b: bool) = a || b
+    let inline basics_and (a: bool) (b: bool) : bool = a && b
+    let inline basics_or (a: bool) (b: bool) : bool = a || b
 
     let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)
+    
+    [<CustomEquality; CustomComparison>]
+    type StringRope =
+        | StringRopeOne of string
+        | StringRopeAppend of StringRope * StringRope
+    
+        static member toString (this: StringRope) : string =
+            match this with
+            | StringRopeOne content -> content
+            | StringRopeAppend (fullLeftRope, fullRightRope) ->
+                let mutableBuilder = System.Text.StringBuilder()
+                let mutable stringRopeToMatchNext = fullLeftRope
+                let mutable shouldKeepGoing = true
+                let mutableRemainingRightStringRopes: ResizeArray<StringRope> = ResizeArray()
+                mutableRemainingRightStringRopes.Add(fullRightRope)
+                while (shouldKeepGoing) do
+                    match stringRopeToMatchNext with
+                    | StringRopeOne segment ->
+                        let _ = mutableBuilder.Append(segment)
+                        if mutableRemainingRightStringRopes.Count = 0 then
+                            shouldKeepGoing <- false
+                        else
+                            stringRopeToMatchNext <-
+                                mutableRemainingRightStringRopes.get_Item(mutableRemainingRightStringRopes.Count - 1)
+                            mutableRemainingRightStringRopes.RemoveAt(mutableRemainingRightStringRopes.Count - 1)
+                    | StringRopeAppend (left, right) ->
+                        stringRopeToMatchNext <- left
+                        mutableRemainingRightStringRopes.Add(right)
+                done
+                mutableBuilder.ToString()
+        override x.GetHashCode() =
+            hash (StringRope.toString(x))
+        override x.Equals(other) =
+            match other with
+                | :? StringRope as otherStringRope ->
+                    StringRope.toString(x) = StringRope.toString(otherStringRope)
+                | _ -> false
+        interface System.IComparable with
+            member x.CompareTo(other) =
+                match other with
+                | :? StringRope as otherStringRope ->
+                    (StringRope.toString(x)).CompareTo (StringRope.toString(otherStringRope))
+                | _ -> -1
+    
+    let stringRopeEmpty: StringRope = StringRopeOne ""
 
-    let inline string_isEmpty (stringToCheck: string) : bool = stringToCheck = ""
+    let rec string_isEmpty (stringToCheck: StringRope) : bool =
+        match stringToCheck with
+        | StringRopeOne string -> String.IsNullOrEmpty(string)
+        | StringRopeAppend (left, right) ->
+            string_isEmpty left && string_isEmpty right
 
-    let string_length (str: string) =
-        float(String.length(str))
+    let string_length (str: StringRope) : float =
+        float (String.length (StringRope.toString str))
 
-    let string_repeat (repetitions: float) (segment: string): string =
-        String.replicate (int(repetitions)) segment
+    let string_repeat (repetitions: float) (segment: StringRope) : StringRope =
+        StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
 
-    let string_toList (string: string) : list<char> =
-        List.ofArray (string.ToCharArray())
+    let string_toList (string: StringRope) : list<char> =
+        List.ofArray ((StringRope.toString string).ToCharArray())
 
-    let string_fromList (chars: list<char>) =
-        new string (List.toArray chars)
+    let string_fromList (chars: list<char>) : StringRope =
+        StringRopeOne (new string (List.toArray chars))
 
-    let inline string_contains (substring: string) (string: string) : bool =
-        string.Contains(substring)
+    let string_contains (substringRope: StringRope) (string: StringRope) : bool =
+        (StringRope.toString string).Contains(StringRope.toString substringRope)
 
-    let inline string_startsWith (start: string) (string: string) : bool =
-        string.StartsWith(start)
+    let string_startsWith (start: StringRope) (string: StringRope) : bool =
+        (StringRope.toString string).StartsWith(StringRope.toString start)
 
-    let inline string_endsWith (ending: string) (string: string) : bool =
-        string.EndsWith(ending)
+    let string_endsWith (ending: StringRope) (string: StringRope) : bool =
+        (StringRope.toString string).EndsWith(StringRope.toString ending)
+
+    let string_any
+        (charIsNeedle: char -> bool)
+        (string: StringRope)
+        : bool =
+        // can be optimized
+        String.exists charIsNeedle (StringRope.toString string)
+
+    let string_all
+        (charIsExpected: char -> bool)
+        (string: StringRope)
+        : bool =
+        // can be optimized
+        String.forall charIsExpected (StringRope.toString string)
+
+    let string_map
+        (charChange: char -> char)
+        (string: StringRope)
+        : StringRope =
+        // can be optimized
+        StringRopeOne
+            (String.map charChange (StringRope.toString string))
+
+    let string_filter
+        (charShouldBeKept: char -> bool)
+        (string: StringRope)
+        : StringRope =
+        // can be optimized
+        StringRopeOne
+            (String.filter charShouldBeKept (StringRope.toString string))
 
     let string_foldl
         (reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
-        (string: string)
+        (string: StringRope)
         : 'folded =
-        Array.fold (fun soFar char -> reduce char soFar) initialFolded (string.ToCharArray())
+        // can be optimized
+        Array.fold (fun soFar char -> reduce char soFar) initialFolded
+            ((StringRope.toString string).ToCharArray())
 
     let string_foldr
         (reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
-        (string: string)
+        (string: StringRope)
         : 'folded =
-        Array.foldBack reduce (string.ToCharArray()) initialFolded
+        // can be optimized
+        Array.foldBack reduce
+            ((StringRope.toString string).ToCharArray())
+            initialFolded
 
-    let inline string_trim (string: string) : string = string.Trim()
-    let inline string_trimLeft (string: string) : string = string.TrimStart()
-    let inline string_trimRight (string: string) : string = string.TrimEnd()
+    let string_trim (string: StringRope) : StringRope =
+        StringRopeOne ((StringRope.toString string).Trim())
+    let string_trimLeft (string: StringRope) : StringRope =
+        StringRopeOne ((StringRope.toString string).TrimStart())
+    let string_trimRight (string: StringRope) : StringRope =
+        StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let string_right (takenElementCount: float) (string: string): string = 
-        string.Substring(
-            String.length string - int takenElementCount,
-            int takenElementCount
-        )
+    let string_right (takenElementCount: float) (stringRope: StringRope): StringRope =
+        let string : string = StringRope.toString stringRope
+        StringRopeOne
+            (string.Substring(
+                String.length string - int takenElementCount,
+                int takenElementCount
+            ))
 
-    let string_left (skippedElementCount: float) (string: string): string = 
-        string.Substring(0, int skippedElementCount)
+    let string_left (skippedElementCount: float) (string: StringRope) : StringRope = 
+        StringRopeOne
+            ((StringRope.toString string).Substring(0, int skippedElementCount))
     
-    let string_dropRight (skippedElementCount: float) (string: string): string = 
-        string.Substring(
-            0,
-            String.length string - int skippedElementCount
-        )
+    let string_dropRight (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+        let string : string = StringRope.toString stringRope
+        StringRopeOne
+            (string.Substring(
+                0,
+                String.length string - int skippedElementCount
+            ))
 
-    let string_dropLeft (skippedElementCount: float) (string: string): string = 
-        string.Substring(
-            int skippedElementCount,
-            String.length string - int skippedElementCount
-        )
+    let string_dropLeft (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+        let string : string = StringRope.toString stringRope
+        StringRopeOne
+            (string.Substring(
+                int skippedElementCount,
+                String.length string - int skippedElementCount
+            ))
 
-    let inline string_append (early: string) (late: string) : string = early + late
-    let inline string_fromChar (char: char) : string = string char
+    let inline string_append (early: StringRope) (late: StringRope) : StringRope =
+        StringRopeAppend (early, late)
+    let string_fromChar (char: char) : StringRope = StringRopeOne (string char)
 
-    let string_cons (newHeadChar: char) (late: string) : string =
-        string_fromChar newHeadChar + late
+    let string_cons (newHeadChar: char) (late: StringRope) : StringRope =
+        StringRopeAppend (StringRopeOne (string newHeadChar), late)
 
-    let string_split (separator: string) (string: string) : list<string> =
-        List.ofArray (string.Split(separator))
+    let string_split (separator: StringRope) (string: StringRope) : list<StringRope> =
+        List.ofArray
+            (Array.map (fun segment -> StringRopeOne segment)
+                ((StringRope.toString string).Split(StringRope.toString separator))
+            )
 
-    let string_lines (string: string) : list<string> =
+    let string_lines (string: StringRope) : list<StringRope> =
         List.ofArray (
-            string
-                .Replace("\\r\\n", "\\n")
-                .Split("\\n")
+            (Array.map (fun line -> StringRopeOne line)
+                ((StringRope.toString string)
+                    .Replace("
+", "
+")
+                    .Split("
+")
+                )
+            )
         )
 
-    let string_reverse (string: string) : string =
-        new string (Array.rev (string.ToCharArray()))
+    let string_reverse (string: StringRope) : StringRope =
+        StringRopeOne
+            (new string (Array.rev ((StringRope.toString string).ToCharArray())))
 
-    let inline string_replace
-        (toReplace: string)
-        (replacement: string)
-        (string: string)
-        : string =
-        string.Replace(toReplace, replacement)
+    let string_replace
+        (toReplace: StringRope)
+        (replacement: StringRope)
+        (string: StringRope)
+        : StringRope =
+        StringRopeOne
+            ((StringRope.toString string).Replace(
+                StringRope.toString toReplace,
+                StringRope.toString replacement
+            ))
 
-    let inline string_toUpper (string: string) : string = string.ToUpper()
-    let inline string_toLower (string: string) : string = string.ToLower()
+    let string_toUpper (string: StringRope) : StringRope =
+        StringRopeOne ((StringRope.toString string).ToUpper())
+    let string_toLower (string: StringRope) : StringRope =
+        StringRopeOne ((StringRope.toString string).ToLower())
 
-    let string_concat (separator: string) (strings: list<string>) : string =
-        String.concat "" strings
+    let string_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
+        StringRopeOne
+            (String.concat
+                (StringRope.toString separator)
+                (List.map StringRope.toString strings)
+            )
+    let string_concat (strings: list<StringRope>) : StringRope =
+        StringRopeOne
+            (String.concat "" (List.map StringRope.toString strings))
 
     let string_padLeft
         (newMinimumLength: float)
         (padding: char)
-        (string: string)
-        : string =
-        string.PadLeft(int newMinimumLength, padding)
+        (string: StringRope)
+        : StringRope =
+        StringRopeOne
+            ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
 
     let string_padRight
         (newMinimumLength: float)
         (padding: char)
-        (string: string)
-        : string =
-        string.PadRight(int newMinimumLength, padding)
+        (string: StringRope)
+        : StringRope =
+        StringRopeOne
+            ((StringRope.toString string).PadRight(int newMinimumLength, padding))
+    
+    let string_fromFloat (n: float) : StringRope =
+        StringRopeOne (string n)
 
-    let string_toInt (string: string) : option<float> =
-        let (success, num) = System.Int64.TryParse string
+    let string_toInt (string: StringRope) : option<float> =
+        let (success, num) = System.Int64.TryParse (StringRope.toString string)
 
         if success then Some(float num) else None
 
-    let string_toFloat (string: string) : option<float> =
-        let (success, num) = System.Double.TryParse string
+    let string_toFloat (string: StringRope) : option<float> =
+        let (success, num) = System.Double.TryParse (StringRope.toString string)
 
         if success then Some(num) else None
 
-    let string_slice (startInclusivePossiblyNegative: float) (endExclusivePossiblyNegative: float) (string: string): string =
+    let string_slice
+            (startInclusivePossiblyNegative: float)
+            (endExclusivePossiblyNegative: float)
+            (stringRope: StringRope)
+            : StringRope =
+        let string = StringRope.toString stringRope
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0.0) then
                 max
@@ -7996,12 +8125,13 @@ defaultDeclarations =
                     (String.length string)
 
         if (realStartIndex >= realEndIndexExclusive) then
-            ""
+            stringRopeEmpty
         else
-            string.Substring(
-                realStartIndex,
-                realEndIndexExclusive - realStartIndex
-            )
+            StringRopeOne
+                (string.Substring(
+                    realStartIndex,
+                    realEndIndexExclusive - realStartIndex
+                ))
 
     let list_length (list: List<'a>) =
         float(List.length(list))
