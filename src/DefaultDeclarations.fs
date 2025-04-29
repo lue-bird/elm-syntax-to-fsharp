@@ -5,10 +5,14 @@ module DefaultDeclarations =
 
     let inline basics_eq (a: 'a) (b: 'a) = a = b
     let inline basics_neq (a: 'a) (b: 'a) = a <> b
-    let inline basics_lt (a: float) (b: float) : bool = a < b
-    let inline basics_le (a: float) (b: float) : bool = a <= b
-    let inline basics_gt (a: float) (b: float) : bool = a > b
-    let inline basics_ge (a: float) (b: float) : bool = a >= b
+    let inline basics_flt (a: float) (b: float) : bool = a < b
+    let inline basics_ilt (a: int) (b: int) : bool = a < b
+    let inline basics_fle (a: float) (b: float) : bool = a <= b
+    let inline basics_ile (a: int) (b: int) : bool = a <= b
+    let inline basics_fgt (a: float) (b: float) : bool = a > b
+    let inline basics_igt (a: int) (b: int) : bool = a > b
+    let inline basics_fge (a: float) (b: float) : bool = a >= b
+    let inline basics_ige (a: int) (b: int) : bool = a >= b
 
     type Basics_Order =
         | Basics_LT
@@ -22,16 +26,22 @@ module DefaultDeclarations =
         else if comparisonMagnitude < 0 then Basics_LT
         else Basics_GT
 
-    let inline basics_negate (float: float) : float = -float
-    let inline basics_add (a: float) (b: float) : float = a + b
-    let inline basics_sub (a: float) (b: float) : float = a - b
-    let inline basics_mul (a: float) (b: float) : float = a * b
+    let inline basics_fabs (n: float) : float = System.Double.Abs(n)
+    let inline basics_iabs (n: int) : int = System.Int32.Abs(n)
+    let inline basics_fnegate (n: float) : float = -n
+    let inline basics_inegate (n: int) : int = -n
+    let inline basics_fadd (a: float) (b: float) : float = a + b
+    let inline basics_iadd (a: int) (b: int) : int = a + b
+    let inline basics_fsub (a: float) (b: float) : float = a - b
+    let inline basics_isub (a: int) (b: int) : int = a - b
+    let inline basics_fmul (a: float) (b: float) : float = a * b
+    let inline basics_imul (a: int) (b: int) : int = a * b
     let inline basics_fdiv (a: float) (b: float) : float = a / b
-    let inline basics_idiv (a: float) (b: float) : float = truncate (a / b)
-    let inline basics_remainderBy (divisor: float) (toDivide: float) : float =
+    let inline basics_idiv (a: int) (b: int) : int = a / b
+    let inline basics_remainderBy (divisor: int) (toDivide: int) : int =
         toDivide % divisor
 
-    let basics_modBy (divisor: float) (toDivide: float) : float =
+    let basics_modBy (divisor: int) (toDivide: int) : int =
         let remainder = toDivide % divisor
 
         if
@@ -43,7 +53,8 @@ module DefaultDeclarations =
         else
             remainder
 
-    let inline basics_pow (a: float) (b: float) : float = a ** b
+    let inline basics_fpow (a: float) (b: float) : float = a ** b
+    let inline basics_ipow (a: int) (b: int) : int = int (float a ** float b)
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
@@ -104,11 +115,11 @@ module DefaultDeclarations =
         | StringRopeAppend (left, right) ->
             string_isEmpty left && string_isEmpty right
 
-    let string_length (str: StringRope) : float =
-        float (String.length (StringRope.toString str))
+    let string_length (str: StringRope) : int =
+        String.length (StringRope.toString str)
 
-    let string_repeat (repetitions: float) (segment: StringRope) : StringRope =
-        StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
+    let string_repeat (repetitions: int) (segment: StringRope) : StringRope =
+        StringRopeOne (String.replicate repetitions (StringRope.toString segment))
 
     let string_toList (string: StringRope) : list<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
@@ -181,32 +192,32 @@ module DefaultDeclarations =
     let string_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let string_right (takenElementCount: float) (stringRope: StringRope): StringRope =
+    let string_right (takenElementCount: int) (stringRope: StringRope): StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                String.length string - int takenElementCount,
-                int takenElementCount
+                String.length string - takenElementCount,
+                takenElementCount
             ))
 
-    let string_left (skippedElementCount: float) (string: StringRope) : StringRope = 
+    let string_left (skippedElementCount: int) (string: StringRope) : StringRope = 
         StringRopeOne
-            ((StringRope.toString string).Substring(0, int skippedElementCount))
+            ((StringRope.toString string).Substring(0, skippedElementCount))
     
-    let string_dropRight (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+    let string_dropRight (skippedElementCount: int) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 0,
-                String.length string - int skippedElementCount
+                String.length string - skippedElementCount
             ))
 
-    let string_dropLeft (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+    let string_dropLeft (skippedElementCount: int) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                int skippedElementCount,
-                String.length string - int skippedElementCount
+                skippedElementCount,
+                String.length string - skippedElementCount
             ))
 
     let inline string_append (early: StringRope) (late: StringRope) : StringRope =
@@ -263,55 +274,57 @@ module DefaultDeclarations =
             (String.concat "" (List.map StringRope.toString strings))
 
     let string_padLeft
-        (newMinimumLength: float)
+        (newMinimumLength: int)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
+            ((StringRope.toString string).PadLeft(newMinimumLength, padding))
 
     let string_padRight
-        (newMinimumLength: float)
+        (newMinimumLength: int)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadRight(int newMinimumLength, padding))
+            ((StringRope.toString string).PadRight(newMinimumLength, padding))
     
     let string_fromFloat (n: float) : StringRope =
         StringRopeOne (string n)
+    let string_fromInt (n: int) : StringRope =
+        StringRopeOne (string n)
 
-    let string_toInt (string: StringRope) : option<float> =
-        let (success, num) = System.Int64.TryParse (StringRope.toString string)
+    let string_toInt (string: StringRope) : option<int> =
+        let (success, num) = System.Int32.TryParse (StringRope.toString string)
 
-        if success then Some(float num) else None
+        if success then Some num else None
 
     let string_toFloat (string: StringRope) : option<float> =
         let (success, num) = System.Double.TryParse (StringRope.toString string)
 
-        if success then Some(num) else None
+        if success then Some num else None
 
     let string_slice
-            (startInclusivePossiblyNegative: float)
-            (endExclusivePossiblyNegative: float)
+            (startInclusivePossiblyNegative: int)
+            (endExclusivePossiblyNegative: int)
             (stringRope: StringRope)
             : StringRope =
         let string = StringRope.toString stringRope
         let realStartIndex: int =
-            if (startInclusivePossiblyNegative < 0.0) then
+            if (startInclusivePossiblyNegative < 0) then
                 max
                     0
-                    (int startInclusivePossiblyNegative + String.length string)
+                    (startInclusivePossiblyNegative + String.length string)
             else
-                int(startInclusivePossiblyNegative)
+                startInclusivePossiblyNegative
         let realEndIndexExclusive: int =
-            if (endExclusivePossiblyNegative < 0.0) then
+            if (endExclusivePossiblyNegative < 0) then
                 max
                     0
-                    (int endExclusivePossiblyNegative + String.length(string))
+                    (endExclusivePossiblyNegative + String.length(string))
             else
                 min
-                    (int endExclusivePossiblyNegative)
+                    endExclusivePossiblyNegative
                     (String.length string)
 
         if (realStartIndex >= realEndIndexExclusive) then
@@ -322,12 +335,6 @@ module DefaultDeclarations =
                     realStartIndex,
                     realEndIndexExclusive - realStartIndex
                 ))
-
-    let list_length (list: List<'a>) =
-        float(List.length(list))
-
-    let list_repeat (repetitions: float) (segment: 'a): List<'a> =
-        List.replicate (int(repetitions)) segment
 
     let list_member (needle: 'a) (list: list<'a>) : bool =
         List.exists (fun element -> element = needle) list
@@ -342,17 +349,13 @@ module DefaultDeclarations =
         | [] -> None
         | _ :: _ -> Some (List.max list)
 
-    let list_product (list: list<float>) : float =
-        List.fold basics_mul 1 list
+    let list_fproduct (list: list<float>) : float =
+        List.fold (*) 1.0 list
+    let list_iproduct (list: list<int>) : int =
+        List.fold (*) 1 list
 
     let inline list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
         newHead :: tail
-    
-    let list_drop (skippedElementCount: float) (list: list<'a>): list<'a> =
-        List.skip (int skippedElementCount) list
-    
-    let list_take (takenElementCount: float) (list: list<'a>): list<'a> =
-        List.take (int takenElementCount) list
 
     let list_sortWith
         (elementCompare: 'a -> 'a -> Basics_Order)
@@ -392,11 +395,8 @@ module DefaultDeclarations =
         : 'state =
         List.foldBack reduce list initialState
 
-    let inline list_range (startFloat: float) (endFloat: float) : list<float> =
+    let inline list_range (startFloat: int) (endFloat: int) : list<int> =
         [ startFloat..endFloat ]
-
-    let dict_size dict =
-        float(Map.count(dict))
 
     let dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]

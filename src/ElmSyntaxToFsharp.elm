@@ -57,7 +57,7 @@ type FsharpType
 -}
 type FsharpPattern
     = FsharpPatternIgnore
-    | FsharpPatternFloat Float
+    | FsharpPatternInt Int
     | FsharpPatternChar Char
     | FsharpPatternString String
     | FsharpPatternVariable String
@@ -88,6 +88,7 @@ type FsharpPattern
 type FsharpExpression
     = FsharpExpressionUnit
     | FsharpExpressionFloat Float
+    | FsharpExpressionInt Int
     | FsharpExpressionChar Char
     | FsharpExpressionString String
     | FsharpExpressionReference
@@ -853,6 +854,9 @@ fsharpExpressionSubs fsharpExpression =
         FsharpExpressionRecordAccess recordAccess ->
             [ recordAccess.record ]
 
+        FsharpExpressionInt _ ->
+            []
+
         FsharpExpressionFloat _ ->
             []
 
@@ -1153,6 +1157,15 @@ fsharpTypeFloat =
         }
 
 
+fsharpTypeInt : FsharpType
+fsharpTypeInt =
+    FsharpTypeConstruct
+        { moduleOrigin = Nothing
+        , name = "int"
+        , arguments = []
+        }
+
+
 type_ :
     ElmSyntaxTypeInfer.Type String
     -> Result String FsharpType
@@ -1161,7 +1174,8 @@ type_ inferredType =
     case inferredType of
         ElmSyntaxTypeInfer.TypeVariable variable ->
             if variable |> String.startsWith "number" then
-                Ok fsharpTypeFloat
+                -- assume Int
+                Ok fsharpTypeInt
 
             else
                 Ok (FsharpTypeVariable (variable |> variableNameDisambiguateFromFsharpKeywords))
@@ -1690,6 +1704,12 @@ floatLiteral float =
         asString ++ ".0"
 
 
+intLiteral : Int -> String
+intLiteral int =
+    Basics.max (-2 ^ 31) (Basics.min (2 ^ 31 - 1) int)
+        |> String.fromInt
+
+
 fsharpReferenceToString :
     { moduleOrigin : Maybe String
     , name : String
@@ -2085,7 +2105,7 @@ pattern patternInferred =
 
         ElmSyntaxTypeInfer.PatternInt intValue ->
             Ok
-                { pattern = FsharpPatternFloat (intValue.value |> Basics.toFloat)
+                { pattern = FsharpPatternInt intValue.value
                 , introducedVariables = FastSet.empty
                 }
 
@@ -2440,7 +2460,7 @@ typeConstructReferenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "bool" }
 
                 "Int" ->
-                    Just { moduleOrigin = Nothing, name = "float" }
+                    Just { moduleOrigin = Nothing, name = "int" }
 
                 "Float" ->
                     Just { moduleOrigin = Nothing, name = "float" }
@@ -2571,13 +2591,49 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "truncate" }
 
                 "negate" ->
-                    Just { moduleOrigin = Nothing, name = "basics_negate" }
+                    case reference.type_ of
+                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                            case typeFunction.input of
+                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
+                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
+                                        ( [ "Basics" ], "Float" ) ->
+                                            Just { moduleOrigin = Nothing, name = "basics_fnegate" }
+
+                                        _ ->
+                                            -- assume Int
+                                            Just { moduleOrigin = Nothing, name = "basics_inegate" }
+
+                                _ ->
+                                    -- assume Int
+                                    Just { moduleOrigin = Nothing, name = "basics_inegate" }
+
+                        _ ->
+                            -- assume Int
+                            Just { moduleOrigin = Nothing, name = "basics_inegate" }
 
                 "abs" ->
-                    Just { moduleOrigin = Just "System.Double", name = "Abs" }
+                    case reference.type_ of
+                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                            case typeFunction.input of
+                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
+                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
+                                        ( [ "Basics" ], "Float" ) ->
+                                            Just { moduleOrigin = Nothing, name = "basics_fabs" }
+
+                                        _ ->
+                                            -- assume Int
+                                            Just { moduleOrigin = Nothing, name = "basics_iabs" }
+
+                                _ ->
+                                    -- assume Int
+                                    Just { moduleOrigin = Nothing, name = "basics_iabs" }
+
+                        _ ->
+                            -- assume Int
+                            Just { moduleOrigin = Nothing, name = "basics_iabs" }
 
                 "toFloat" ->
-                    Just { moduleOrigin = Nothing, name = "id" }
+                    Just { moduleOrigin = Nothing, name = "float" }
 
                 "isNaN" ->
                     Just { moduleOrigin = Just "System.Double", name = "IsNaN" }
@@ -2693,7 +2749,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "string_toFloat" }
 
                 "fromInt" ->
-                    Just { moduleOrigin = Nothing, name = "string_fromFloat" }
+                    Just { moduleOrigin = Nothing, name = "string_fromInt" }
 
                 "fromFloat" ->
                     Just { moduleOrigin = Nothing, name = "string_fromFloat" }
@@ -2722,7 +2778,7 @@ referenceToCoreFsharp reference =
         [ "Char" ] ->
             case reference.name of
                 "toCode" ->
-                    Just { moduleOrigin = Nothing, name = "float" }
+                    Just { moduleOrigin = Nothing, name = "int" }
 
                 "fromCode" ->
                     Just { moduleOrigin = Nothing, name = "char" }
@@ -2751,7 +2807,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "isEmpty" }
 
                 "length" ->
-                    Just { moduleOrigin = Nothing, name = "list_length" }
+                    Just { moduleOrigin = Just "List", name = "length" }
 
                 "member" ->
                     Just { moduleOrigin = Nothing, name = "list_member" }
@@ -2766,7 +2822,37 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "sum" }
 
                 "product" ->
-                    Just { moduleOrigin = Nothing, name = "list_product" }
+                    case reference.type_ of
+                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                            case typeFunction.input of
+                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
+                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
+                                        ( [ "List" ], "List" ) ->
+                                            case typeFunction.input of
+                                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputListElementTypeConstruct) ->
+                                                    case ( inputListElementTypeConstruct.moduleOrigin, inputListElementTypeConstruct.name ) of
+                                                        ( [ "Basics" ], "Float" ) ->
+                                                            Just { moduleOrigin = Nothing, name = "list_fproduct" }
+
+                                                        _ ->
+                                                            -- assume List Int
+                                                            Just { moduleOrigin = Nothing, name = "list_iproduct" }
+
+                                                _ ->
+                                                    -- assume List Int
+                                                    Just { moduleOrigin = Nothing, name = "list_iproduct" }
+
+                                        _ ->
+                                            -- assume List Int
+                                            Just { moduleOrigin = Nothing, name = "list_iproduct" }
+
+                                _ ->
+                                    -- assume List Int
+                                    Just { moduleOrigin = Nothing, name = "list_iproduct" }
+
+                        _ ->
+                            -- assume List Int
+                            Just { moduleOrigin = Nothing, name = "list_iproduct" }
 
                 "append" ->
                     Just { moduleOrigin = Just "List", name = "append" }
@@ -2778,7 +2864,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "rev" }
 
                 "repeat" ->
-                    Just { moduleOrigin = Nothing, name = "list_repeat" }
+                    Just { moduleOrigin = Just "List", name = "replicate" }
 
                 "all" ->
                     Just { moduleOrigin = Just "List", name = "forall" }
@@ -2823,10 +2909,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "list_range" }
 
                 "take" ->
-                    Just { moduleOrigin = Nothing, name = "list_take" }
+                    Just { moduleOrigin = Just "List", name = "take" }
 
                 "drop" ->
-                    Just { moduleOrigin = Nothing, name = "list_drop" }
+                    Just { moduleOrigin = Just "List", name = "skip" }
 
                 "intersperse" ->
                     Just { moduleOrigin = Nothing, name = "list_intersperse" }
@@ -2843,7 +2929,7 @@ referenceToCoreFsharp reference =
         [ "Dict" ] ->
             case reference.name of
                 "size" ->
-                    Just { moduleOrigin = Nothing, name = "dict_size" }
+                    Just { moduleOrigin = Just "Map", name = "count" }
 
                 "empty" ->
                     Just { moduleOrigin = Just "Map", name = "empty" }
@@ -2985,8 +3071,8 @@ printFsharpPatternNotParenthesized fsharpPattern =
         FsharpPatternIgnore ->
             printExactlyUnderscore
 
-        FsharpPatternFloat float ->
-            Print.exactly (float |> floatLiteral)
+        FsharpPatternInt int ->
+            Print.exactly (int |> intLiteral)
 
         FsharpPatternChar charValue ->
             Print.exactly (charLiteral charValue)
@@ -5116,6 +5202,18 @@ fsharpKeywords =
         , "with"
         , "yield"
         , "const"
+        , -- some exposed names
+          "float"
+        , "single"
+        , "double"
+        , "decimal"
+        , "int"
+        , "byte"
+        , "char"
+        , "string"
+        , "unit"
+        , "option"
+        , "list"
         ]
 
 
@@ -5184,7 +5282,19 @@ expression context expressionTypedNode =
             Ok FsharpExpressionUnit
 
         ElmSyntaxTypeInfer.ExpressionInteger intValue ->
-            Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
+            case expressionTypedNode.type_ of
+                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct typeConstruct) ->
+                    case ( typeConstruct.moduleOrigin, typeConstruct.name ) of
+                        ( [ "Basics" ], "Float" ) ->
+                            Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
+
+                        _ ->
+                            -- assume Int
+                            Ok (FsharpExpressionInt intValue.value)
+
+                _ ->
+                    -- assume Int
+                    Ok (FsharpExpressionInt intValue.value)
 
         ElmSyntaxTypeInfer.ExpressionFloat floatValue ->
             Ok (FsharpExpressionFloat floatValue)
@@ -5519,7 +5629,20 @@ expression context expressionTypedNode =
                     FsharpExpressionCall
                         { called =
                             FsharpExpressionReference
-                                { moduleOrigin = Nothing, name = "basics_negate" }
+                                (case inNegationNode.type_ of
+                                    ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
+                                        case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
+                                            ( [ "Basics" ], "Float" ) ->
+                                                { moduleOrigin = Nothing, name = "basics_fnegate" }
+
+                                            _ ->
+                                                -- assume Int
+                                                { moduleOrigin = Nothing, name = "basics_inegate" }
+
+                                    _ ->
+                                        -- assume Int
+                                        { moduleOrigin = Nothing, name = "basics_inegate" }
+                                )
                         , arguments = [ inNegation ]
                         }
                 )
@@ -6140,22 +6263,40 @@ expressionOperatorToFsharpFunctionReference :
 expressionOperatorToFsharpFunctionReference operatorSymbol =
     case operatorSymbol.symbol of
         "+" ->
-            Ok { moduleOrigin = Nothing, name = "basics_add" }
+            Ok { moduleOrigin = Nothing, name = "(+)" }
 
         "-" ->
-            Ok { moduleOrigin = Nothing, name = "basics_sub" }
+            Ok { moduleOrigin = Nothing, name = "(-)" }
 
         "*" ->
-            Ok { moduleOrigin = Nothing, name = "basics_mul" }
+            Ok { moduleOrigin = Nothing, name = "(*)" }
 
         "/" ->
-            Ok { moduleOrigin = Nothing, name = "basics_fdiv" }
+            Ok { moduleOrigin = Nothing, name = "(/)" }
 
         "//" ->
-            Ok { moduleOrigin = Nothing, name = "basics_idiv" }
+            Ok { moduleOrigin = Nothing, name = "(/)" }
 
         "^" ->
-            Ok { moduleOrigin = Nothing, name = "basics_pow" }
+            case operatorSymbol.type_ of
+                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                    case typeFunction.input of
+                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
+                            case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
+                                ( [ "Basics" ], "Float" ) ->
+                                    Ok { moduleOrigin = Nothing, name = "basics_fpow" }
+
+                                _ ->
+                                    -- assume Int
+                                    Ok { moduleOrigin = Nothing, name = "basics_ipow" }
+
+                        _ ->
+                            -- assume Int
+                            Ok { moduleOrigin = Nothing, name = "basics_ipow" }
+
+                _ ->
+                    -- assume Int
+                    Ok { moduleOrigin = Nothing, name = "basics_ipow" }
 
         "==" ->
             Ok { moduleOrigin = Nothing, name = "basics_eq" }
@@ -6170,16 +6311,16 @@ expressionOperatorToFsharpFunctionReference operatorSymbol =
             Ok { moduleOrigin = Nothing, name = "basics_and" }
 
         "<" ->
-            Ok { moduleOrigin = Nothing, name = "basics_lt" }
+            Ok { moduleOrigin = Nothing, name = "(<)" }
 
         ">" ->
-            Ok { moduleOrigin = Nothing, name = "basics_gt" }
+            Ok { moduleOrigin = Nothing, name = "(>)" }
 
         "<=" ->
-            Ok { moduleOrigin = Nothing, name = "basics_le" }
+            Ok { moduleOrigin = Nothing, name = "(<=)" }
 
         ">=" ->
-            Ok { moduleOrigin = Nothing, name = "basics_ge" }
+            Ok { moduleOrigin = Nothing, name = "(>=)" }
 
         "::" ->
             Ok { moduleOrigin = Nothing, name = "list_cons" }
@@ -6683,6 +6824,9 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
         FsharpExpressionChar _ ->
             False
 
+        FsharpExpressionInt _ ->
+            False
+
         FsharpExpressionFloat _ ->
             False
 
@@ -6744,6 +6888,9 @@ printFsharpExpressionNotParenthesized fsharpExpression =
 
         FsharpExpressionChar charValue ->
             Print.exactly (charLiteral charValue)
+
+        FsharpExpressionInt int ->
+            Print.exactly (int |> intLiteral)
 
         FsharpExpressionFloat float ->
             Print.exactly (float |> floatLiteral)
@@ -6951,7 +7098,7 @@ patternIsSpaceSeparated fsharpPattern =
         FsharpPatternIgnore ->
             False
 
-        FsharpPatternFloat _ ->
+        FsharpPatternInt _ ->
             False
 
         FsharpPatternChar _ ->
@@ -7452,7 +7599,7 @@ fsharpPatternContainedVariables fsharpPattern =
         FsharpPatternIgnore ->
             FastSet.empty
 
-        FsharpPatternFloat _ ->
+        FsharpPatternInt _ ->
             FastSet.empty
 
         FsharpPatternChar _ ->
@@ -7817,10 +7964,14 @@ defaultDeclarations =
 
     let inline basics_eq (a: 'a) (b: 'a) = a = b
     let inline basics_neq (a: 'a) (b: 'a) = a <> b
-    let inline basics_lt (a: float) (b: float) : bool = a < b
-    let inline basics_le (a: float) (b: float) : bool = a <= b
-    let inline basics_gt (a: float) (b: float) : bool = a > b
-    let inline basics_ge (a: float) (b: float) : bool = a >= b
+    let inline basics_flt (a: float) (b: float) : bool = a < b
+    let inline basics_ilt (a: int) (b: int) : bool = a < b
+    let inline basics_fle (a: float) (b: float) : bool = a <= b
+    let inline basics_ile (a: int) (b: int) : bool = a <= b
+    let inline basics_fgt (a: float) (b: float) : bool = a > b
+    let inline basics_igt (a: int) (b: int) : bool = a > b
+    let inline basics_fge (a: float) (b: float) : bool = a >= b
+    let inline basics_ige (a: int) (b: int) : bool = a >= b
 
     type Basics_Order =
         | Basics_LT
@@ -7834,16 +7985,22 @@ defaultDeclarations =
         else if comparisonMagnitude < 0 then Basics_LT
         else Basics_GT
 
-    let inline basics_negate (float: float) : float = -float
-    let inline basics_add (a: float) (b: float) : float = a + b
-    let inline basics_sub (a: float) (b: float) : float = a - b
-    let inline basics_mul (a: float) (b: float) : float = a * b
+    let inline basics_fabs (n: float) : float = System.Double.Abs(n)
+    let inline basics_iabs (n: int) : int = System.Int32.Abs(n)
+    let inline basics_fnegate (n: float) : float = -n
+    let inline basics_inegate (n: int) : int = -n
+    let inline basics_fadd (a: float) (b: float) : float = a + b
+    let inline basics_iadd (a: int) (b: int) : int = a + b
+    let inline basics_fsub (a: float) (b: float) : float = a - b
+    let inline basics_isub (a: int) (b: int) : int = a - b
+    let inline basics_fmul (a: float) (b: float) : float = a * b
+    let inline basics_imul (a: int) (b: int) : int = a * b
     let inline basics_fdiv (a: float) (b: float) : float = a / b
-    let inline basics_idiv (a: float) (b: float) : float = truncate (a / b)
-    let inline basics_remainderBy (divisor: float) (toDivide: float) : float =
+    let inline basics_idiv (a: int) (b: int) : int = a / b
+    let inline basics_remainderBy (divisor: int) (toDivide: int) : int =
         toDivide % divisor
 
-    let basics_modBy (divisor: float) (toDivide: float) : float =
+    let basics_modBy (divisor: int) (toDivide: int) : int =
         let remainder = toDivide % divisor
 
         if
@@ -7855,7 +8012,8 @@ defaultDeclarations =
         else
             remainder
 
-    let inline basics_pow (a: float) (b: float) : float = a ** b
+    let inline basics_fpow (a: float) (b: float) : float = a ** b
+    let inline basics_ipow (a: int) (b: int) : int = int (float a ** float b)
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
@@ -7916,11 +8074,11 @@ defaultDeclarations =
         | StringRopeAppend (left, right) ->
             string_isEmpty left && string_isEmpty right
 
-    let string_length (str: StringRope) : float =
-        float (String.length (StringRope.toString str))
+    let string_length (str: StringRope) : int =
+        String.length (StringRope.toString str)
 
-    let string_repeat (repetitions: float) (segment: StringRope) : StringRope =
-        StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
+    let string_repeat (repetitions: int) (segment: StringRope) : StringRope =
+        StringRopeOne (String.replicate repetitions (StringRope.toString segment))
 
     let string_toList (string: StringRope) : list<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
@@ -7993,32 +8151,32 @@ defaultDeclarations =
     let string_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let string_right (takenElementCount: float) (stringRope: StringRope): StringRope =
+    let string_right (takenElementCount: int) (stringRope: StringRope): StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                String.length string - int takenElementCount,
-                int takenElementCount
+                String.length string - takenElementCount,
+                takenElementCount
             ))
 
-    let string_left (skippedElementCount: float) (string: StringRope) : StringRope = 
+    let string_left (skippedElementCount: int) (string: StringRope) : StringRope = 
         StringRopeOne
-            ((StringRope.toString string).Substring(0, int skippedElementCount))
+            ((StringRope.toString string).Substring(0, skippedElementCount))
     
-    let string_dropRight (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+    let string_dropRight (skippedElementCount: int) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 0,
-                String.length string - int skippedElementCount
+                String.length string - skippedElementCount
             ))
 
-    let string_dropLeft (skippedElementCount: float) (stringRope: StringRope) : StringRope =
+    let string_dropLeft (skippedElementCount: int) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                int skippedElementCount,
-                String.length string - int skippedElementCount
+                skippedElementCount,
+                String.length string - skippedElementCount
             ))
 
     let inline string_append (early: StringRope) (late: StringRope) : StringRope =
@@ -8078,55 +8236,57 @@ defaultDeclarations =
             (String.concat "" (List.map StringRope.toString strings))
 
     let string_padLeft
-        (newMinimumLength: float)
+        (newMinimumLength: int)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
+            ((StringRope.toString string).PadLeft(newMinimumLength, padding))
 
     let string_padRight
-        (newMinimumLength: float)
+        (newMinimumLength: int)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadRight(int newMinimumLength, padding))
+            ((StringRope.toString string).PadRight(newMinimumLength, padding))
     
     let string_fromFloat (n: float) : StringRope =
         StringRopeOne (string n)
+    let string_fromInt (n: int) : StringRope =
+        StringRopeOne (string n)
 
-    let string_toInt (string: StringRope) : option<float> =
-        let (success, num) = System.Int64.TryParse (StringRope.toString string)
+    let string_toInt (string: StringRope) : option<int> =
+        let (success, num) = System.Int32.TryParse (StringRope.toString string)
 
-        if success then Some(float num) else None
+        if success then Some num else None
 
     let string_toFloat (string: StringRope) : option<float> =
         let (success, num) = System.Double.TryParse (StringRope.toString string)
 
-        if success then Some(num) else None
+        if success then Some num else None
 
     let string_slice
-            (startInclusivePossiblyNegative: float)
-            (endExclusivePossiblyNegative: float)
+            (startInclusivePossiblyNegative: int)
+            (endExclusivePossiblyNegative: int)
             (stringRope: StringRope)
             : StringRope =
         let string = StringRope.toString stringRope
         let realStartIndex: int =
-            if (startInclusivePossiblyNegative < 0.0) then
+            if (startInclusivePossiblyNegative < 0) then
                 max
                     0
-                    (int startInclusivePossiblyNegative + String.length string)
+                    (startInclusivePossiblyNegative + String.length string)
             else
-                int(startInclusivePossiblyNegative)
+                startInclusivePossiblyNegative
         let realEndIndexExclusive: int =
-            if (endExclusivePossiblyNegative < 0.0) then
+            if (endExclusivePossiblyNegative < 0) then
                 max
                     0
-                    (int endExclusivePossiblyNegative + String.length(string))
+                    (endExclusivePossiblyNegative + String.length(string))
             else
                 min
-                    (int endExclusivePossiblyNegative)
+                    endExclusivePossiblyNegative
                     (String.length string)
 
         if (realStartIndex >= realEndIndexExclusive) then
@@ -8137,12 +8297,6 @@ defaultDeclarations =
                     realStartIndex,
                     realEndIndexExclusive - realStartIndex
                 ))
-
-    let list_length (list: List<'a>) =
-        float(List.length(list))
-
-    let list_repeat (repetitions: float) (segment: 'a): List<'a> =
-        List.replicate (int(repetitions)) segment
 
     let list_member (needle: 'a) (list: list<'a>) : bool =
         List.exists (fun element -> element = needle) list
@@ -8157,17 +8311,13 @@ defaultDeclarations =
         | [] -> None
         | _ :: _ -> Some (List.max list)
 
-    let list_product (list: list<float>) : float =
-        List.fold basics_mul 1 list
+    let list_fproduct (list: list<float>) : float =
+        List.fold (*) 1.0 list
+    let list_iproduct (list: list<int>) : int =
+        List.fold (*) 1 list
 
     let inline list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
         newHead :: tail
-    
-    let list_drop (skippedElementCount: float) (list: list<'a>): list<'a> =
-        List.skip (int skippedElementCount) list
-    
-    let list_take (takenElementCount: float) (list: list<'a>): list<'a> =
-        List.take (int takenElementCount) list
 
     let list_sortWith
         (elementCompare: 'a -> 'a -> Basics_Order)
@@ -8207,11 +8357,8 @@ defaultDeclarations =
         : 'state =
         List.foldBack reduce list initialState
 
-    let inline list_range (startFloat: float) (endFloat: float) : list<float> =
+    let inline list_range (startFloat: int) (endFloat: int) : list<int> =
         [ startFloat..endFloat ]
-
-    let dict_size dict =
-        float(Map.count(dict))
 
     let dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
