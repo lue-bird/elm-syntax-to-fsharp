@@ -164,7 +164,7 @@ Contains variants, variant function and value declaration names.
 
 -}
 type alias ModuleContext =
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             Elm.Syntax.ModuleName.ModuleName
@@ -181,14 +181,14 @@ type alias ModuleContext =
 to origin module based on a module's imports.
 
 Requires all exposed names
-so we can resolve `exposing (..)` and `EnumType(..)`.
+so we can resolve `exposing (..)` and `ChoiceType(..)`.
 
 -}
 importsToModuleContext :
     FastDict.Dict
         Elm.Syntax.ModuleName.ModuleName
         { valueOrFunctionOrTypeAliasNames : FastSet.Set String
-        , enumTypesExposingVariants :
+        , choiceTypesExposingVariants :
             FastDict.Dict String (FastDict.Dict String { valueCount : Int })
         }
     -> List (Elm.Syntax.Node.Node Elm.Syntax.Import.Import)
@@ -199,7 +199,7 @@ importsToModuleContext moduleExposes imports =
             List
                 { moduleName : Elm.Syntax.ModuleName.ModuleName
                 , alias : Maybe String
-                , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+                , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                     FastSet.Set String
                 , exposedVariants :
                     FastDict.Dict String { valueCount : Int }
@@ -215,7 +215,7 @@ importsToModuleContext moduleExposes imports =
                                         syntaxImport.moduleName |> Elm.Syntax.Node.value
 
                                     exposes :
-                                        { valuesAndFunctionsAndTypeAliasesAndEnumTypes :
+                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                                             FastSet.Set String
                                         , variants :
                                             FastDict.Dict String { valueCount : Int }
@@ -223,7 +223,7 @@ importsToModuleContext moduleExposes imports =
                                     exposes =
                                         case syntaxImport.exposingList of
                                             Nothing ->
-                                                { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
+                                                { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                     FastSet.empty
                                                 , variants = FastDict.empty
                                                 }
@@ -231,7 +231,7 @@ importsToModuleContext moduleExposes imports =
                                             Just (Elm.Syntax.Node.Node _ syntaxExposing) ->
                                                 case moduleExposes |> FastDict.get importModuleName of
                                                     Nothing ->
-                                                        { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
+                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                             FastSet.empty
                                                         , variants = FastDict.empty
                                                         }
@@ -239,15 +239,15 @@ importsToModuleContext moduleExposes imports =
                                                     Just moduleExposedNames ->
                                                         case syntaxExposing of
                                                             Elm.Syntax.Exposing.All _ ->
-                                                                { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                                                    moduleExposedNames.enumTypesExposingVariants
+                                                                { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                    moduleExposedNames.choiceTypesExposingVariants
                                                                         |> FastDict.foldl
-                                                                            (\enumTypeName _ soFar ->
-                                                                                soFar |> FastSet.insert enumTypeName
+                                                                            (\choiceTypeName _ soFar ->
+                                                                                soFar |> FastSet.insert choiceTypeName
                                                                             )
                                                                             moduleExposedNames.valueOrFunctionOrTypeAliasNames
                                                                 , variants =
-                                                                    moduleExposedNames.enumTypesExposingVariants
+                                                                    moduleExposedNames.choiceTypesExposingVariants
                                                                         |> FastDict.foldl
                                                                             (\_ variantNames soFar -> FastDict.union variantNames soFar)
                                                                             FastDict.empty
@@ -262,43 +262,43 @@ importsToModuleContext moduleExposes imports =
                                                                                     soFar
 
                                                                                 Elm.Syntax.Exposing.TypeOrAliasExpose name ->
-                                                                                    { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndEnumTypes
+                                                                                    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                                                                             |> FastSet.insert name
                                                                                     , variants = soFar.variants
                                                                                     }
 
                                                                                 Elm.Syntax.Exposing.FunctionExpose name ->
-                                                                                    { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndEnumTypes
+                                                                                    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                                                                             |> FastSet.insert name
                                                                                     , variants = soFar.variants
                                                                                     }
 
-                                                                                Elm.Syntax.Exposing.TypeExpose enumTypeExpose ->
-                                                                                    { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndEnumTypes
-                                                                                            |> FastSet.insert enumTypeExpose.name
+                                                                                Elm.Syntax.Exposing.TypeExpose choiceTypeExpose ->
+                                                                                    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                                                                            |> FastSet.insert choiceTypeExpose.name
                                                                                     , variants =
-                                                                                        case enumTypeExpose.open of
+                                                                                        case choiceTypeExpose.open of
                                                                                             Nothing ->
                                                                                                 soFar.variants
 
                                                                                             Just _ ->
                                                                                                 case
-                                                                                                    moduleExposedNames.enumTypesExposingVariants
-                                                                                                        |> FastDict.get enumTypeExpose.name
+                                                                                                    moduleExposedNames.choiceTypesExposingVariants
+                                                                                                        |> FastDict.get choiceTypeExpose.name
                                                                                                 of
                                                                                                     Nothing ->
                                                                                                         soFar.variants
 
-                                                                                                    Just enumTypeDeclared ->
+                                                                                                    Just choiceTypeDeclared ->
                                                                                                         FastDict.union
                                                                                                             soFar.variants
-                                                                                                            enumTypeDeclared
+                                                                                                            choiceTypeDeclared
                                                                                     }
                                                                         )
-                                                                        { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
+                                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                                             FastSet.empty
                                                                         , variants = FastDict.empty
                                                                         }
@@ -310,8 +310,8 @@ importsToModuleContext moduleExposes imports =
                                             (\(Elm.Syntax.Node.Node _ syntaxAlias) ->
                                                 syntaxAlias |> String.join "."
                                             )
-                                , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                    exposes.valuesAndFunctionsAndTypeAliasesAndEnumTypes
+                                , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                    exposes.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                 , exposedVariants =
                                     exposes.variants
                                 }
@@ -324,29 +324,29 @@ importsToModuleContext moduleExposes imports =
             (\syntaxImport soFar ->
                 let
                     importedModuleMembers :
-                        { valuesAndFunctionsAndTypeAliasesAndEnumTypes :
+                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                             FastSet.Set String
                         , variants : FastDict.Dict String { valueCount : Int }
                         }
                     importedModuleMembers =
                         case moduleExposes |> FastDict.get syntaxImport.moduleName of
                             Nothing ->
-                                { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
+                                { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                     FastSet.empty
                                 , variants = FastDict.empty
                                 }
 
                             Just moduleExposedNames ->
-                                { valuesAndFunctionsAndTypeAliasesAndEnumTypes =
-                                    moduleExposedNames.enumTypesExposingVariants
+                                { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                    moduleExposedNames.choiceTypesExposingVariants
                                         |> FastDict.foldl
-                                            (\enumTypeName _ namesSoFar ->
+                                            (\choiceTypeName _ namesSoFar ->
                                                 namesSoFar
-                                                    |> FastSet.insert enumTypeName
+                                                    |> FastSet.insert choiceTypeName
                                             )
                                             moduleExposedNames.valueOrFunctionOrTypeAliasNames
                                 , variants =
-                                    moduleExposedNames.enumTypesExposingVariants
+                                    moduleExposedNames.choiceTypesExposingVariants
                                         |> FastDict.foldl
                                             (\_ variantNames variantsSoFar ->
                                                 FastDict.union variantNames variantsSoFar
@@ -367,8 +367,8 @@ importsToModuleContext moduleExposes imports =
                                                 }
                                     )
                                     FastDict.empty
-                        , valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-                            syntaxImport.exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes
+                        , valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                            syntaxImport.exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                 |> FastSet.foldl
                                     (\expose dictSoFar ->
                                         dictSoFar
@@ -379,8 +379,8 @@ importsToModuleContext moduleExposes imports =
                         }
                         (case syntaxImport.alias of
                             Nothing ->
-                                { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndEnumTypes
+                                { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                         |> FastSet.foldl
                                             (\exposeFromImportedModule dictSoFar ->
                                                 dictSoFar
@@ -404,8 +404,8 @@ importsToModuleContext moduleExposes imports =
                                 }
 
                             Just importAlias ->
-                                { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndEnumTypes
+                                { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                         |> FastSet.foldl
                                             (\exposeFromImportedModule dictSoFar ->
                                                 dictSoFar
@@ -431,7 +431,7 @@ importsToModuleContext moduleExposes imports =
                     )
                     soFar
             )
-            { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
+            { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                 FastDict.empty
             , variantLookup =
                 FastDict.empty
@@ -440,10 +440,10 @@ importsToModuleContext moduleExposes imports =
 
 moduleContextMerge : ModuleContext -> ModuleContext -> ModuleContext
 moduleContextMerge a b =
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
         FastDict.union
-            a.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
-            b.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
+            a.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
+            b.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
     , variantLookup =
         FastDict.union
             a.variantLookup
@@ -455,7 +455,7 @@ implicitImports :
     List
         { moduleName : Elm.Syntax.ModuleName.ModuleName
         , alias : Maybe String
-        , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+        , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
@@ -471,7 +471,7 @@ implicitImports =
                 , ( "True", { valueCount = 0 } )
                 , ( "False", { valueCount = 0 } )
                 ]
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList
                 [ "Int"
                 , "Float"
@@ -519,7 +519,7 @@ implicitImports =
     , { moduleName = [ "List" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "List" ]
       }
     , { moduleName = [ "Maybe" ]
@@ -529,7 +529,7 @@ implicitImports =
                 [ ( "Just", { valueCount = 1 } )
                 , ( "Nothing", { valueCount = 0 } )
                 ]
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Maybe" ]
       }
     , { moduleName = [ "Result" ]
@@ -539,49 +539,49 @@ implicitImports =
                 [ ( "Ok", { valueCount = 1 } )
                 , ( "Err", { valueCount = 1 } )
                 ]
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Result" ]
       }
     , { moduleName = [ "String" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "String" ]
       }
     , { moduleName = [ "Char" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Char" ]
       }
     , { moduleName = [ "Tuple" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
     , { moduleName = [ "Debug" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
     , { moduleName = [ "Platform" ]
       , alias = Nothing
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Program" ]
       }
     , { moduleName = [ "Platform", "Cmd" ]
       , alias = Just "Cmd"
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Cmd" ]
       }
     , { moduleName = [ "Platform", "Sub" ]
       , alias = Just "Sub"
       , exposedVariants = FastDict.empty
-      , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+      , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Sub" ]
       }
     ]
@@ -591,7 +591,7 @@ importsCombine :
     List
         { moduleName : Elm.Syntax.ModuleName.ModuleName
         , alias : Maybe String
-        , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+        , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
@@ -600,7 +600,7 @@ importsCombine :
         List
             { moduleName : Elm.Syntax.ModuleName.ModuleName
             , alias : Maybe String
-            , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+            , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
@@ -613,7 +613,7 @@ importsCombineFrom :
     List
         { moduleName : Elm.Syntax.ModuleName.ModuleName
         , alias : Maybe String
-        , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+        , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
@@ -622,7 +622,7 @@ importsCombineFrom :
         List
             { moduleName : Elm.Syntax.ModuleName.ModuleName
             , alias : Maybe String
-            , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+            , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
@@ -631,7 +631,7 @@ importsCombineFrom :
         List
             { moduleName : Elm.Syntax.ModuleName.ModuleName
             , alias : Maybe String
-            , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+            , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
@@ -660,7 +660,7 @@ importsCombineFrom soFar syntaxImports =
 importsMerge :
     { moduleName : Elm.Syntax.ModuleName.ModuleName
     , alias : Maybe String
-    , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+    , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
         FastSet.Set String
     , exposedVariants :
         FastDict.Dict String { valueCount : Int }
@@ -668,7 +668,7 @@ importsMerge :
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
         , alias : Maybe String
-        , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+        , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
@@ -676,7 +676,7 @@ importsMerge :
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
         , alias : Maybe String
-        , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes :
+        , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
@@ -690,10 +690,10 @@ importsMerge earlier later =
 
             Nothing ->
                 later.alias
-    , exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes =
+    , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
         FastSet.union
-            earlier.exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes
-            later.exposedValuesAndFunctionsAndTypeAliasesAndEnumTypes
+            earlier.exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes
+            later.exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes
     , exposedVariants =
         FastDict.union
             earlier.exposedVariants
@@ -866,7 +866,7 @@ fsharpExpressionSubs fsharpExpression =
             []
 
 
-enumTypeDeclaration :
+choiceTypeDeclaration :
     ModuleContext
     -> Elm.Syntax.Type.Type
     ->
@@ -876,14 +876,14 @@ enumTypeDeclaration :
             , parameters : List String
             , variants : FastDict.Dict String (Maybe FsharpType)
             }
-enumTypeDeclaration moduleOriginLookup syntaxEnumType =
+choiceTypeDeclaration moduleOriginLookup syntaxChoiceType =
     Result.map
         (\variants ->
             { name =
-                syntaxEnumType.name
+                syntaxChoiceType.name
                     |> Elm.Syntax.Node.value
             , parameters =
-                syntaxEnumType.generics
+                syntaxChoiceType.generics
                     |> List.map
                         (\(Elm.Syntax.Node.Node _ parameter) ->
                             parameter |> variableNameDisambiguateFromFsharpKeywords
@@ -891,7 +891,7 @@ enumTypeDeclaration moduleOriginLookup syntaxEnumType =
             , variants = variants |> FastDict.fromList
             }
         )
-        (syntaxEnumType.constructors
+        (syntaxChoiceType.constructors
             |> listMapAndCombineOk
                 (\(Elm.Syntax.Node.Node _ syntaxVariant) ->
                     Result.map
@@ -1319,7 +1319,7 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
                 ( qualification, name ) =
                     reference
             in
-            case moduleOriginLookup.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup |> FastDict.get reference of
+            case moduleOriginLookup.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup |> FastDict.get reference of
                 Nothing ->
                     Err
                         ("could not find module origin of the type reference "
@@ -3166,7 +3166,7 @@ modules :
                     , type_ : FsharpType
                     }
             , recordTypes : FastSet.Set (List String)
-            , enumTypes :
+            , choiceTypes :
                 FastDict.Dict
                     String
                     { parameters : List String
@@ -3392,7 +3392,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             FastDict.Dict
                 Elm.Syntax.ModuleName.ModuleName
                 { valueOrFunctionOrTypeAliasNames : FastSet.Set String
-                , enumTypesExposingVariants :
+                , choiceTypesExposingVariants :
                     FastDict.Dict String (FastDict.Dict String { valueCount : Int })
                 }
         moduleMembers =
@@ -3612,18 +3612,18 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                     |> .name
                                                                     |> Elm.Syntax.Node.value
                                                                 )
-                                                    , enumTypesExposingVariants =
-                                                        membersSoFar.enumTypesExposingVariants
+                                                    , choiceTypesExposingVariants =
+                                                        membersSoFar.choiceTypesExposingVariants
                                                     }
 
-                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxEnumTypeDeclaration ->
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
                                                     { valueOrFunctionOrTypeAliasNames =
                                                         membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                    , enumTypesExposingVariants =
-                                                        membersSoFar.enumTypesExposingVariants
+                                                    , choiceTypesExposingVariants =
+                                                        membersSoFar.choiceTypesExposingVariants
                                                             |> FastDict.insert
-                                                                (syntaxEnumTypeDeclaration.name |> Elm.Syntax.Node.value)
-                                                                (syntaxEnumTypeDeclaration.constructors
+                                                                (syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value)
+                                                                (syntaxChoiceTypeDeclaration.constructors
                                                                     |> List.foldl
                                                                         (\(Elm.Syntax.Node.Node _ variant) variantNamesSoFar ->
                                                                             variantNamesSoFar
@@ -3646,8 +3646,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                 (typeAlias.name
                                                                     |> Elm.Syntax.Node.value
                                                                 )
-                                                    , enumTypesExposingVariants =
-                                                        membersSoFar.enumTypesExposingVariants
+                                                    , choiceTypesExposingVariants =
+                                                        membersSoFar.choiceTypesExposingVariants
                                                     }
 
                                                 Elm.Syntax.Declaration.PortDeclaration _ ->
@@ -3662,7 +3662,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                     membersSoFar
                                         )
                                         { valueOrFunctionOrTypeAliasNames = FastSet.empty
-                                        , enumTypesExposingVariants = FastDict.empty
+                                        , choiceTypesExposingVariants = FastDict.empty
                                         }
                                 )
                     )
@@ -3826,7 +3826,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             , declarations =
                 { valuesAndFunctions = FastDict.empty
                 , typeAliases = FastDict.empty
-                , enumTypes = FastDict.empty
+                , choiceTypes = FastDict.empty
                 , recordTypes = FastSet.empty
                 }
             }
@@ -3848,7 +3848,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 { parameters : List String
                                 , type_ : FsharpType
                                 }
-                        , enumTypes :
+                        , choiceTypes :
                             FastDict.Dict
                                 String
                                 { parameters : List String
@@ -3873,19 +3873,19 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                             (moduleInferred.module_.imports |> importsToModuleContext moduleMembers)
                                             (case moduleMembers |> FastDict.get moduleName of
                                                 Nothing ->
-                                                    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
+                                                    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                                                         FastDict.empty
                                                     , variantLookup = FastDict.empty
                                                     }
 
                                                 Just moduleLocalNames ->
-                                                    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
+                                                    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                                                         FastSet.union
                                                             moduleLocalNames.valueOrFunctionOrTypeAliasNames
-                                                            (moduleLocalNames.enumTypesExposingVariants
+                                                            (moduleLocalNames.choiceTypesExposingVariants
                                                                 |> FastDict.foldl
-                                                                    (\enumTypeName _ soFar ->
-                                                                        soFar |> FastSet.insert enumTypeName
+                                                                    (\choiceTypeName _ soFar ->
+                                                                        soFar |> FastSet.insert choiceTypeName
                                                                     )
                                                                     FastSet.empty
                                                             )
@@ -3897,9 +3897,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                 )
                                                                 FastDict.empty
                                                     , variantLookup =
-                                                        moduleLocalNames.enumTypesExposingVariants
+                                                        moduleLocalNames.choiceTypesExposingVariants
                                                             |> FastDict.foldl
-                                                                (\_ variantNames soFarAcrossEnumTypes ->
+                                                                (\_ variantNames soFarAcrossChoiceTypes ->
                                                                     variantNames
                                                                         |> FastDict.foldl
                                                                             (\name info soFar ->
@@ -3909,7 +3909,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                                         , valueCount = info.valueCount
                                                                                         }
                                                                             )
-                                                                            soFarAcrossEnumTypes
+                                                                            soFarAcrossChoiceTypes
                                                                 )
                                                                 FastDict.empty
                                                     }
@@ -3939,7 +3939,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                     { errors = soFar.errors
                                                                     , declarations =
                                                                         { typeAliases = soFar.declarations.typeAliases
-                                                                        , enumTypes = soFar.declarations.enumTypes
+                                                                        , choiceTypes = soFar.declarations.choiceTypes
                                                                         , valuesAndFunctions =
                                                                             soFar.declarations.valuesAndFunctions
                                                                                 |> FastDict.insert
@@ -3968,7 +3968,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             { errors = soFar.errors
                                                             , declarations =
                                                                 { valuesAndFunctions = soFar.declarations.valuesAndFunctions
-                                                                , enumTypes = soFar.declarations.enumTypes
+                                                                , choiceTypes = soFar.declarations.choiceTypes
                                                                 , typeAliases =
                                                                     soFar.declarations.typeAliases
                                                                         |> FastDict.insert
@@ -3989,20 +3989,20 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             , errors = error :: soFar.errors
                                                             }
 
-                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxEnumTypeDeclaration ->
-                                                    case syntaxEnumTypeDeclaration.name |> Elm.Syntax.Node.value of
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
+                                                    case syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value of
                                                         "Maybe" ->
                                                             soFar
 
                                                         _ ->
-                                                            case syntaxEnumTypeDeclaration |> enumTypeDeclaration createdModuleContext of
+                                                            case syntaxChoiceTypeDeclaration |> choiceTypeDeclaration createdModuleContext of
                                                                 Ok fsharpTypeAliasDeclaration ->
                                                                     { errors = soFar.errors
                                                                     , declarations =
                                                                         { valuesAndFunctions = soFar.declarations.valuesAndFunctions
                                                                         , typeAliases = soFar.declarations.typeAliases
-                                                                        , enumTypes =
-                                                                            soFar.declarations.enumTypes
+                                                                        , choiceTypes =
+                                                                            soFar.declarations.choiceTypes
                                                                                 |> FastDict.insert
                                                                                     ({ moduleOrigin = moduleName
                                                                                      , name = fsharpTypeAliasDeclaration.name
@@ -4050,7 +4050,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             , declarations =
                                 { valuesAndFunctions = FastDict.empty
                                 , typeAliases = FastDict.empty
-                                , enumTypes = FastDict.empty
+                                , choiceTypes = FastDict.empty
                                 }
                             }
 
@@ -4077,10 +4077,10 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                             |> fsharpTypeContainedRecords
                                     )
                             )
-                            (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.enumTypes
+                            (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.choiceTypes
                                 |> fastDictMapToFastSetAndUnify
-                                    (\enumTypeInfo ->
-                                        enumTypeInfo.variants
+                                    (\choiceTypeInfo ->
+                                        choiceTypeInfo.variants
                                             |> fastDictMapToFastSetAndUnify
                                                 (\maybeValue ->
                                                     case maybeValue of
@@ -4104,8 +4104,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 , result = valueOrFunctionInfo.result
                                 }
                             )
-                , enumTypes =
-                    fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.enumTypes
+                , choiceTypes =
+                    fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.choiceTypes
                         |> FastDict.map
                             (\_ typeAliasInfo ->
                                 { parameters = typeAliasInfo.parameters
@@ -5015,8 +5015,8 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
                 )
                 (syntaxDeclarationValueOrFunction.result
                     |> expression
-                        { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-                            moduleContext.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
+                        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                            moduleContext.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
                         , variantLookup =
                             moduleContext.variantLookup
                         , variablesFromWithinDeclarationInScope =
@@ -5118,7 +5118,7 @@ fsharpKeywords =
 expressionContextAddVariablesInScope :
     FastSet.Set String
     ->
-        { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
             FastDict.Dict
                 ( Elm.Syntax.ModuleName.ModuleName, String )
                 Elm.Syntax.ModuleName.ModuleName
@@ -5131,7 +5131,7 @@ expressionContextAddVariablesInScope :
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
     ->
-        { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
             FastDict.Dict
                 ( Elm.Syntax.ModuleName.ModuleName, String )
                 Elm.Syntax.ModuleName.ModuleName
@@ -5144,8 +5144,8 @@ expressionContextAddVariablesInScope :
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
 expressionContextAddVariablesInScope additionalVariablesInScope context =
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-        context.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+        context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
     , variantLookup =
         context.variantLookup
     , variablesFromWithinDeclarationInScope =
@@ -5156,7 +5156,7 @@ expressionContextAddVariablesInScope additionalVariablesInScope context =
 
 
 expression :
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             Elm.Syntax.ModuleName.ModuleName
@@ -5597,7 +5597,7 @@ expression context expressionTypedNode =
                             referenceToFsharpName
                                 { moduleOrigin =
                                     case
-                                        context.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
+                                        context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
                                             |> FastDict.get ( [], fsharpRecordVariable )
                                     of
                                         Nothing ->
@@ -5952,7 +5952,7 @@ condenseExpressionCall call =
 
 
 case_ :
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             Elm.Syntax.ModuleName.ModuleName
@@ -6003,7 +6003,7 @@ case_ context syntaxCase =
 
 
 letDeclaration :
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             Elm.Syntax.ModuleName.ModuleName
@@ -6040,7 +6040,7 @@ letDeclaration context syntaxLetDeclaration =
 
 
 letValueOrFunctionDeclaration :
-    { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup :
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             Elm.Syntax.ModuleName.ModuleName
@@ -6107,8 +6107,8 @@ letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
                 )
                 (syntaxLetDeclarationValueOrFunction.result
                     |> expression
-                        { valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup =
-                            context.valueAndFunctionAndTypeAliasAndEnumTypeModuleOriginLookup
+                        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                            context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
                         , variantLookup =
                             context.variantLookup
                         , variablesFromWithinDeclarationInScope =
@@ -6470,8 +6470,8 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclar
     }
 
 
-type FsharpEnumTypeOrTypeAliasDeclaration
-    = FsharpEnumTypeDeclaration
+type FsharpChoiceTypeOrTypeAliasDeclaration
+    = FsharpChoiceTypeDeclaration
         { name : String
         , parameters : List String
         , variants : FastDict.Dict String (Maybe FsharpType)
@@ -6501,12 +6501,12 @@ fsharpTypeDeclarationsGroupByDependencies :
         { mostToLeastDependedOn :
             List
                 (FsharpValueOrFunctionDependencyBucket
-                    FsharpEnumTypeOrTypeAliasDeclaration
+                    FsharpChoiceTypeOrTypeAliasDeclaration
                 )
         }
 fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
     let
-        ordered : List (Data.Graph.SCC FsharpEnumTypeOrTypeAliasDeclaration)
+        ordered : List (Data.Graph.SCC FsharpChoiceTypeOrTypeAliasDeclaration)
         ordered =
             Data.Graph.stronglyConnComp
                 ((fsharpTypeDeclarations.typeAliases
@@ -6523,7 +6523,7 @@ fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
                     ++ (fsharpTypeDeclarations.enums
                             |> List.map
                                 (\enumDeclaration ->
-                                    ( FsharpEnumTypeDeclaration enumDeclaration
+                                    ( FsharpChoiceTypeDeclaration enumDeclaration
                                     , enumDeclaration.name
                                     , enumDeclaration.variants
                                         |> FastDict.foldl
@@ -7602,7 +7602,7 @@ fsharpDeclarationsToModuleString :
             , type_ : FsharpType
             }
     , recordTypes : FastSet.Set (List String)
-    , enumTypes :
+    , choiceTypes :
         FastDict.Dict
             String
             { parameters : List String
@@ -7637,7 +7637,7 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
             { mostToLeastDependedOn :
                 List
                     (FsharpValueOrFunctionDependencyBucket
-                        FsharpEnumTypeOrTypeAliasDeclaration
+                        FsharpChoiceTypeOrTypeAliasDeclaration
                     )
             }
         typeDeclarationsOrdered =
@@ -7652,7 +7652,7 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
                                 }
                             )
                 , enums =
-                    fsharpDeclarations.enumTypes
+                    fsharpDeclarations.choiceTypes
                         |> fastDictMapAndToList
                             (\name info ->
                                 { name = name
@@ -7663,6 +7663,9 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
                 }
     in
     """namespace global
+
+open System
+open System.Runtime.CompilerServices
 
 module Elm =
 """
@@ -7695,10 +7698,12 @@ module Elm =
                             case typeAliasDeclarationGroup of
                                 FsharpValueOrFunctionDependencySingle single ->
                                     case single of
-                                        FsharpEnumTypeDeclaration choiceTypeDeclaration ->
+                                        FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
                                             Print.exactly "type "
                                                 |> Print.followedBy
-                                                    (printFsharpChoiceTypeDeclaration choiceTypeDeclaration)
+                                                    (printFsharpChoiceTypeDeclaration
+                                                        fsharpChoiceTypeDeclaration
+                                                    )
 
                                         FsharpTypeAliasDeclaration aliasDeclaration ->
                                             Print.exactly "type "
@@ -7712,10 +7717,12 @@ module Elm =
 
                                         recursiveBucketMember0 :: recursiveBucketMember1Up ->
                                             (case recursiveBucketMember0 of
-                                                FsharpEnumTypeDeclaration choiceTypeDeclaration ->
+                                                FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
                                                     Print.exactly "type "
                                                         |> Print.followedBy
-                                                            (printFsharpChoiceTypeDeclaration choiceTypeDeclaration)
+                                                            (printFsharpChoiceTypeDeclaration
+                                                                fsharpChoiceTypeDeclaration
+                                                            )
 
                                                 FsharpTypeAliasDeclaration aliasDeclaration ->
                                                     Print.exactly "type "
@@ -7730,7 +7737,7 @@ module Elm =
                                                                     |> Print.followedBy Print.linebreakIndented
                                                                     |> Print.followedBy
                                                                         (case typeDeclaration of
-                                                                            FsharpEnumTypeDeclaration enumDeclaration ->
+                                                                            FsharpChoiceTypeDeclaration enumDeclaration ->
                                                                                 Print.exactly "and "
                                                                                     |> Print.followedBy
                                                                                         (printFsharpChoiceTypeDeclaration enumDeclaration)

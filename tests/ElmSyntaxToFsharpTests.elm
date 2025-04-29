@@ -440,7 +440,7 @@ expectTranspiledToFsharpStringAs expected source =
                                 , type_ : ElmSyntaxToFsharp.FsharpType
                                 }
                         , recordTypes : FastSet.Set (List String)
-                        , enumTypes :
+                        , choiceTypes :
                             FastDict.Dict
                                 String
                                 { parameters : List String
