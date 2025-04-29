@@ -6260,8 +6260,8 @@ expressionOperatorToFsharpFunctionReference :
     , type_ : ElmSyntaxTypeInfer.Type String
     }
     -> Result String { moduleOrigin : Maybe String, name : String }
-expressionOperatorToFsharpFunctionReference operatorSymbol =
-    case operatorSymbol.symbol of
+expressionOperatorToFsharpFunctionReference operator =
+    case operator.symbol of
         "+" ->
             Ok { moduleOrigin = Nothing, name = "(+)" }
 
@@ -6278,7 +6278,7 @@ expressionOperatorToFsharpFunctionReference operatorSymbol =
             Ok { moduleOrigin = Nothing, name = "(/)" }
 
         "^" ->
-            case operatorSymbol.type_ of
+            case operator.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
                     case typeFunction.input of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
@@ -8035,8 +8035,8 @@ defaultDeclarations =
                 let mutableBuilder = System.Text.StringBuilder()
                 let mutable stringRopeToMatchNext = fullLeftRope
                 let mutable shouldKeepGoing = true
-                let mutableRemainingRightStringRopes: ResizeArray<StringRope> = ResizeArray()
-                mutableRemainingRightStringRopes.Add(fullRightRope)
+                let mutableRemainingRightStringRopes: System.Collections.Generic.Stack<StringRope> = System.Collections.Generic.Stack()
+                mutableRemainingRightStringRopes.Push(fullRightRope)
                 while (shouldKeepGoing) do
                     match stringRopeToMatchNext with
                     | StringRopeOne segment ->
@@ -8045,11 +8045,10 @@ defaultDeclarations =
                             shouldKeepGoing <- false
                         else
                             stringRopeToMatchNext <-
-                                mutableRemainingRightStringRopes.get_Item(mutableRemainingRightStringRopes.Count - 1)
-                            mutableRemainingRightStringRopes.RemoveAt(mutableRemainingRightStringRopes.Count - 1)
+                                mutableRemainingRightStringRopes.Pop()
                     | StringRopeAppend (left, right) ->
                         stringRopeToMatchNext <- left
-                        mutableRemainingRightStringRopes.Add(right)
+                        mutableRemainingRightStringRopes.Push(right)
                 done
                 mutableBuilder.ToString()
         override x.GetHashCode() =
@@ -8076,7 +8075,7 @@ defaultDeclarations =
 
     let string_length (str: StringRope) : int =
         String.length (StringRope.toString str)
-
+    
     let string_repeat (repetitions: int) (segment: StringRope) : StringRope =
         StringRopeOne (String.replicate repetitions (StringRope.toString segment))
 
@@ -8196,11 +8195,8 @@ defaultDeclarations =
         List.ofArray (
             (Array.map (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
-                    .Replace("
-", "
-")
-                    .Split("
-")
+                    .Replace("\\r\\n", "\\n")
+                    .Split("\\n")
                 )
             )
         )

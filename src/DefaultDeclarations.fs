@@ -76,8 +76,8 @@ module DefaultDeclarations =
                 let mutableBuilder = System.Text.StringBuilder()
                 let mutable stringRopeToMatchNext = fullLeftRope
                 let mutable shouldKeepGoing = true
-                let mutableRemainingRightStringRopes: ResizeArray<StringRope> = ResizeArray()
-                mutableRemainingRightStringRopes.Add(fullRightRope)
+                let mutableRemainingRightStringRopes: System.Collections.Generic.Stack<StringRope> = System.Collections.Generic.Stack()
+                mutableRemainingRightStringRopes.Push(fullRightRope)
                 while (shouldKeepGoing) do
                     match stringRopeToMatchNext with
                     | StringRopeOne segment ->
@@ -86,11 +86,10 @@ module DefaultDeclarations =
                             shouldKeepGoing <- false
                         else
                             stringRopeToMatchNext <-
-                                mutableRemainingRightStringRopes.get_Item(mutableRemainingRightStringRopes.Count - 1)
-                            mutableRemainingRightStringRopes.RemoveAt(mutableRemainingRightStringRopes.Count - 1)
+                                mutableRemainingRightStringRopes.Pop()
                     | StringRopeAppend (left, right) ->
                         stringRopeToMatchNext <- left
-                        mutableRemainingRightStringRopes.Add(right)
+                        mutableRemainingRightStringRopes.Push(right)
                 done
                 mutableBuilder.ToString()
         override x.GetHashCode() =
