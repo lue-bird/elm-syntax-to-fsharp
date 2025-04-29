@@ -2736,6 +2736,9 @@ referenceToCoreFsharp reference =
                 "isHexDigit" ->
                     Just { moduleOrigin = Nothing, name = "char_isHexDigit" }
 
+                "isDigit" ->
+                    Just { moduleOrigin = Nothing, name = "char_isDigit" }
+
                 _ ->
                     Nothing
 
@@ -7859,6 +7862,8 @@ defaultDeclarations =
 
     let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)
+    let inline char_isDigit (ch : char) : bool =
+        System.Char.IsAsciiDigit(ch)
     
     [<CustomEquality; CustomComparison>]
     type StringRope =

@@ -50,6 +50,8 @@ module DefaultDeclarations =
 
     let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)
+    let inline char_isDigit (ch : char) : bool =
+        System.Char.IsAsciiDigit(ch)
     
     [<CustomEquality; CustomComparison>]
     type StringRope =
