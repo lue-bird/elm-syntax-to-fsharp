@@ -2552,13 +2552,13 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "min" }
 
                 "LT" ->
-                    Just { moduleOrigin = Nothing, name = "Basics_LT" }
+                    Just { moduleOrigin = Just "Basics_Order", name = "LT" }
 
                 "EQ" ->
-                    Just { moduleOrigin = Nothing, name = "Basics_EQ" }
+                    Just { moduleOrigin = Just "Basics_Order", name = "EQ" }
 
                 "GT" ->
-                    Just { moduleOrigin = Nothing, name = "Basics_GT" }
+                    Just { moduleOrigin = Just "Basics_Order", name = "GT" }
 
                 "True" ->
                     Just { moduleOrigin = Nothing, name = "true" }
@@ -3107,7 +3107,12 @@ printFsharpPatternNotParenthesized fsharpPattern =
                 |> Print.followedBy (Print.exactly " }")
 
         FsharpPatternVariant patternVariant ->
-            Print.exactly patternVariant.name
+            Print.exactly
+                (qualifiedReferenceToFsharpName
+                    { moduleOrigin = patternVariant.moduleOrigin
+                    , name = patternVariant.name
+                    }
+                )
                 |> Print.followedBy
                     (case patternVariant.values of
                         [] ->
@@ -7974,16 +7979,16 @@ defaultDeclarations =
     let inline basics_ige (a: int) (b: int) : bool = a >= b
 
     type Basics_Order =
-        | Basics_LT
-        | Basics_EQ
-        | Basics_GT
+        | LT = -1
+        | EQ = 0
+        | GT = 1
 
     let inline basics_compare (a: 'a) (b: 'a) : Basics_Order =
         let comparisonMagnitude = compare a b
 
-        if comparisonMagnitude = 0 then Basics_EQ
-        else if comparisonMagnitude < 0 then Basics_LT
-        else Basics_GT
+        if comparisonMagnitude = 0 then Basics_Order.EQ
+        else if comparisonMagnitude < 0 then Basics_Order.LT
+        else Basics_Order.GT
 
     let inline basics_fabs (n: float) : float = System.Double.Abs(n)
     let inline basics_iabs (n: int) : int = System.Int32.Abs(n)
@@ -8075,7 +8080,7 @@ defaultDeclarations =
 
     let string_length (str: StringRope) : int =
         String.length (StringRope.toString str)
-    
+
     let string_repeat (repetitions: int) (segment: StringRope) : StringRope =
         StringRopeOne (String.replicate repetitions (StringRope.toString segment))
 
@@ -8320,11 +8325,7 @@ defaultDeclarations =
         (list: List<'a>)
         : List<'a> =
         List.sortWith
-            (fun a b ->
-                match elementCompare a b with
-                | Basics_LT -> -1
-                | Basics_EQ -> 0
-                | Basics_GT -> 1)
+            (fun a b -> int (elementCompare a b))
             list
 
     let list_intersperse (sep: 'a) (list: list<'a>) =
