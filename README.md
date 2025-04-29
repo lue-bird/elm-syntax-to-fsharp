@@ -26,7 +26,7 @@ plus2 n =
 -->
 Ok """namespace global
 module Elm =
-    let sample_plus2: (n: float) =
+    let sample_plus2 (n: float) =
         basics_add n (List.sum [ 2.0 ])
 
     ..and some default declarations..
