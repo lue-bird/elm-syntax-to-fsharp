@@ -1,8 +1,4 @@
-Print pure [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/) declarations as
-[F#](https://fsharp.org/) code.
-
-While that might already be useful on its own (wasm target etc),
-you can even compile the generated F# further into rust etc using [fable](https://fable.io/).
+Print pure [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/) declarations as [F#](https://fsharp.org/) code.
 
 ```elm
 import Elm.Parser
@@ -80,12 +76,12 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
     -   potential future candidates: `Basics.(<<)`, `Basics.(>>)`, `Basics.clamp`, `Basics.degrees`, `Basics.turns`,
         `Basics.radians`, `Basics.logBase`, `Basics.atan2`, `Basics.toPolar`, `Basics.fromPolar`, `Basics.never`, `List.map5`, `List.map4`, `Char.isAlpha`, `Char.isAlphaNum`, `Char.isOctDigit`, `Char.toLocaleLower`, `Char.toLocaleUpper`, `List.head`, `List.tail`, `List.unzip`, `Dict.update`, `Dict.merge`, `Dict.intersect`, `Bitwise`, `Set`, `Array`. Any help appreciated!
 -   no checks are performed before transpiling to fsharp. So if you don't add a compile check of your elm input,
-    you might e.g. get a running program that circumvents an elm opaque type or phantom type, or a fsharp program that can't be run
+    you might e.g. get a running program that circumvents an elm opaque type
 -   not much care has been put into making the resulting code readable or even conventionally formatted
     and comments are not preserved
 
 Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new) you notice <3
 
 ### why F#?
--   it runs decently fast and can directly target Wasm
+-   it runs okay fast and can even compile further into Wasm or using [fable](https://fable.io/) even into languages like rust 
 -   it's pretty much a superset of elm which makes transpiling easy
