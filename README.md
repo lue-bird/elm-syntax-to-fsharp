@@ -84,5 +84,5 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new) you notice <3
 
 ### why F#?
--   it runs okay fast and can even compile further into Wasm or using [fable](https://fable.io/) even into languages like rust 
+-   it runs decently fast (remember to enable AOT compilation) and can even compile further into Wasm or using [fable](https://fable.io/) even into languages like rust 
 -   it's pretty much a superset of elm which makes transpiling easy
