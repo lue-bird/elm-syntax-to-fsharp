@@ -131,7 +131,7 @@ Compile the resulting F# to an executable:
 ```bash
 dotnet publish --self-contained -c release
 ```
-A built executable can now be found at `/bin/release/net9.0/linux-x64/native/yourProjectName`.
+A built executable can now be found at `/bin/release/net9.0/yourArchitecture/native/yourProjectName`.
 
 If something unexpected happened,
 please [report any issue](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new).
