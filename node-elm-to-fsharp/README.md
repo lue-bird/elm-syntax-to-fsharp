@@ -14,7 +14,4 @@ To instead run it once
 npm run start
 ```
 
-To compile the resulting F# to an executable, run
-```bash
-dotnet publish -c release
-```
+See also [how to use the transpiled output](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main#how-to-use-the-transpiled-output).
