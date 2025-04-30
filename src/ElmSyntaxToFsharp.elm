@@ -6047,7 +6047,7 @@ condenseExpressionCall call =
                                 }
 
                 ( (FsharpPatternVariable "generated_0") :: lambdaParameter1Up, FsharpExpressionCall variantCall ) ->
-                    if (lambdaParameter1Up |> List.length) == 1 + (call.argument1Up |> List.length) then
+                    if (lambdaParameter1Up |> List.length) == (call.argument1Up |> List.length) then
                         FsharpExpressionCall
                             { called = variantCall.called
                             , arguments =
