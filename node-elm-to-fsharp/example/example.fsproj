@@ -5,6 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>example</RootNamespace>
     <PublishAot>true</PublishAot>
+    <OptimizationPreference>Speed</OptimizationPreference>
     <StripSymbols>true</StripSymbols>
   </PropertyGroup>
 
