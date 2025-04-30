@@ -34,7 +34,6 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 
 ### be aware
 
--   `Int` will only cover 2^32 values
 -   only a subset of elm is currently supported. not supported:
     -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/json`, `elm/parser`, `elm/virtual-dom`,
         `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`

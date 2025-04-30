@@ -1157,11 +1157,11 @@ fsharpTypeFloat =
         }
 
 
-fsharpTypeInt : FsharpType
-fsharpTypeInt =
+fsharpTypeInt64 : FsharpType
+fsharpTypeInt64 =
     FsharpTypeConstruct
         { moduleOrigin = Nothing
-        , name = "int"
+        , name = "int64"
         , arguments = []
         }
 
@@ -1175,7 +1175,7 @@ type_ inferredType =
         ElmSyntaxTypeInfer.TypeVariable variable ->
             if variable |> String.startsWith "number" then
                 -- assume Int
-                Ok fsharpTypeInt
+                Ok fsharpTypeInt64
 
             else
                 Ok (FsharpTypeVariable (variable |> variableNameDisambiguateFromFsharpKeywords))
@@ -1706,8 +1706,7 @@ floatLiteral float =
 
 intLiteral : Int -> String
 intLiteral int =
-    Basics.max (-2 ^ 31) (Basics.min (2 ^ 31 - 1) int)
-        |> String.fromInt
+    (int |> String.fromInt) ++ "L"
 
 
 fsharpReferenceToString :
@@ -2460,7 +2459,7 @@ typeConstructReferenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "bool" }
 
                 "Int" ->
-                    Just { moduleOrigin = Nothing, name = "int" }
+                    Just { moduleOrigin = Nothing, name = "int64" }
 
                 "Float" ->
                     Just { moduleOrigin = Nothing, name = "float" }
@@ -2778,7 +2777,7 @@ referenceToCoreFsharp reference =
         [ "Char" ] ->
             case reference.name of
                 "toCode" ->
-                    Just { moduleOrigin = Nothing, name = "int" }
+                    Just { moduleOrigin = Nothing, name = "int64" }
 
                 "fromCode" ->
                     Just { moduleOrigin = Nothing, name = "char" }
@@ -2807,7 +2806,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "isEmpty" }
 
                 "length" ->
-                    Just { moduleOrigin = Just "List", name = "length" }
+                    Just { moduleOrigin = Nothing, name = "list_length" }
 
                 "member" ->
                     Just { moduleOrigin = Nothing, name = "list_member" }
@@ -2864,7 +2863,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "rev" }
 
                 "repeat" ->
-                    Just { moduleOrigin = Just "List", name = "replicate" }
+                    Just { moduleOrigin = Nothing, name = "list_repeat" }
 
                 "all" ->
                     Just { moduleOrigin = Just "List", name = "forall" }
@@ -2909,10 +2908,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "list_range" }
 
                 "take" ->
-                    Just { moduleOrigin = Just "List", name = "take" }
+                    Just { moduleOrigin = Nothing, name = "list_take" }
 
                 "drop" ->
-                    Just { moduleOrigin = Just "List", name = "skip" }
+                    Just { moduleOrigin = Nothing, name = "list_drop" }
 
                 "intersperse" ->
                     Just { moduleOrigin = Nothing, name = "list_intersperse" }
@@ -2929,7 +2928,7 @@ referenceToCoreFsharp reference =
         [ "Dict" ] ->
             case reference.name of
                 "size" ->
-                    Just { moduleOrigin = Just "Map", name = "count" }
+                    Just { moduleOrigin = Nothing, name = "dict_size" }
 
                 "empty" ->
                     Just { moduleOrigin = Just "Map", name = "empty" }
@@ -7970,13 +7969,13 @@ defaultDeclarations =
     let inline basics_eq (a: 'a) (b: 'a) = a = b
     let inline basics_neq (a: 'a) (b: 'a) = a <> b
     let inline basics_flt (a: float) (b: float) : bool = a < b
-    let inline basics_ilt (a: int) (b: int) : bool = a < b
+    let inline basics_ilt (a: int64) (b: int64) : bool = a < b
     let inline basics_fle (a: float) (b: float) : bool = a <= b
-    let inline basics_ile (a: int) (b: int) : bool = a <= b
+    let inline basics_ile (a: int64) (b: int64) : bool = a <= b
     let inline basics_fgt (a: float) (b: float) : bool = a > b
-    let inline basics_igt (a: int) (b: int) : bool = a > b
+    let inline basics_igt (a: int64) (b: int64) : bool = a > b
     let inline basics_fge (a: float) (b: float) : bool = a >= b
-    let inline basics_ige (a: int) (b: int) : bool = a >= b
+    let inline basics_ige (a: int64) (b: int64) : bool = a >= b
 
     type Basics_Order =
         | LT = -1
@@ -7991,21 +7990,21 @@ defaultDeclarations =
         else Basics_Order.GT
 
     let inline basics_fabs (n: float) : float = System.Double.Abs(n)
-    let inline basics_iabs (n: int) : int = System.Int32.Abs(n)
+    let inline basics_iabs (n: int64) : int64 = System.Int64.Abs(n)
     let inline basics_fnegate (n: float) : float = -n
-    let inline basics_inegate (n: int) : int = -n
+    let inline basics_inegate (n: int64) : int64 = -n
     let inline basics_fadd (a: float) (b: float) : float = a + b
-    let inline basics_iadd (a: int) (b: int) : int = a + b
+    let inline basics_iadd (a: int64) (b: int64) : int64 = a + b
     let inline basics_fsub (a: float) (b: float) : float = a - b
-    let inline basics_isub (a: int) (b: int) : int = a - b
+    let inline basics_isub (a: int64) (b: int64) : int64 = a - b
     let inline basics_fmul (a: float) (b: float) : float = a * b
-    let inline basics_imul (a: int) (b: int) : int = a * b
+    let inline basics_imul (a: int64) (b: int64) : int64 = a * b
     let inline basics_fdiv (a: float) (b: float) : float = a / b
-    let inline basics_idiv (a: int) (b: int) : int = a / b
-    let inline basics_remainderBy (divisor: int) (toDivide: int) : int =
+    let inline basics_idiv (a: int64) (b: int64) : int64 = a / b
+    let inline basics_remainderBy (divisor: int64) (toDivide: int64) : int64 =
         toDivide % divisor
 
-    let basics_modBy (divisor: int) (toDivide: int) : int =
+    let basics_modBy (divisor: int64) (toDivide: int64) : int64 =
         let remainder = toDivide % divisor
 
         if
@@ -8018,7 +8017,7 @@ defaultDeclarations =
             remainder
 
     let inline basics_fpow (a: float) (b: float) : float = a ** b
-    let inline basics_ipow (a: int) (b: int) : int = int (float a ** float b)
+    let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
@@ -8078,11 +8077,11 @@ defaultDeclarations =
         | StringRopeAppend (left, right) ->
             string_isEmpty left && string_isEmpty right
 
-    let string_length (str: StringRope) : int =
+    let string_length (str: StringRope) : int64 =
         String.length (StringRope.toString str)
 
-    let string_repeat (repetitions: int) (segment: StringRope) : StringRope =
-        StringRopeOne (String.replicate repetitions (StringRope.toString segment))
+    let string_repeat (repetitions: int64) (segment: StringRope) : StringRope =
+        StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
 
     let string_toList (string: StringRope) : list<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
@@ -8155,32 +8154,32 @@ defaultDeclarations =
     let string_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let string_right (takenElementCount: int) (stringRope: StringRope): StringRope =
+    let string_right (takenElementCount: int64) (stringRope: StringRope): StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                String.length string - takenElementCount,
-                takenElementCount
+                String.length string - int takenElementCount,
+                int takenElementCount
             ))
 
-    let string_left (skippedElementCount: int) (string: StringRope) : StringRope = 
+    let string_left (skippedElementCount: int64) (string: StringRope) : StringRope = 
         StringRopeOne
-            ((StringRope.toString string).Substring(0, skippedElementCount))
+            ((StringRope.toString string).Substring(0, int skippedElementCount))
     
-    let string_dropRight (skippedElementCount: int) (stringRope: StringRope) : StringRope =
+    let string_dropRight (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 0,
-                String.length string - skippedElementCount
+                String.length string - int skippedElementCount
             ))
 
-    let string_dropLeft (skippedElementCount: int) (stringRope: StringRope) : StringRope =
+    let string_dropLeft (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
-                skippedElementCount,
-                String.length string - skippedElementCount
+                int skippedElementCount,
+                String.length string - int skippedElementCount
             ))
 
     let inline string_append (early: StringRope) (late: StringRope) : StringRope =
@@ -8237,28 +8236,28 @@ defaultDeclarations =
             (String.concat "" (List.map StringRope.toString strings))
 
     let string_padLeft
-        (newMinimumLength: int)
+        (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadLeft(newMinimumLength, padding))
+            ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
 
     let string_padRight
-        (newMinimumLength: int)
+        (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
         : StringRope =
         StringRopeOne
-            ((StringRope.toString string).PadRight(newMinimumLength, padding))
+            ((StringRope.toString string).PadRight(int newMinimumLength, padding))
     
     let string_fromFloat (n: float) : StringRope =
         StringRopeOne (string n)
-    let string_fromInt (n: int) : StringRope =
+    let string_fromInt (n: int64) : StringRope =
         StringRopeOne (string n)
 
-    let string_toInt (string: StringRope) : option<int> =
-        let (success, num) = System.Int32.TryParse (StringRope.toString string)
+    let string_toInt (string: StringRope) : option<int64> =
+        let (success, num) = System.Int64.TryParse (StringRope.toString string)
 
         if success then Some num else None
 
@@ -8268,26 +8267,26 @@ defaultDeclarations =
         if success then Some num else None
 
     let string_slice
-            (startInclusivePossiblyNegative: int)
-            (endExclusivePossiblyNegative: int)
+            (startInclusivePossiblyNegative: int64)
+            (endExclusivePossiblyNegative: int64)
             (stringRope: StringRope)
             : StringRope =
         let string = StringRope.toString stringRope
         let realStartIndex: int =
-            if (startInclusivePossiblyNegative < 0) then
+            if (startInclusivePossiblyNegative < 0L) then
                 max
                     0
-                    (startInclusivePossiblyNegative + String.length string)
+                    (int startInclusivePossiblyNegative + String.length string)
             else
-                startInclusivePossiblyNegative
+                int startInclusivePossiblyNegative
         let realEndIndexExclusive: int =
-            if (endExclusivePossiblyNegative < 0) then
+            if (endExclusivePossiblyNegative < 0L) then
                 max
                     0
-                    (endExclusivePossiblyNegative + String.length(string))
+                    (int endExclusivePossiblyNegative + String.length string)
             else
                 min
-                    endExclusivePossiblyNegative
+                    (int endExclusivePossiblyNegative)
                     (String.length string)
 
         if (realStartIndex >= realEndIndexExclusive) then
@@ -8298,6 +8297,9 @@ defaultDeclarations =
                     realStartIndex,
                     realEndIndexExclusive - realStartIndex
                 ))
+    
+    let inline list_length (list: List<'a>) : int64 =
+        List.length list
 
     let list_member (needle: 'a) (list: list<'a>) : bool =
         List.exists (fun element -> element = needle) list
@@ -8314,11 +8316,20 @@ defaultDeclarations =
 
     let list_fproduct (list: list<float>) : float =
         List.fold (*) 1.0 list
-    let list_iproduct (list: list<int>) : int =
-        List.fold (*) 1 list
+    let list_iproduct (list: list<int64>) : int64 =
+        List.fold (*) 1L list
 
     let inline list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
         newHead :: tail
+    
+    let inline list_repeat (repetitions: int64) (element: 'a) : List<'a> =
+        List.replicate (int repetitions) element
+    
+    let inline list_take (elementCountFromStart: int64) (list: List<'a>) : List<'a> =
+        List.take (int elementCountFromStart) list
+    
+    let inline list_drop (skippedElementCountFromStart: int64) (list: List<'a>) : List<'a> =
+        List.skip (int skippedElementCountFromStart) list
 
     let list_sortWith
         (elementCompare: 'a -> 'a -> Basics_Order)
@@ -8354,8 +8365,11 @@ defaultDeclarations =
         : 'state =
         List.foldBack reduce list initialState
 
-    let inline list_range (startFloat: int) (endFloat: int) : list<int> =
+    let inline list_range (startFloat: int64) (endFloat: int64) : list<int64> =
         [ startFloat..endFloat ]
+    
+    let inline dict_size (dict: Map<'key, 'value>) : int64 =
+        Map.count dict
 
     let dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
