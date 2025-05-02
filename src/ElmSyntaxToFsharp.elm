@@ -2667,6 +2667,26 @@ referenceToCoreFsharp reference =
                 "sqrt" ->
                     Just { moduleOrigin = Just "System.Double", name = "Sqrt" }
 
+                "clamp" ->
+                    case reference.type_ of
+                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                            if
+                                typeFunction.input
+                                    == ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ], name = "Float", arguments = [] }
+                                        )
+                            then
+                                Just { moduleOrigin = Nothing, name = "basics_fclamp" }
+
+                            else
+                                -- assume Int
+                                Just { moduleOrigin = Nothing, name = "basics_iclamp" }
+
+                        _ ->
+                            -- assume Int
+                            Just { moduleOrigin = Nothing, name = "basics_iclamp" }
+
                 _ ->
                     Nothing
 
@@ -8072,6 +8092,10 @@ defaultDeclarations =
 
     let inline basics_fpow (a: float) (b: float) : float = a ** b
     let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
+    let inline basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
+        min maximum (max minimum n)
+    let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
+        min maximum (max minimum n)
 
     let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         n >>> int32 bitPositionsToShiftBy

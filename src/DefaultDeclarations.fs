@@ -54,11 +54,15 @@ module DefaultDeclarations =
 
     let inline basics_fpow (a: float) (b: float) : float = a ** b
     let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
+    let inline basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
+        min maximum (max minimum n)
+    let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
+        min maximum (max minimum n)
 
     let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
-        n >>> bitPositionsToShiftBy
+        n >>> int32 bitPositionsToShiftBy
     let inline bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
-        n <<< bitPositionsToShiftBy
+        n <<< int32 bitPositionsToShiftBy
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
