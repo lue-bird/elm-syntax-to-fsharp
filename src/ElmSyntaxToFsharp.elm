@@ -3072,6 +3072,9 @@ referenceToCoreFsharp reference =
                 "insert" ->
                     Just { moduleOrigin = Just "Map", name = "add" }
 
+                "update" ->
+                    Just { moduleOrigin = Just "Map", name = "change" }
+
                 "remove" ->
                     Just { moduleOrigin = Just "Map", name = "remove" }
 
@@ -3080,6 +3083,12 @@ referenceToCoreFsharp reference =
 
                 "diff" ->
                     Just { moduleOrigin = Nothing, name = "dict_diff" }
+
+                "intersect" ->
+                    Just { moduleOrigin = Nothing, name = "dict_intersect" }
+
+                "merge" ->
+                    Just { moduleOrigin = Nothing, name = "dict_merge" }
 
                 _ ->
                     Nothing
@@ -8577,6 +8586,40 @@ defaultDeclarations =
         (bDict: Map<'key, 'a>)
         : Map<'key, 'a> =
         Map.fold (fun soFar k v -> Map.add k v soFar) bDict aDict
+    
+    let dict_intersect (aDict: Map<'comparable, 'v>) (bDict: Map<'comparable, 'v>) =
+        Map.filter (fun key _ -> Map.containsKey key bDict) aDict
+
+    let dict_merge
+        (leftStep: ('comparable -> 'aValue -> 'result -> 'result))
+        (bothStep: ('comparable -> 'aValue -> 'bValue -> 'result -> 'result))
+        (rightStep: ('comparable -> 'bValue -> 'result -> 'result))
+        (leftDict: Map<'comparable, 'aValue>)
+        (rightDict: Map<'comparable, 'bValue>)
+        (initialResult: 'result)
+        : 'result
+        =
+        let rec stepState ( list: List<( 'comparable * 'aValue )>, result: 'result ) (rKey: 'comparable) (rValue: 'bValue) =
+            match list with
+            | [] ->
+                ( list, rightStep rKey rValue result )
+
+            | ( lKey, lValue ) :: rest ->
+                if lKey < rKey then
+                    stepState ( rest, leftStep lKey lValue result ) rKey rValue
+
+                else if lKey > rKey then
+                    ( list, rightStep rKey rValue result )
+
+                else
+                    ( rest, bothStep lKey lValue rValue result )
+
+        let ( leftovers: List<( 'comparable * 'aValue )>, intermediateResult: 'result ) =
+            Map.fold stepState ( Map.toList leftDict, initialResult ) rightDict
+        
+        List.fold (fun result ( k, v ) -> leftStep k v result)
+            intermediateResult
+            leftovers
 
 
     type Parser_Problem =
