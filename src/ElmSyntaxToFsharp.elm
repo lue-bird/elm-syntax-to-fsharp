@@ -2891,7 +2891,7 @@ referenceToCoreFsharp reference =
         [ "List" ] ->
             case reference.name of
                 "singleton" ->
-                    Just { moduleOrigin = Just "List", name = "exactlyOne" }
+                    Just { moduleOrigin = Just "List", name = "singleton" }
 
                 "isEmpty" ->
                     Just { moduleOrigin = Just "List", name = "isEmpty" }
