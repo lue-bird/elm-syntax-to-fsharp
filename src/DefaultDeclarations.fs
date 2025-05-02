@@ -58,6 +58,8 @@ module DefaultDeclarations =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
     let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
+    let inline basics_logBase (newBase: float) (n: float) : float =
+        System.Math.Log(n, newBase=newBase)
     
     let inline basics_atan2 (y: float) (x: float) : float =
         System.Double.Atan2(y, x)

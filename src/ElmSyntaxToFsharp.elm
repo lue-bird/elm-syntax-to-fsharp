@@ -2670,6 +2670,9 @@ referenceToCoreFsharp reference =
                 "sqrt" ->
                     Just { moduleOrigin = Just "System.Double", name = "Sqrt" }
 
+                "logBase" ->
+                    Just { moduleOrigin = Nothing, name = "basics_logBase" }
+
                 "radians" ->
                     Just { moduleOrigin = Nothing, name = "basics_radians" }
 
@@ -8114,6 +8117,8 @@ defaultDeclarations =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
     let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
+    let inline basics_logBase (newBase: float) (n: float) : float =
+        System.Math.Log(n, newBase=newBase)
     
     let inline basics_atan2 (y: float) (x: float) : float =
         System.Double.Atan2(y, x)
