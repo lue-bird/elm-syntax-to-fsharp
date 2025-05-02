@@ -2853,16 +2853,37 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "char" }
 
                 "toLower" ->
-                    Just { moduleOrigin = Just "System.Char", name = "toLower" }
+                    Just { moduleOrigin = Just "System.Char", name = "ToLowerInvariant" }
 
                 "toUpper" ->
-                    Just { moduleOrigin = Just "System.Char", name = "toUpper" }
+                    Just { moduleOrigin = Just "System.Char", name = "ToUpperInvariant" }
+
+                "toLocaleLower" ->
+                    Just { moduleOrigin = Just "System.Char", name = "ToLower" }
+
+                "toLocaleUpper" ->
+                    Just { moduleOrigin = Just "System.Char", name = "ToUpper" }
+
+                "isLower" ->
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterLower" }
+
+                "isUpper" ->
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterUpper" }
 
                 "isHexDigit" ->
-                    Just { moduleOrigin = Nothing, name = "char_isHexDigit" }
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiHexDigit" }
+
+                "isOctDigit" ->
+                    Just { moduleOrigin = Just "System.Char", name = "char_isOctDigit" }
 
                 "isDigit" ->
-                    Just { moduleOrigin = Nothing, name = "char_isDigit" }
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiDigit" }
+
+                "isAlpha" ->
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetter" }
+
+                "isAlphaNum" ->
+                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterOrDigit" }
 
                 _ ->
                     Nothing
@@ -8155,11 +8176,11 @@ defaultDeclarations =
         | JustOneMore of Basics_Never
     let rec basics_never (JustOneMore ever: Basics_Never) =
         basics_never ever
+ 
+    let inline char_isOctDigit (ch: char) : bool =
+        let code = int ch
 
-    let inline char_isHexDigit (ch : char) : bool =
-        System.Char.IsAsciiHexDigit(ch)
-    let inline char_isDigit (ch : char) : bool =
-        System.Char.IsAsciiDigit(ch)
+        code <= 0x37 && 0x30 <= code
     
     [<CustomEquality; CustomComparison>]
     type StringRope =
@@ -8355,9 +8376,9 @@ defaultDeclarations =
             ))
 
     let string_toUpper (string: StringRope) : StringRope =
-        StringRopeOne ((StringRope.toString string).ToUpper())
+        StringRopeOne ((StringRope.toString string).ToUpperInvariant())
     let string_toLower (string: StringRope) : StringRope =
-        StringRopeOne ((StringRope.toString string).ToLower())
+        StringRopeOne ((StringRope.toString string).ToLowerInvariant())
 
     let string_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
         StringRopeOne

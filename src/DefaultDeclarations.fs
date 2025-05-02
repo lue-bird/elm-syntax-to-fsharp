@@ -90,11 +90,11 @@ module DefaultDeclarations =
         | JustOneMore of Basics_Never
     let rec basics_never (JustOneMore ever: Basics_Never) =
         basics_never ever
+ 
+    let inline char_isOctDigit (ch: char) : bool =
+        let code = int ch
 
-    let inline char_isHexDigit (ch : char) : bool =
-        System.Char.IsAsciiHexDigit(ch)
-    let inline char_isDigit (ch : char) : bool =
-        System.Char.IsAsciiDigit(ch)
+        code <= 0x37 && 0x30 <= code
     
     [<CustomEquality; CustomComparison>]
     type StringRope =
@@ -290,9 +290,9 @@ module DefaultDeclarations =
             ))
 
     let string_toUpper (string: StringRope) : StringRope =
-        StringRopeOne ((StringRope.toString string).ToUpper())
+        StringRopeOne ((StringRope.toString string).ToUpperInvariant())
     let string_toLower (string: StringRope) : StringRope =
-        StringRopeOne ((StringRope.toString string).ToLower())
+        StringRopeOne ((StringRope.toString string).ToLowerInvariant())
 
     let string_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
         StringRopeOne
