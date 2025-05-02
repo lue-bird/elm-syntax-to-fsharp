@@ -2572,10 +2572,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "basics_neq" }
 
                 "e" ->
-                    Just { moduleOrigin = Just "System.Double", name = "E" }
+                    Just { moduleOrigin = Just "System.Math", name = "E" }
 
                 "pi" ->
-                    Just { moduleOrigin = Just "System.Double", name = "Pi" }
+                    Just { moduleOrigin = Just "System.Math", name = "Pi" }
 
                 "ceiling" ->
                     Just { moduleOrigin = Nothing, name = "ceil" }
@@ -2664,8 +2664,26 @@ referenceToCoreFsharp reference =
                 "atan" ->
                     Just { moduleOrigin = Just "System.Double", name = "Atan" }
 
+                "atan2" ->
+                    Just { moduleOrigin = Nothing, name = "basics_atan2" }
+
                 "sqrt" ->
                     Just { moduleOrigin = Just "System.Double", name = "Sqrt" }
+
+                "radians" ->
+                    Just { moduleOrigin = Nothing, name = "basics_radians" }
+
+                "degrees" ->
+                    Just { moduleOrigin = Nothing, name = "basics_degrees" }
+
+                "turns" ->
+                    Just { moduleOrigin = Nothing, name = "basics_turns" }
+
+                "fromPolar" ->
+                    Just { moduleOrigin = Nothing, name = "basics_fromPolar" }
+
+                "toPolar" ->
+                    Just { moduleOrigin = Nothing, name = "basics_toPolar" }
 
                 "clamp" ->
                     case reference.type_ of
@@ -2693,7 +2711,7 @@ referenceToCoreFsharp reference =
         [ "Bitwise" ] ->
             case reference.name of
                 "complement" ->
-                    Just { moduleOrigin = Nothing, name = "(~~~~)" }
+                    Just { moduleOrigin = Nothing, name = "(~~~)" }
 
                 "and" ->
                     Just { moduleOrigin = Nothing, name = "(&&&)" }
@@ -8093,9 +8111,26 @@ defaultDeclarations =
     let inline basics_fpow (a: float) (b: float) : float = a ** b
     let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
     let inline basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
-        min maximum (max minimum n)
+        System.Math.Clamp(value=n, min=minimum, max=maximum)
     let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
-        min maximum (max minimum n)
+        System.Math.Clamp(value=n, min=minimum, max=maximum)
+    
+    let inline basics_atan2 (y: float) (x: float) : float =
+        System.Double.Atan2(y, x)
+    let inline basics_radians (radians: float) : float =
+        radians
+    let inline basics_degrees (angleInDegrees: float) : float =
+        (angleInDegrees * System.Math.PI) / 180.0
+    let inline basics_turns (angleInTurns: float) : float =
+        (System.Math.PI * 2.0) * angleInTurns
+    let basics_fromPolar (( radius: float, theta: float )) : ( float * float ) =
+        ( radius * (System.Double.Cos(theta))
+        , radius * (System.Double.Sin(theta))
+        )
+    let basics_toPolar ( x: float, y: float ): ( float * float ) =
+        ( System.Double.Sqrt((x * x) + (y * y))
+        , System.Double.Atan2(y, x)
+        )
 
     let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         n >>> int32 bitPositionsToShiftBy
