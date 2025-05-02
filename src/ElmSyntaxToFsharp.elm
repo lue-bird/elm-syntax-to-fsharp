@@ -2731,11 +2731,14 @@ referenceToCoreFsharp reference =
                 "xor" ->
                     Just { moduleOrigin = Nothing, name = "(^^^)" }
 
+                "shiftLeftBy" ->
+                    Just { moduleOrigin = Nothing, name = "bitwise_shiftLeftBy" }
+
                 "shiftRightBy" ->
                     Just { moduleOrigin = Nothing, name = "bitwise_shiftRightBy" }
 
-                "shiftLeftBy" ->
-                    Just { moduleOrigin = Nothing, name = "bitwise_shiftLeftBy" }
+                "shiftRightZfBy" ->
+                    Just { moduleOrigin = Nothing, name = "bitwise_shiftRightZfBy" }
 
                 _ ->
                     Nothing
@@ -8185,10 +8188,12 @@ defaultDeclarations =
         , System.Double.Atan2(y, x)
         )
 
-    let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
-        n >>> int32 bitPositionsToShiftBy
     let inline bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         n <<< int32 bitPositionsToShiftBy
+    let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        n >>> int32 bitPositionsToShiftBy
+    let inline bitwise_shiftRightZfBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        int64 (int64 n >>> int32 bitPositionsToShiftBy);
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
