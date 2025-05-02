@@ -2670,6 +2670,29 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Bitwise" ] ->
+            case reference.name of
+                "complement" ->
+                    Just { moduleOrigin = Nothing, name = "(~~~~)" }
+
+                "and" ->
+                    Just { moduleOrigin = Nothing, name = "(&&&)" }
+
+                "or" ->
+                    Just { moduleOrigin = Nothing, name = "(|||)" }
+
+                "xor" ->
+                    Just { moduleOrigin = Nothing, name = "(^^^)" }
+
+                "shiftRightBy" ->
+                    Just { moduleOrigin = Nothing, name = "bitwise_shiftRightBy" }
+
+                "shiftLeftBy" ->
+                    Just { moduleOrigin = Nothing, name = "bitwise_shiftLeftBy" }
+
+                _ ->
+                    Nothing
+
         [ "String" ] ->
             case reference.name of
                 "isEmpty" ->
@@ -6330,7 +6353,39 @@ expressionOperatorToFsharpFunctionReference operator =
             Ok { moduleOrigin = Nothing, name = "list_cons" }
 
         "++" ->
-            Ok { moduleOrigin = Just "List", name = "append" }
+            case operator.type_ of
+                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
+                    if
+                        typeFunction.input
+                            == ElmSyntaxTypeInfer.TypeNotVariable
+                                (ElmSyntaxTypeInfer.TypeConstruct
+                                    { moduleOrigin = [ "String" ]
+                                    , name = "String"
+                                    , arguments = []
+                                    }
+                                )
+                    then
+                        Ok { moduleOrigin = Nothing, name = "string_append" }
+
+                    else
+                        -- assume List
+                        Ok { moduleOrigin = Just "List", name = "append" }
+
+                _ ->
+                    -- assume List
+                    Ok { moduleOrigin = Just "List", name = "append" }
+
+        "|>" ->
+            Ok { moduleOrigin = Nothing, name = "(|>)" }
+
+        "<|" ->
+            Ok { moduleOrigin = Nothing, name = "(<|)" }
+
+        ">>" ->
+            Ok { moduleOrigin = Nothing, name = "(>>)" }
+
+        "<<" ->
+            Ok { moduleOrigin = Nothing, name = "(<<)" }
 
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
@@ -8012,12 +8067,16 @@ defaultDeclarations =
         then
             remainder + toDivide
 
-
         else
             remainder
 
     let inline basics_fpow (a: float) (b: float) : float = a ** b
     let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
+
+    let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        n >>> int32 bitPositionsToShiftBy
+    let inline bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        n <<< int32 bitPositionsToShiftBy
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b

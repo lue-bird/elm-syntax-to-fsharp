@@ -49,12 +49,16 @@ module DefaultDeclarations =
         then
             remainder + toDivide
 
-
         else
             remainder
 
     let inline basics_fpow (a: float) (b: float) : float = a ** b
     let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
+
+    let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        n >>> bitPositionsToShiftBy
+    let inline bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+        n <<< bitPositionsToShiftBy
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
