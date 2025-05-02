@@ -142,7 +142,7 @@ module DefaultDeclarations =
 
     let rec string_isEmpty (stringToCheck: StringRope) : bool =
         match stringToCheck with
-        | StringRopeOne string -> String.IsNullOrEmpty(string)
+        | StringRopeOne string -> System.String.IsNullOrEmpty(string)
         | StringRopeAppend (left, right) ->
             string_isEmpty left && string_isEmpty right
 
@@ -369,6 +369,12 @@ module DefaultDeclarations =
     
     let inline list_length (list: List<'a>) : int64 =
         List.length list
+    
+    let inline list_tail (list: List<'a>) : option<List<'a>> =
+        match list with
+        | [] -> None
+        | head :: tail ->
+            Some tail
 
     let list_member (needle: 'a) (list: list<'a>) : bool =
         List.exists (fun element -> element = needle) list
@@ -395,10 +401,11 @@ module DefaultDeclarations =
         List.replicate (int repetitions) element
     
     let inline list_take (elementCountFromStart: int64) (list: List<'a>) : List<'a> =
-        List.take (int elementCountFromStart) list
+        List.truncate (int elementCountFromStart) list
     
     let inline list_drop (skippedElementCountFromStart: int64) (list: List<'a>) : List<'a> =
-        List.skip (int skippedElementCountFromStart) list
+        try List.skip (int skippedElementCountFromStart) list with
+        | :? System.ArgumentOutOfRangeException -> []
 
     let list_sortWith
         (elementCompare: 'a -> 'a -> Basics_Order)
