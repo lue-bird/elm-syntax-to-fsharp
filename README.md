@@ -73,7 +73,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         ```
         Incidentally, avoiding extensible record types
         also tends to improve your elm code because it's simpler and makes the compiler errors more concrete
-    -   potential future candidates: `Basics.never`, `List.map5`, `List.map4`, `Char.isAlpha`, `Char.isAlphaNum`, `Char.isOctDigit`, `Char.toLocaleLower`, `Char.toLocaleUpper`, `List.head`, `List.tail`, `List.unzip`, `Dict.update`, `Dict.merge`, `Dict.intersect`, `Bitwise.shiftRightZfBy`, `Set`, `Array`. Any help appreciated!
+    -   potential future candidates: `List.map5`, `List.map4`, `Char.isAlpha`, `Char.isAlphaNum`, `Char.isOctDigit`, `Char.toLocaleLower`, `Char.toLocaleUpper`, `List.head`, `List.tail`, `List.unzip`, `Dict.update`, `Dict.merge`, `Dict.intersect`, `Bitwise.shiftRightZfBy`, `Set`, `Array`. Any help appreciated!
 -   no checks are performed before transpiling to fsharp. So if you don't add a compile check of your elm input,
     you might e.g. get a running program that circumvents an elm opaque type
 -   not much care has been put into making the resulting code readable or even conventionally formatted

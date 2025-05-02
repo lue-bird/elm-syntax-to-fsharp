@@ -2464,6 +2464,9 @@ typeConstructReferenceToCoreFsharp reference =
                 "Float" ->
                     Just { moduleOrigin = Nothing, name = "float" }
 
+                "Never" ->
+                    Just { moduleOrigin = Nothing, name = "Basics_Never" }
+
                 _ ->
                     Nothing
 
@@ -2707,6 +2710,9 @@ referenceToCoreFsharp reference =
                         _ ->
                             -- assume Int
                             Just { moduleOrigin = Nothing, name = "basics_iclamp" }
+
+                "never" ->
+                    Just { moduleOrigin = Nothing, name = "basics_never" }
 
                 _ ->
                     Nothing
@@ -8144,6 +8150,11 @@ defaultDeclarations =
 
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
+
+    type Basics_Never =
+        | JustOneMore of Basics_Never
+    let rec basics_never (JustOneMore ever: Basics_Never) =
+        basics_never ever
 
     let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)

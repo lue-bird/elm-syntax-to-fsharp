@@ -86,6 +86,11 @@ module DefaultDeclarations =
     let inline basics_and (a: bool) (b: bool) : bool = a && b
     let inline basics_or (a: bool) (b: bool) : bool = a || b
 
+    type Basics_Never =
+        | JustOneMore of Basics_Never
+    let rec basics_never (JustOneMore ever: Basics_Never) =
+        basics_never ever
+
     let inline char_isHexDigit (ch : char) : bool =
         System.Char.IsAsciiHexDigit(ch)
     let inline char_isDigit (ch : char) : bool =
