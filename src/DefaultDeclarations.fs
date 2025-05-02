@@ -444,6 +444,92 @@ module DefaultDeclarations =
     let inline list_range (startFloat: int64) (endFloat: int64) : list<int64> =
         [ startFloat..endFloat ]
     
+    let rec list_map4_into_reverse
+        (combinedSoFarReverse: List<'combined>)
+        (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aList: List<'a>)
+        (bList: List<'b>)
+        (cList: List<'c>)
+        (dList: List<'d>)
+        : List<'combined> =
+        // optimization possibility: construct into an array first
+        match aList with
+        | [] -> List.rev combinedSoFarReverse
+        | aHead :: aTail ->
+            match bList with
+            | [] -> List.rev combinedSoFarReverse
+            | bHead :: bTail ->
+                match cList with
+                | [] -> List.rev combinedSoFarReverse
+                | cHead :: cTail ->
+                    match dList with
+                    | [] -> List.rev combinedSoFarReverse
+                    | dHead :: dTail ->
+                        list_map4_into_reverse
+                            (combine aHead bHead cHead dHead
+                                :: combinedSoFarReverse
+                            )
+                            combine
+                            aTail
+                            bTail
+                            cTail
+                            dTail
+    
+    let inline list_map4
+        (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aList: List<'a>)
+        (bList: List<'b>)
+        (cList: List<'c>)
+        (dList: List<'d>)
+        : List<'combined> =
+        list_map4_into_reverse [] combine aList bList cList dList
+    
+    let rec list_map5_into_reverse
+        (combinedSoFarReverse: List<'combined>)
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aList: List<'a>)
+        (bList: List<'b>)
+        (cList: List<'c>)
+        (dList: List<'d>)
+        (eList: List<'e>)
+        : List<'combined> =
+        // optimization possibility: construct into an array first
+        match aList with
+        | [] -> List.rev combinedSoFarReverse
+        | aHead :: aTail ->
+            match bList with
+            | [] -> List.rev combinedSoFarReverse
+            | bHead :: bTail ->
+                match cList with
+                | [] -> List.rev combinedSoFarReverse
+                | cHead :: cTail ->
+                    match dList with
+                    | [] -> List.rev combinedSoFarReverse
+                    | dHead :: dTail ->
+                        match eList with
+                        | [] -> List.rev combinedSoFarReverse
+                        | eHead :: eTail ->
+                            list_map5_into_reverse
+                                (combine aHead bHead cHead dHead eHead
+                                    :: combinedSoFarReverse
+                                )
+                                combine
+                                aTail
+                                bTail
+                                cTail
+                                dTail
+                                eTail
+    
+    let inline list_map5
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aList: List<'a>)
+        (bList: List<'b>)
+        (cList: List<'c>)
+        (dList: List<'d>)
+        (eList: List<'e>)
+        : List<'combined> =
+        list_map5_into_reverse [] combine aList bList cList dList eList
+    
     let inline dict_size (dict: Map<'key, 'value>) : int64 =
         Map.count dict
 
