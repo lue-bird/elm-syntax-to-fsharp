@@ -42,33 +42,23 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         (also, `Set` is supported but not optimized).
     -   extensible record types. For example, these declarations won't work (at let or module level):
         ```elm
-        -- inferred { r | name : name } -> name
-        getName =
-            .name
+        -- in aliased type or variant value
+        type alias Named otherFields =
+            { otherFields | name : String }
         
-        -- inferred name -> { r | name : name } -> { r | name : name }
-        setName new r =
-            { r | name = new }
-        
-        -- even if used in explicit annotation
+        -- in explicit annotation
         getName : { r | name : name } -> name
         getName =
             .name
         
-        -- even if the extensible record type is "fully constructed"
-        type alias Named otherFields =
-            { otherFields | name : String }
-        
-        getName : Named { email : Email } -> String
-        getName =
-            .name
+        -- in un-annotated type
+        -- Here inferred as name -> { r | name : name } -> { r | name : name }
+        setName new r =
+            { r | name = new }
         ```
         Allowed however are for example:
         ```elm
-        type alias User =
-            { name : String, email : Email }
-        
-        userGetName : User -> String
+        userGetName : { name : String, email : Email } -> String
         userGetName =
             .name
         ```
@@ -80,7 +70,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new) you notice <3
 
 ### why F#?
--   it runs decently fast (remember to enable AOT compilation) and can even compile further into Wasm or using [fable](https://fable.io/) even into languages like rust 
+-   it runs decently fast (remember to enable AOT compilation) and can even compile further into Wasm or using [fable](https://fable.io/) into languages like rust 
 -   it's pretty much a superset of elm which makes transpiling easy
 
 ### how do I use the transpiled output?
@@ -128,7 +118,7 @@ Compile the resulting F# to an executable:
 ```bash
 dotnet publish --self-contained -c release
 ```
-A built executable can now be found at `/bin/release/net9.0/yourArchitecture/native/yourProjectName`.
+The built executable can now be found at `/bin/release/net9.0/yourArchitecture/native/yourProjectName`.
 
 If something unexpected happened,
-please [report any issue](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new).
+please [report an issue](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new).
