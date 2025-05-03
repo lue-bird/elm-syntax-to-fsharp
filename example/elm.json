@@ -7,7 +7,7 @@
     "dependencies": {
         "direct": {
             "elm/core": "1.0.5",
-            "lue-bird/elm-syntax-format": "1.1.8",
+            "lue-bird/elm-syntax-format": "1.1.9",
             "stil4m/elm-syntax": "7.3.8"
         },
         "indirect": {
