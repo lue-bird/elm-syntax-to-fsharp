@@ -2489,7 +2489,7 @@ typeConstructReferenceToCoreFsharp reference =
         [ "List" ] ->
             case reference.name of
                 "List" ->
-                    Just { moduleOrigin = Nothing, name = "list" }
+                    Just { moduleOrigin = Nothing, name = "List" }
 
                 _ ->
                     Nothing
@@ -2498,6 +2498,14 @@ typeConstructReferenceToCoreFsharp reference =
             case reference.name of
                 "Dict" ->
                     Just { moduleOrigin = Nothing, name = "Map" }
+
+                _ ->
+                    Nothing
+
+        [ "Array" ] ->
+            case reference.name of
+                "Array" ->
+                    Just { moduleOrigin = Nothing, name = "array" }
 
                 _ ->
                     Nothing
@@ -3157,6 +3165,69 @@ referenceToCoreFsharp reference =
                 "Just" ->
                     Just { moduleOrigin = Nothing, name = "Some" }
 
+                _ ->
+                    Nothing
+
+        [ "Array" ] ->
+            case reference.name of
+                "isEmpty" ->
+                    Just { moduleOrigin = Just "Array", name = "iEmpty" }
+
+                "length" ->
+                    Just { moduleOrigin = Nothing, name = "array_length" }
+
+                "get" ->
+                    Just { moduleOrigin = Nothing, name = "array_get" }
+
+                "empty" ->
+                    Just { moduleOrigin = Just "Array", name = "empty" }
+
+                "initialize" ->
+                    Just { moduleOrigin = Nothing, name = "array_initialize" }
+
+                "repeat" ->
+                    Just { moduleOrigin = Nothing, name = "array_repeat" }
+
+                "fromList" ->
+                    Just { moduleOrigin = Just "Array", name = "ofList" }
+
+                "reverse" ->
+                    Just { moduleOrigin = Just "Array", name = "rev" }
+
+                "filter" ->
+                    Just { moduleOrigin = Just "Array", name = "filter" }
+
+                "push" ->
+                    Just { moduleOrigin = Nothing, name = "array_push" }
+
+                "set" ->
+                    Just { moduleOrigin = Nothing, name = "array_set" }
+
+                "slice" ->
+                    Just { moduleOrigin = Nothing, name = "array_slice" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "Array", name = "map" }
+
+                "indexedMap" ->
+                    Just { moduleOrigin = Nothing, name = "array_indexedMap" }
+
+                "append" ->
+                    Just { moduleOrigin = Just "Array", name = "append" }
+
+                "toList" ->
+                    Just { moduleOrigin = Just "Array", name = "toList" }
+
+                "toIndexedList" ->
+                    Just { moduleOrigin = Nothing, name = "array_toIndexedList" }
+
+                "foldl" ->
+                    Just { moduleOrigin = Nothing, name = "array_foldl" }
+
+                "foldr" ->
+                    Just { moduleOrigin = Nothing, name = "array_foldr" }
+
+                -- TODO slice (Array.sub)
                 _ ->
                     Nothing
 
@@ -8717,7 +8788,67 @@ defaultDeclarations =
         List.fold (fun result ( k, v ) -> leftStep k v result)
             intermediateResult
             leftovers
+    
+    let inline array_length (array: array<'a>) : int64 =
+        Array.length array
+    let array_get (index: int64) (array: array<'element>) : option<'element> =
+        Array.tryItem (int index) array
+    let inline array_initialize (count: int64) (indexToElement: int64 -> 'element) : array<'element> =
+        Array.init (max 0 (int count)) (fun index -> indexToElement index)
+    let inline array_repeat (count: int64) (element: 'element) : array<'element> =
+        Array.replicate (max 0 (int count)) element
+    let array_set (index: int64) (replacementElement: 'element) (array: array<'element>) : array<'element> =
+        if index < 0 then
+            array
+        else if index >= Array.length array then
+            array
+        else
+            Array.updateAt (int index) replacementElement array
+    let array_push (newLastElement: 'element) (array: array<'element>) : array<'element> =
+        Array.append array [| newLastElement |]
+    let inline array_indexedMap (elementChange: int64 -> 'a -> 'b) (array: array<'a>) : array<'b> =
+        Array.mapi (fun index element -> elementChange index element) array
+    let array_toIndexedList (array: array<'a>) : List<( int64 * 'a )> =
+        (Array.foldBack
+            (fun (element: 'a) (soFar: {| Index: int64; List: List<( int64 * 'a )> |}) ->
+                {| Index = soFar.Index - 1L
+                ;  List = ( soFar.Index, element ) :: soFar.List
+                |}
+            )
+            array
+            {| Index = int64 (Array.length array - 1)
+            ;  List = []
+            |}
+        ).List
+    let inline array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+        Array.fold (fun state element -> reduce element state) initialState array
+    let inline array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+        Array.foldBack (fun state element -> reduce element state) array initialState
+    let array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
+        let realStartIndex: int =
+            if (startInclusivePossiblyNegative < 0L) then
+                max
+                    0
+                    (int startInclusivePossiblyNegative + Array.length array)
+            else
+                int startInclusivePossiblyNegative
+        let realEndIndexExclusive: int =
+            if (endExclusivePossiblyNegative < 0L) then
+                max
+                    0
+                    (int endExclusivePossiblyNegative + Array.length array)
+            else
+                min
+                    (int endExclusivePossiblyNegative)
+                    (Array.length array)
 
+        if (realStartIndex >= realEndIndexExclusive) then
+            Array.empty
+        else
+            Array.sub
+                array
+                realStartIndex
+                (realEndIndexExclusive - realStartIndex)
 
     type Parser_Problem =
         | Parser_Expecting of string
