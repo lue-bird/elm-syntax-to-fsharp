@@ -22,7 +22,7 @@ plus2 n =
 -->
 Ok """namespace global
 module Elm =
-    let sample_plus2 (n: int64) =
+    let Sample_plus2 (n: int64) =
         (+) n (List.sum [ 2L ])
 
     ..and some default declarations..
@@ -99,9 +99,11 @@ module Program
 
 [<EntryPoint>]
 let main args =
-    let output = Elm.yourModule_yourFunction yourInput
+    let output = Elm.YourModule_yourFunction yourInput
     0
 ```
+where `Elm.YourModule_yourFunction` is the transpiled elm function `Your.Module.yourFunction`.
+
 Here's some special types you can expect:
   - elm `Basics.Int`s will be of type `int64`.
     You can create them explicitly by appending L to an int literal (`42L`)

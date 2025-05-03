@@ -1,47 +1,47 @@
 namespace global
 
 module DefaultDeclarations =
-    let inline basics_always (result: 'result) (_: '_ignored) : 'result = result
+    let inline Basics_always (result: 'result) (_: '_ignored) : 'result = result
 
-    let inline basics_eq (a: 'a) (b: 'a) = a = b
-    let inline basics_neq (a: 'a) (b: 'a) = a <> b
-    let inline basics_flt (a: float) (b: float) : bool = a < b
-    let inline basics_ilt (a: int64) (b: int64) : bool = a < b
-    let inline basics_fle (a: float) (b: float) : bool = a <= b
-    let inline basics_ile (a: int64) (b: int64) : bool = a <= b
-    let inline basics_fgt (a: float) (b: float) : bool = a > b
-    let inline basics_igt (a: int64) (b: int64) : bool = a > b
-    let inline basics_fge (a: float) (b: float) : bool = a >= b
-    let inline basics_ige (a: int64) (b: int64) : bool = a >= b
+    let inline Basics_eq (a: 'a) (b: 'a) = a = b
+    let inline Basics_neq (a: 'a) (b: 'a) = a <> b
+    let inline Basics_flt (a: float) (b: float) : bool = a < b
+    let inline Basics_ilt (a: int64) (b: int64) : bool = a < b
+    let inline Basics_fle (a: float) (b: float) : bool = a <= b
+    let inline Basics_ile (a: int64) (b: int64) : bool = a <= b
+    let inline Basics_fgt (a: float) (b: float) : bool = a > b
+    let inline Basics_igt (a: int64) (b: int64) : bool = a > b
+    let inline Basics_fge (a: float) (b: float) : bool = a >= b
+    let inline Basics_ige (a: int64) (b: int64) : bool = a >= b
 
     type Basics_Order =
         | LT = -1
         | EQ = 0
         | GT = 1
 
-    let inline basics_compare (a: 'a) (b: 'a) : Basics_Order =
+    let inline Basics_compare (a: 'a) (b: 'a) : Basics_Order =
         let comparisonMagnitude = compare a b
 
         if comparisonMagnitude = 0 then Basics_Order.EQ
         else if comparisonMagnitude < 0 then Basics_Order.LT
         else Basics_Order.GT
 
-    let inline basics_fabs (n: float) : float = System.Double.Abs(n)
-    let inline basics_iabs (n: int64) : int64 = System.Int64.Abs(n)
-    let inline basics_fnegate (n: float) : float = -n
-    let inline basics_inegate (n: int64) : int64 = -n
-    let inline basics_fadd (a: float) (b: float) : float = a + b
-    let inline basics_iadd (a: int64) (b: int64) : int64 = a + b
-    let inline basics_fsub (a: float) (b: float) : float = a - b
-    let inline basics_isub (a: int64) (b: int64) : int64 = a - b
-    let inline basics_fmul (a: float) (b: float) : float = a * b
-    let inline basics_imul (a: int64) (b: int64) : int64 = a * b
-    let inline basics_fdiv (a: float) (b: float) : float = a / b
-    let inline basics_idiv (a: int64) (b: int64) : int64 = a / b
-    let inline basics_remainderBy (divisor: int64) (toDivide: int64) : int64 =
+    let inline Basics_fabs (n: float) : float = System.Double.Abs(n)
+    let inline Basics_iabs (n: int64) : int64 = System.Int64.Abs(n)
+    let inline Basics_fnegate (n: float) : float = -n
+    let inline Basics_inegate (n: int64) : int64 = -n
+    let inline Basics_fadd (a: float) (b: float) : float = a + b
+    let inline Basics_iadd (a: int64) (b: int64) : int64 = a + b
+    let inline Basics_fsub (a: float) (b: float) : float = a - b
+    let inline Basics_isub (a: int64) (b: int64) : int64 = a - b
+    let inline Basics_fmul (a: float) (b: float) : float = a * b
+    let inline Basics_imul (a: int64) (b: int64) : int64 = a * b
+    let inline Basics_fdiv (a: float) (b: float) : float = a / b
+    let inline Basics_idiv (a: int64) (b: int64) : int64 = a / b
+    let inline Basics_remainderBy (divisor: int64) (toDivide: int64) : int64 =
         toDivide % divisor
 
-    let basics_modBy (divisor: int64) (toDivide: int64) : int64 =
+    let Basics_modBy (divisor: int64) (toDivide: int64) : int64 =
         let remainder = toDivide % divisor
 
         if
@@ -52,48 +52,48 @@ module DefaultDeclarations =
         else
             remainder
 
-    let inline basics_fpow (a: float) (b: float) : float = a ** b
-    let inline basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
-    let inline basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
+    let inline Basics_fpow (a: float) (b: float) : float = a ** b
+    let inline Basics_ipow (a: int64) (b: int64) : int64 = int64 (float a ** float b)
+    let inline Basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
-    let inline basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
+    let inline Basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
         System.Math.Clamp(value=n, min=minimum, max=maximum)
-    let inline basics_logBase (newBase: float) (n: float) : float =
+    let inline Basics_logBase (newBase: float) (n: float) : float =
         System.Math.Log(n, newBase=newBase)
     
-    let inline basics_atan2 (y: float) (x: float) : float =
+    let inline Basics_atan2 (y: float) (x: float) : float =
         System.Double.Atan2(y, x)
-    let inline basics_radians (radians: float) : float =
+    let inline Basics_radians (radians: float) : float =
         radians
-    let inline basics_degrees (angleInDegrees: float) : float =
+    let inline Basics_degrees (angleInDegrees: float) : float =
         (angleInDegrees * System.Math.PI) / 180.0
-    let inline basics_turns (angleInTurns: float) : float =
+    let inline Basics_turns (angleInTurns: float) : float =
         (System.Math.PI * 2.0) * angleInTurns
-    let basics_fromPolar (( radius: float, theta: float )) : ( float * float ) =
+    let Basics_fromPolar (( radius: float, theta: float )) : ( float * float ) =
         ( radius * (System.Double.Cos(theta))
         , radius * (System.Double.Sin(theta))
         )
-    let basics_toPolar ( x: float, y: float ): ( float * float ) =
+    let Basics_toPolar ( x: float, y: float ): ( float * float ) =
         ( System.Double.Sqrt((x * x) + (y * y))
         , System.Double.Atan2(y, x)
         )
 
-    let inline bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+    let inline Bitwise_shiftLeftBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         n <<< int32 bitPositionsToShiftBy
-    let inline bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+    let inline Bitwise_shiftRightBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         n >>> int32 bitPositionsToShiftBy
-    let inline bitwise_shiftRightZfBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
+    let inline Bitwise_shiftRightZfBy (bitPositionsToShiftBy: int64) (n: int64) : int64 =
         int64 (int64 n >>> int32 bitPositionsToShiftBy);
 
-    let inline basics_and (a: bool) (b: bool) : bool = a && b
-    let inline basics_or (a: bool) (b: bool) : bool = a || b
+    let inline Basics_and (a: bool) (b: bool) : bool = a && b
+    let inline Basics_or (a: bool) (b: bool) : bool = a || b
 
     type Basics_Never =
         | JustOneMore of Basics_Never
-    let rec basics_never (JustOneMore ever: Basics_Never) =
-        basics_never ever
+    let rec Basics_never (JustOneMore ever: Basics_Never) =
+        Basics_never ever
  
-    let inline char_isOctDigit (ch: char) : bool =
+    let inline Char_isOctDigit (ch: char) : bool =
         let code = int ch
 
         code <= 0x37 && 0x30 <= code
@@ -142,48 +142,48 @@ module DefaultDeclarations =
     
     let stringRopeEmpty: StringRope = StringRopeOne ""
 
-    let rec string_isEmpty (stringToCheck: StringRope) : bool =
+    let rec String_isEmpty (stringToCheck: StringRope) : bool =
         match stringToCheck with
         | StringRopeOne string -> System.String.IsNullOrEmpty(string)
         | StringRopeAppend (left, right) ->
-            string_isEmpty left && string_isEmpty right
+            String_isEmpty left && String_isEmpty right
 
-    let string_length (str: StringRope) : int64 =
+    let String_length (str: StringRope) : int64 =
         String.length (StringRope.toString str)
 
-    let string_repeat (repetitions: int64) (segment: StringRope) : StringRope =
+    let String_repeat (repetitions: int64) (segment: StringRope) : StringRope =
         StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
 
-    let string_toList (string: StringRope) : list<char> =
+    let String_toList (string: StringRope) : list<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
 
-    let string_fromList (chars: list<char>) : StringRope =
+    let String_fromList (chars: list<char>) : StringRope =
         StringRopeOne (new string (List.toArray chars))
 
-    let string_contains (substringRope: StringRope) (string: StringRope) : bool =
+    let String_contains (substringRope: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).Contains(StringRope.toString substringRope)
 
-    let string_startsWith (start: StringRope) (string: StringRope) : bool =
+    let String_startsWith (start: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).StartsWith(StringRope.toString start)
 
-    let string_endsWith (ending: StringRope) (string: StringRope) : bool =
+    let String_endsWith (ending: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).EndsWith(StringRope.toString ending)
 
-    let string_any
+    let String_any
         (charIsNeedle: char -> bool)
         (string: StringRope)
         : bool =
         // can be optimized
         String.exists charIsNeedle (StringRope.toString string)
 
-    let string_all
+    let String_all
         (charIsExpected: char -> bool)
         (string: StringRope)
         : bool =
         // can be optimized
         String.forall charIsExpected (StringRope.toString string)
 
-    let string_map
+    let String_map
         (charChange: char -> char)
         (string: StringRope)
         : StringRope =
@@ -191,7 +191,7 @@ module DefaultDeclarations =
         StringRopeOne
             (String.map charChange (StringRope.toString string))
 
-    let string_filter
+    let String_filter
         (charShouldBeKept: char -> bool)
         (string: StringRope)
         : StringRope =
@@ -199,7 +199,7 @@ module DefaultDeclarations =
         StringRopeOne
             (String.filter charShouldBeKept (StringRope.toString string))
 
-    let string_foldl
+    let String_foldl
         (reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
@@ -208,7 +208,7 @@ module DefaultDeclarations =
         Array.fold (fun soFar char -> reduce char soFar) initialFolded
             ((StringRope.toString string).ToCharArray())
 
-    let string_foldr
+    let String_foldr
         (reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
@@ -218,14 +218,14 @@ module DefaultDeclarations =
             ((StringRope.toString string).ToCharArray())
             initialFolded
 
-    let string_trim (string: StringRope) : StringRope =
+    let String_trim (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).Trim())
-    let string_trimLeft (string: StringRope) : StringRope =
+    let String_trimLeft (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimStart())
-    let string_trimRight (string: StringRope) : StringRope =
+    let String_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let string_right (takenElementCount: int64) (stringRope: StringRope): StringRope =
+    let String_right (takenElementCount: int64) (stringRope: StringRope): StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
@@ -233,11 +233,11 @@ module DefaultDeclarations =
                 int takenElementCount
             ))
 
-    let string_left (skippedElementCount: int64) (string: StringRope) : StringRope = 
+    let String_left (skippedElementCount: int64) (string: StringRope) : StringRope = 
         StringRopeOne
             ((StringRope.toString string).Substring(0, int skippedElementCount))
     
-    let string_dropRight (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
+    let String_dropRight (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
@@ -245,7 +245,7 @@ module DefaultDeclarations =
                 String.length string - int skippedElementCount
             ))
 
-    let string_dropLeft (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
+    let String_dropLeft (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
         let string : string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
@@ -253,20 +253,20 @@ module DefaultDeclarations =
                 String.length string - int skippedElementCount
             ))
 
-    let inline string_append (early: StringRope) (late: StringRope) : StringRope =
+    let inline String_append (early: StringRope) (late: StringRope) : StringRope =
         StringRopeAppend (early, late)
-    let string_fromChar (char: char) : StringRope = StringRopeOne (string char)
+    let String_fromChar (char: char) : StringRope = StringRopeOne (string char)
 
-    let string_cons (newHeadChar: char) (late: StringRope) : StringRope =
+    let String_cons (newHeadChar: char) (late: StringRope) : StringRope =
         StringRopeAppend (StringRopeOne (string newHeadChar), late)
 
-    let string_split (separator: StringRope) (string: StringRope) : list<StringRope> =
+    let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
         List.ofArray
             (Array.map (fun segment -> StringRopeOne segment)
                 ((StringRope.toString string).Split(StringRope.toString separator))
             )
 
-    let string_lines (string: StringRope) : list<StringRope> =
+    let String_lines (string: StringRope) : list<StringRope> =
         List.ofArray (
             (Array.map (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
@@ -276,11 +276,11 @@ module DefaultDeclarations =
             )
         )
 
-    let string_reverse (string: StringRope) : StringRope =
+    let String_reverse (string: StringRope) : StringRope =
         StringRopeOne
             (new string (Array.rev ((StringRope.toString string).ToCharArray())))
 
-    let string_replace
+    let String_replace
         (toReplace: StringRope)
         (replacement: StringRope)
         (string: StringRope)
@@ -291,22 +291,22 @@ module DefaultDeclarations =
                 StringRope.toString replacement
             ))
 
-    let string_toUpper (string: StringRope) : StringRope =
+    let String_toUpper (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).ToUpperInvariant())
-    let string_toLower (string: StringRope) : StringRope =
+    let String_toLower (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).ToLowerInvariant())
 
-    let string_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
+    let String_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
         StringRopeOne
             (String.concat
                 (StringRope.toString separator)
                 (List.map StringRope.toString strings)
             )
-    let string_concat (strings: list<StringRope>) : StringRope =
+    let String_concat (strings: list<StringRope>) : StringRope =
         StringRopeOne
             (String.concat "" (List.map StringRope.toString strings))
 
-    let string_padLeft
+    let String_padLeft
         (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
@@ -314,7 +314,7 @@ module DefaultDeclarations =
         StringRopeOne
             ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
 
-    let string_padRight
+    let String_padRight
         (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
@@ -322,22 +322,22 @@ module DefaultDeclarations =
         StringRopeOne
             ((StringRope.toString string).PadRight(int newMinimumLength, padding))
     
-    let string_fromFloat (n: float) : StringRope =
+    let String_fromFloat (n: float) : StringRope =
         StringRopeOne (string n)
-    let string_fromInt (n: int64) : StringRope =
+    let String_fromInt (n: int64) : StringRope =
         StringRopeOne (string n)
 
-    let string_toInt (string: StringRope) : option<int64> =
+    let String_toInt (string: StringRope) : option<int64> =
         let (success, num) = System.Int64.TryParse (StringRope.toString string)
 
         if success then Some num else None
 
-    let string_toFloat (string: StringRope) : option<float> =
+    let String_toFloat (string: StringRope) : option<float> =
         let (success, num) = System.Double.TryParse (StringRope.toString string)
 
         if success then Some num else None
 
-    let string_slice
+    let String_slice
             (startInclusivePossiblyNegative: int64)
             (endExclusivePossiblyNegative: int64)
             (stringRope: StringRope)
@@ -369,47 +369,47 @@ module DefaultDeclarations =
                     realEndIndexExclusive - realStartIndex
                 ))
     
-    let inline list_length (list: List<'a>) : int64 =
+    let inline List_length (list: List<'a>) : int64 =
         List.length list
     
-    let inline list_tail (list: List<'a>) : option<List<'a>> =
+    let inline List_tail (list: List<'a>) : option<List<'a>> =
         match list with
         | [] -> None
         | head :: tail ->
             Some tail
 
-    let list_member (needle: 'a) (list: list<'a>) : bool =
+    let List_member (needle: 'a) (list: list<'a>) : bool =
         List.exists (fun element -> element = needle) list
     
-    let list_minimum (list: List<'a>): option<'a> =
+    let List_minimum (list: List<'a>): option<'a> =
         match list with
         | [] -> None
         | _ :: _ -> Some (List.min list)
     
-    let list_maximum (list: List<'a>): option<'a> =
+    let List_maximum (list: List<'a>): option<'a> =
         match list with
         | [] -> None
         | _ :: _ -> Some (List.max list)
 
-    let list_fproduct (list: list<float>) : float =
+    let List_fproduct (list: list<float>) : float =
         List.fold (*) 1.0 list
-    let list_iproduct (list: list<int64>) : int64 =
+    let List_iproduct (list: list<int64>) : int64 =
         List.fold (*) 1L list
 
-    let inline list_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
+    let inline List_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
         newHead :: tail
     
-    let inline list_repeat (repetitions: int64) (element: 'a) : List<'a> =
+    let inline List_repeat (repetitions: int64) (element: 'a) : List<'a> =
         List.replicate (int repetitions) element
     
-    let inline list_take (elementCountFromStart: int64) (list: List<'a>) : List<'a> =
+    let inline List_take (elementCountFromStart: int64) (list: List<'a>) : List<'a> =
         List.truncate (int elementCountFromStart) list
     
-    let inline list_drop (skippedElementCountFromStart: int64) (list: List<'a>) : List<'a> =
+    let inline List_drop (skippedElementCountFromStart: int64) (list: List<'a>) : List<'a> =
         try List.skip (int skippedElementCountFromStart) list with
         | :? System.ArgumentOutOfRangeException -> []
 
-    let list_sortWith
+    let List_sortWith
         (elementCompare: 'a -> 'a -> Basics_Order)
         (list: List<'a>)
         : List<'a> =
@@ -417,7 +417,7 @@ module DefaultDeclarations =
             (fun a b -> int (elementCompare a b))
             list
 
-    let list_intersperse (sep: 'a) (list: list<'a>) =
+    let List_intersperse (sep: 'a) (list: list<'a>) =
         match list with
         | [] -> []
         | listHead :: listTail ->
@@ -426,7 +426,7 @@ module DefaultDeclarations =
                 listTail
                 [ listHead ]
 
-    let list_foldl
+    let List_foldl
         (reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
         (list: list<'a>)
@@ -436,17 +436,17 @@ module DefaultDeclarations =
             initialState
             list
 
-    let list_foldr
+    let List_foldr
         (reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
         (list: list<'a>)
         : 'state =
         List.foldBack reduce list initialState
 
-    let inline list_range (startFloat: int64) (endFloat: int64) : list<int64> =
+    let inline List_range (startFloat: int64) (endFloat: int64) : list<int64> =
         [ startFloat..endFloat ]
     
-    let rec list_map4_into_reverse
+    let rec List_map4_into_reverse
         (combinedSoFarReverse: List<'combined>)
         (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
         (aList: List<'a>)
@@ -467,7 +467,7 @@ module DefaultDeclarations =
                     match dList with
                     | [] -> List.rev combinedSoFarReverse
                     | dHead :: dTail ->
-                        list_map4_into_reverse
+                        List_map4_into_reverse
                             (combine aHead bHead cHead dHead
                                 :: combinedSoFarReverse
                             )
@@ -477,16 +477,16 @@ module DefaultDeclarations =
                             cTail
                             dTail
     
-    let inline list_map4
+    let inline List_map4
         (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
         (aList: List<'a>)
         (bList: List<'b>)
         (cList: List<'c>)
         (dList: List<'d>)
         : List<'combined> =
-        list_map4_into_reverse [] combine aList bList cList dList
+        List_map4_into_reverse [] combine aList bList cList dList
     
-    let rec list_map5_into_reverse
+    let rec List_map5_into_reverse
         (combinedSoFarReverse: List<'combined>)
         (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
         (aList: List<'a>)
@@ -511,7 +511,7 @@ module DefaultDeclarations =
                         match eList with
                         | [] -> List.rev combinedSoFarReverse
                         | eHead :: eTail ->
-                            list_map5_into_reverse
+                            List_map5_into_reverse
                                 (combine aHead bHead cHead dHead eHead
                                     :: combinedSoFarReverse
                                 )
@@ -522,7 +522,7 @@ module DefaultDeclarations =
                                 dTail
                                 eTail
     
-    let inline list_map5
+    let inline List_map5
         (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
         (aList: List<'a>)
         (bList: List<'b>)
@@ -530,22 +530,22 @@ module DefaultDeclarations =
         (dList: List<'d>)
         (eList: List<'e>)
         : List<'combined> =
-        list_map5_into_reverse [] combine aList bList cList dList eList
+        List_map5_into_reverse [] combine aList bList cList dList eList
     
-    let inline dict_size (dict: Map<'key, 'value>) : int64 =
+    let inline Dict_size (dict: Map<'key, 'value>) : int64 =
         Map.count dict
 
-    let dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
+    let Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
 
-    let dict_foldr
+    let Dict_foldr
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.foldBack reduce dict initialState
 
-    let dict_foldl
+    let Dict_foldl
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
@@ -553,13 +553,13 @@ module DefaultDeclarations =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
 
 
-    let dict_keys (dict: Map<'key, 'value>) : List<'key> =
+    let Dict_keys (dict: Map<'key, 'value>) : List<'key> =
         Seq.toList (Map.keys dict)
 
-    let dict_values (dict: Map<'key, 'value>) : List<'value> =
+    let Dict_values (dict: Map<'key, 'value>) : List<'value> =
         Seq.toList (Map.values dict)
 
-    let dict_diff
+    let Dict_diff
         (baseDict: Map<'key, 'a>)
         (dictWithKeysToRemove: Map<'key, 'b>)
         : Map<'key, 'a> =
@@ -568,16 +568,16 @@ module DefaultDeclarations =
             baseDict
             dictWithKeysToRemove
 
-    let dict_union
+    let Dict_union
         (aDict: Map<'key, 'a>)
         (bDict: Map<'key, 'a>)
         : Map<'key, 'a> =
         Map.fold (fun soFar k v -> Map.add k v soFar) bDict aDict
     
-    let dict_intersect (aDict: Map<'comparable, 'v>) (bDict: Map<'comparable, 'v>) =
+    let Dict_intersect (aDict: Map<'comparable, 'v>) (bDict: Map<'comparable, 'v>) =
         Map.filter (fun key _ -> Map.containsKey key bDict) aDict
 
-    let dict_merge
+    let Dict_merge
         (leftStep: ('comparable -> 'aValue -> 'result -> 'result))
         (bothStep: ('comparable -> 'aValue -> 'bValue -> 'result -> 'result))
         (rightStep: ('comparable -> 'bValue -> 'result -> 'result))
@@ -608,26 +608,26 @@ module DefaultDeclarations =
             intermediateResult
             leftovers
     
-    let inline array_length (array: array<'a>) : int64 =
+    let inline Array_length (array: array<'a>) : int64 =
         Array.length array
-    let array_get (index: int64) (array: array<'element>) : option<'element> =
+    let Array_get (index: int64) (array: array<'element>) : option<'element> =
         Array.tryItem (int index) array
-    let inline array_initialize (count: int64) (indexToElement: int64 -> 'element) : array<'element> =
+    let inline Array_initialize (count: int64) (indexToElement: int64 -> 'element) : array<'element> =
         Array.init (max 0 (int count)) (fun index -> indexToElement index)
-    let inline array_repeat (count: int64) (element: 'element) : array<'element> =
+    let inline Array_repeat (count: int64) (element: 'element) : array<'element> =
         Array.replicate (max 0 (int count)) element
-    let array_set (index: int64) (replacementElement: 'element) (array: array<'element>) : array<'element> =
+    let Array_set (index: int64) (replacementElement: 'element) (array: array<'element>) : array<'element> =
         if index < 0 then
             array
         else if index >= Array.length array then
             array
         else
             Array.updateAt (int index) replacementElement array
-    let array_push (newLastElement: 'element) (array: array<'element>) : array<'element> =
+    let Array_push (newLastElement: 'element) (array: array<'element>) : array<'element> =
         Array.append array [| newLastElement |]
-    let inline array_indexedMap (elementChange: int64 -> 'a -> 'b) (array: array<'a>) : array<'b> =
+    let inline Array_indexedMap (elementChange: int64 -> 'a -> 'b) (array: array<'a>) : array<'b> =
         Array.mapi (fun index element -> elementChange index element) array
-    let array_toIndexedList (array: array<'a>) : List<( int64 * 'a )> =
+    let Array_toIndexedList (array: array<'a>) : List<( int64 * 'a )> =
         (Array.foldBack
             (fun (element: 'a) (soFar: {| Index: int64; List: List<( int64 * 'a )> |}) ->
                 {| Index = soFar.Index - 1L
@@ -639,11 +639,11 @@ module DefaultDeclarations =
             ;  List = []
             |}
         ).List
-    let inline array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+    let inline Array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
         Array.fold (fun state element -> reduce element state) initialState array
-    let inline array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+    let inline Array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
         Array.foldBack (fun state element -> reduce element state) array initialState
-    let array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
+    let Array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
                 max

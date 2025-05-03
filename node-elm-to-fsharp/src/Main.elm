@@ -192,11 +192,11 @@ runningInterface state =
                     |> ElmSyntaxToFsharp.fsharpDeclarationsToModuleString
                     -- TODO remove for general use
                     |> String.replace
-                        "listExtra_uniqueHelp<'a>"
-                        "listExtra_uniqueHelp<'a when 'a: equality>"
+                        "ListExtra_uniqueHelp<'a>"
+                        "ListExtra_uniqueHelp<'a when 'a: equality>"
                     |> String.replace
-                        "listExtra_unique<'a>"
-                        "listExtra_unique<'a when 'a: equality>"
+                        "ListExtra_unique<'a>"
+                        "ListExtra_unique<'a when 'a: equality>"
                     |> Bytes.Encode.string
                     |> Bytes.Encode.encode
             }
