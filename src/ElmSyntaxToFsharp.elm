@@ -7265,6 +7265,10 @@ printFsharpExpressionLambda syntaxLambda =
                                     )
                                 )
                             |> Print.followedBy
+                                (Print.emptyOrLinebreakIndented
+                                    (parameterTypePrint |> Print.lineSpread)
+                                )
+                            |> Print.followedBy
                                 (Print.exactly ")")
                     )
 
@@ -7745,25 +7749,30 @@ printFsharpLetDestructuring letDestructuring =
             letDestructuring.patternType
                 |> printFsharpTypeParenthesizedIfSpaceSeparated
     in
-    printParenthesized
-        { opening = "("
-        , closing = ")"
-        , inner =
-            letDestructuring.pattern
-                |> printFsharpPatternNotParenthesized
-                |> Print.followedBy
-                    (Print.exactly ": ")
-                |> Print.followedBy
-                    (Print.withIndentAtNextMultipleOf4 patternTypePrint)
-        }
-        |> Print.followedBy (Print.exactly " =")
-        |> Print.followedBy
-            (Print.withIndentAtNextMultipleOf4
+    Print.withIndentAtNextMultipleOf4
+        (printParenthesized
+            { opening = "("
+            , closing = ")"
+            , inner =
+                letDestructuring.pattern
+                    |> printFsharpPatternNotParenthesized
+                    |> Print.followedBy
+                        (Print.exactly ":")
+                    |> Print.followedBy
+                        (Print.withIndentAtNextMultipleOf4
+                            (Print.spaceOrLinebreakIndented
+                                (patternTypePrint |> Print.lineSpread)
+                                |> Print.followedBy patternTypePrint
+                            )
+                        )
+            }
+            |> Print.followedBy (Print.exactly " =")
+            |> Print.followedBy
                 (Print.linebreakIndented
                     |> Print.followedBy
                         (printFsharpExpressionNotParenthesized letDestructuring.expression)
                 )
-            )
+        )
 
 
 fsharpTypeUnit : FsharpType
