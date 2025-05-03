@@ -70,7 +70,7 @@ type FsharpPattern
         , tail : FsharpPattern
         }
     | FsharpPatternListExact (List FsharpPattern)
-    | FsharpPatternRecordInexhaustive (FastSet.Set String)
+    | FsharpPatternRecordInexhaustive (FastDict.Dict String FsharpPattern)
     | FsharpPatternVariant
         { moduleOrigin : Maybe String
         , name : String
@@ -741,7 +741,7 @@ fsharpTypeContainedRecords fsharpType =
                             |> String.split "_"
                             |> List.drop 1
                             |> List.filter (\field -> field /= "")
-                            |> List.map variableNameDisambiguateFromFsharpKeywords
+                            |> List.map stringFirstCharToUpper
                             |> List.sort
                         )
 
@@ -1124,7 +1124,7 @@ printFsharpTypeRecord syntaxRecordFields =
                                     printFsharpTypeNotParenthesized fieldValue
                             in
                             Print.withIndentIncreasedBy 2
-                                (Print.exactly ((fieldName |> stringFirstCharToUpper) ++ ":")
+                                (Print.exactly (fieldName ++ ":")
                                     |> Print.followedBy
                                         (Print.withIndentAtNextMultipleOf4
                                             (Print.spaceOrLinebreakIndented
@@ -1261,7 +1261,7 @@ type_ inferredType =
                                 (\( fieldName, fieldValueType ) ->
                                     Result.map
                                         (\value ->
-                                            ( fieldName |> variableNameDisambiguateFromFsharpKeywords
+                                            ( fieldName |> stringFirstCharToUpper
                                             , value
                                             )
                                         )
@@ -1408,7 +1408,7 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
                         (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ name, valueNode )) ->
                             Result.map
                                 (\value ->
-                                    ( name |> variableNameDisambiguateFromFsharpKeywords
+                                    ( name |> stringFirstCharToUpper
                                     , value
                                     )
                                 )
@@ -2113,17 +2113,39 @@ pattern patternInferred =
 
         ElmSyntaxTypeInfer.PatternRecord fields ->
             let
-                fieldNames : FastSet.Set String
+                fieldNames :
+                    { fields : FastDict.Dict String FsharpPattern
+                    , introducedVariables : FastSet.Set String
+                    }
                 fieldNames =
                     fields
-                        |> listMapAndToFastSet
-                            (\fieldTypedNode ->
-                                fieldTypedNode.value |> variableNameDisambiguateFromFsharpKeywords
+                        |> List.foldl
+                            (\fieldTypedNode soFar ->
+                                let
+                                    introducedVariableName : String
+                                    introducedVariableName =
+                                        fieldTypedNode.value
+                                            |> variableNameDisambiguateFromFsharpKeywords
+                                in
+                                { fields =
+                                    soFar.fields
+                                        |> FastDict.insert
+                                            (fieldTypedNode.value |> stringFirstCharToUpper)
+                                            (FsharpPatternVariable
+                                                introducedVariableName
+                                            )
+                                , introducedVariables =
+                                    soFar.introducedVariables
+                                        |> FastSet.insert introducedVariableName
+                                }
                             )
+                            { fields = FastDict.empty
+                            , introducedVariables = FastSet.empty
+                            }
             in
             Ok
-                { pattern = FsharpPatternRecordInexhaustive fieldNames
-                , introducedVariables = fieldNames
+                { pattern = FsharpPatternRecordInexhaustive fieldNames.fields
+                , introducedVariables = fieldNames.introducedVariables
                 }
 
         ElmSyntaxTypeInfer.PatternListCons listCons ->
@@ -3104,14 +3126,17 @@ printFsharpPatternNotParenthesized fsharpPattern =
             Print.exactly "{ "
                 |> Print.followedBy
                     (recordInexhaustiveFieldNames
-                        |> FastSet.toList
+                        |> FastDict.toList
                         |> Print.listMapAndIntersperseAndFlatten
-                            (\fieldName ->
+                            (\( fieldName, fieldValuePattern ) ->
                                 Print.exactly
-                                    ((fieldName |> stringFirstCharToUpper)
+                                    (fieldName
                                         ++ " = "
-                                        ++ fieldName
                                     )
+                                    |> Print.followedBy
+                                        (printFsharpPatternNotParenthesized
+                                            fieldValuePattern
+                                        )
                             )
                             (Print.exactly "; ")
                     )
@@ -3205,7 +3230,7 @@ printFsharpExpressionRecord syntaxRecordFields =
                                     printFsharpExpressionNotParenthesized fieldValue
                             in
                             Print.withIndentIncreasedBy 2
-                                (Print.exactly ((fieldName |> stringFirstCharToUpper) ++ " =")
+                                (Print.exactly (fieldName ++ " =")
                                     |> Print.followedBy
                                         (Print.withIndentAtNextMultipleOf4
                                             (Print.spaceOrLinebreakIndented
@@ -5359,7 +5384,7 @@ expression context expressionTypedNode =
                                         , field =
                                             fieldName
                                                 |> String.replace "." ""
-                                                |> variableNameDisambiguateFromFsharpKeywords
+                                                |> stringFirstCharToUpper
                                         }
                                 }
                         )
@@ -5684,7 +5709,7 @@ expression context expressionTypedNode =
                         , field =
                             recordAccess.fieldName
                                 |> String.replace "." ""
-                                |> variableNameDisambiguateFromFsharpKeywords
+                                |> stringFirstCharToUpper
                         }
                 )
                 (recordAccess.record |> expression context)
@@ -5729,7 +5754,7 @@ expression context expressionTypedNode =
                             Result.map
                                 (\fieldValue ->
                                     ( field.name
-                                        |> variableNameDisambiguateFromFsharpKeywords
+                                        |> stringFirstCharToUpper
                                     , fieldValue
                                     )
                                 )
@@ -6984,7 +7009,7 @@ printFsharpExpressionNotParenthesized fsharpExpression =
                 syntaxRecordAccess.record
                 |> Print.followedBy
                     (Print.exactly
-                        ("." ++ (syntaxRecordAccess.field |> stringFirstCharToUpper))
+                        ("." ++ syntaxRecordAccess.field)
                     )
 
         FsharpExpressionRecordUpdate syntaxRecordUpdate ->
@@ -7135,7 +7160,7 @@ printFsharpExpressionRecordUpdate syntaxRecordUpdate =
                             |> Print.listMapAndIntersperseAndFlatten
                                 (\( fieldName, fieldValue ) ->
                                     Print.withIndentIncreasedBy 2
-                                        (Print.exactly ((fieldName |> stringFirstCharToUpper) ++ " ="))
+                                        (Print.exactly (fieldName ++ " ="))
                                         |> Print.followedBy
                                             (Print.withIndentAtNextMultipleOf4
                                                 (Print.linebreakIndented
@@ -7703,6 +7728,8 @@ fsharpPatternContainedVariables fsharpPattern =
 
         FsharpPatternRecordInexhaustive recordPatternInexhaustiveFieldNames ->
             recordPatternInexhaustiveFieldNames
+                |> FastDict.values
+                |> listMapToFastSetsAndUnify fsharpPatternContainedVariables
 
 
 printFsharpLetDestructuring :
