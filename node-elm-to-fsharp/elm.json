@@ -12,11 +12,11 @@
             "elm/json": "1.1.3",
             "elm/project-metadata-utils": "1.0.2",
             "guida-lang/graph": "1.0.1",
-            "lue-bird/elm-state-interface-experimental": "9.0.0",
-            "lue-bird/elm-syntax-type-infer": "1.0.0",
+            "lue-bird/elm-state-interface-experimental": "11.0.1",
+            "lue-bird/elm-syntax-type-infer": "1.0.1",
             "miniBill/elm-fast-dict": "1.2.1",
             "miniBill/elm-unicode": "1.1.1",
-            "stil4m/elm-syntax": "7.3.7",
+            "stil4m/elm-syntax": "7.3.8",
             "wolfadex/elm-ansi": "3.0.0"
         },
         "indirect": {
