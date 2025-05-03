@@ -6562,10 +6562,13 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                 fsharpValueOrFunctionDeclaration.name
                 |> Print.followedBy
                     (Print.withIndentIncreasedBy 4
-                        (parameterPrints
-                            |> Print.listMapAndIntersperseAndFlatten
-                                (\parameterPrint -> parameterPrint)
-                                (Print.spaceOrLinebreakIndented parametersLineSpread)
+                        (Print.spaceOrLinebreakIndented parametersLineSpread
+                            |> Print.followedBy
+                                (parameterPrints
+                                    |> Print.listMapAndIntersperseAndFlatten
+                                        (\parameterPrint -> parameterPrint)
+                                        (Print.spaceOrLinebreakIndented parametersLineSpread)
+                                )
                         )
                     )
                 |> Print.followedBy
