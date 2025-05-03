@@ -1758,7 +1758,7 @@ singleDoubleQuotedStringCharToEscaped character =
 
         otherCharacter ->
             if characterIsNotPrint otherCharacter then
-                "\\u" ++ characterHex otherCharacter  
+                "\\u" ++ characterHex otherCharacter
 
             else
                 String.fromChar otherCharacter
@@ -1997,7 +1997,7 @@ quotedCharToEscaped character =
 
         otherCharacter ->
             if characterIsNotPrint otherCharacter then
-                "\\u" ++ characterHex otherCharacter  
+                "\\u" ++ characterHex otherCharacter
 
             else
                 String.fromChar otherCharacter
@@ -2666,7 +2666,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "String_foldl" }
 
                 "foldr" ->
-                    Just { moduleOrigin = Nothing, name = "String_foldl" }
+                    Just { moduleOrigin = Nothing, name = "String_foldr" }
 
                 "join" ->
                     Just { moduleOrigin = Nothing, name = "String_join" }
