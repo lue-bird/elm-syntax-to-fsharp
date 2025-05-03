@@ -14,6 +14,7 @@ If you need more fine-grained helpers,
 
 -}
 
+import Bitwise
 import Data.Graph
 import Elm.Syntax.Declaration
 import Elm.Syntax.Exposing
@@ -1757,7 +1758,7 @@ singleDoubleQuotedStringCharToEscaped character =
 
         otherCharacter ->
             if characterIsNotPrint otherCharacter then
-                "\\u{" ++ characterHex otherCharacter ++ "}"
+                "\\u" ++ characterHex otherCharacter  
 
             else
                 String.fromChar otherCharacter
@@ -1830,9 +1831,30 @@ unsafeHexDigitIntToString int =
 
 characterHex : Char -> String
 characterHex character =
+    let
+        charCode : Int
+        charCode =
+            Char.toCode character
+    in
     String.toUpper
-        (intToHexString (Char.toCode character)
-            |> String.padLeft 8 '0'
+        (unsafeHexDigitIntToString
+            (charCode
+                |> Bitwise.and 0xF000
+                |> Bitwise.shiftRightBy 12
+            )
+            ++ unsafeHexDigitIntToString
+                (charCode
+                    |> Bitwise.and 0x0F00
+                    |> Bitwise.shiftRightBy 8
+                )
+            ++ unsafeHexDigitIntToString
+                (charCode
+                    |> Bitwise.and 0xF0
+                    |> Bitwise.shiftRightBy 4
+                )
+            ++ unsafeHexDigitIntToString
+                (charCode |> Bitwise.and 0x0F)
+            ++ ""
         )
 
 
@@ -1975,7 +1997,7 @@ quotedCharToEscaped character =
 
         otherCharacter ->
             if characterIsNotPrint otherCharacter then
-                "\\u{" ++ characterHex otherCharacter ++ "}"
+                "\\u" ++ characterHex otherCharacter  
 
             else
                 String.fromChar otherCharacter
