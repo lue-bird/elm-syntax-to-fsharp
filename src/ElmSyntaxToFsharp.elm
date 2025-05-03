@@ -3106,6 +3106,20 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Debug" ] ->
+            case reference.name of
+                "log" ->
+                    Just { moduleOrigin = Nothing, name = "Debug_log" }
+
+                "toString" ->
+                    Just { moduleOrigin = Nothing, name = "Debug_toString" }
+
+                "todo" ->
+                    Just { moduleOrigin = Nothing, name = "Debug_todo" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -8687,6 +8701,15 @@ defaultDeclarations =
                 array
                 realStartIndex
                 (realEndIndexExclusive - realStartIndex)
+    
+    let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
+        System.Diagnostics.Debug.Print(StringRope.toString tag + ": {0}", value)
+
+        value
+    let inline Debug_toString (value: 'value) : StringRope =
+        StringRopeOne (value.ToString())
+    let inline Debug_todo (message: string) : 'value =
+        raise (new System.NotImplementedException(message))
 
     type Parser_Problem =
         | Parser_Expecting of string
