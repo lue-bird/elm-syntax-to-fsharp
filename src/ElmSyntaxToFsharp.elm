@@ -1148,15 +1148,6 @@ printFsharpTypeRecord syntaxRecordFields =
             |> Print.followedBy (Print.exactly "}")
 
 
-fsharpTypeFloat : FsharpType
-fsharpTypeFloat =
-    FsharpTypeConstruct
-        { moduleOrigin = Nothing
-        , name = "float"
-        , arguments = []
-        }
-
-
 fsharpTypeInt64 : FsharpType
 fsharpTypeInt64 =
     FsharpTypeConstruct
@@ -1291,28 +1282,6 @@ type_ inferredType =
 
                 ElmSyntaxTypeInfer.TypeRecordExtension _ ->
                     Err "extensible record types are not supported"
-
-
-typeExpandFunctionOutputReverse :
-    ElmSyntaxTypeInfer.Type String
-    -> List (ElmSyntaxTypeInfer.Type String)
-typeExpandFunctionOutputReverse typeNode =
-    typeExpandFunctionOutputIntoReverse [] typeNode
-
-
-typeExpandFunctionOutputIntoReverse :
-    List (ElmSyntaxTypeInfer.Type String)
-    -> ElmSyntaxTypeInfer.Type String
-    -> List (ElmSyntaxTypeInfer.Type String)
-typeExpandFunctionOutputIntoReverse soFarReverse syntaxType =
-    case syntaxType of
-        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-            typeExpandFunctionOutputIntoReverse
-                (typeFunction.input :: soFarReverse)
-                typeFunction.output
-
-        otherType ->
-            otherType :: soFarReverse
 
 
 typeAnnotation :
@@ -1460,28 +1429,6 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
 
         Elm.Syntax.TypeAnnotation.GenericRecord _ _ ->
             Err "extensible record types are not supported"
-
-
-typeAnnotationExpandFunctionOutputReverse :
-    Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
-    -> List (Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation)
-typeAnnotationExpandFunctionOutputReverse typeNode =
-    typeAnnotationExpandFunctionOutputIntoReverse [] typeNode
-
-
-typeAnnotationExpandFunctionOutputIntoReverse :
-    List (Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation)
-    -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
-    -> List (Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation)
-typeAnnotationExpandFunctionOutputIntoReverse soFarReverse (Elm.Syntax.Node.Node fullRange syntaxType) =
-    case syntaxType of
-        Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation inputNode outputNode ->
-            typeAnnotationExpandFunctionOutputIntoReverse
-                (inputNode :: soFarReverse)
-                outputNode
-
-        otherType ->
-            Elm.Syntax.Node.Node fullRange otherType :: soFarReverse
 
 
 printFsharpTypeNotParenthesized : FsharpType -> Print
@@ -2316,127 +2263,6 @@ printFsharpPatternListCons syntaxCons =
             (printFsharpPatternParenthesizedIfSpaceSeparated
                 syntaxCons.tail
             )
-
-
-patternConsExpand :
-    ElmSyntaxTypeInfer.TypedNode
-        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-        (ElmSyntaxTypeInfer.Type String)
-    ->
-        { initialElements :
-            List
-                (ElmSyntaxTypeInfer.TypedNode
-                    (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                    (ElmSyntaxTypeInfer.Type String)
-                )
-        , tail :
-            ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
-        }
-patternConsExpand patternNode =
-    patternConsExpandFromInitialElementsReverse [] patternNode
-
-
-patternConsExpandFromInitialElementsReverse :
-    List
-        (ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-            (ElmSyntaxTypeInfer.Type String)
-        )
-    ->
-        ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-            (ElmSyntaxTypeInfer.Type String)
-    ->
-        { initialElements :
-            List
-                (ElmSyntaxTypeInfer.TypedNode
-                    (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                    (ElmSyntaxTypeInfer.Type String)
-                )
-        , tail :
-            ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
-        }
-patternConsExpandFromInitialElementsReverse initialElementsSoFarReverse syntaxPattern =
-    let
-        wrapInTypedNode value =
-            { value = value
-            , type_ = syntaxPattern.type_
-            , range = syntaxPattern.range
-            }
-    in
-    case syntaxPattern.value of
-        ElmSyntaxTypeInfer.PatternListCons listCons ->
-            patternConsExpandFromInitialElementsReverse
-                (listCons.head :: initialElementsSoFarReverse)
-                listCons.tail
-
-        ElmSyntaxTypeInfer.PatternParenthesized inParens ->
-            patternConsExpandFromInitialElementsReverse initialElementsSoFarReverse
-                inParens
-
-        ElmSyntaxTypeInfer.PatternIgnored ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternIgnored |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternUnit ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternUnit |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternChar char ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternChar char |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternString string ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternString string |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternInt int ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternInt int |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternTuple parts ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternTuple parts |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternTriple parts ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternTriple parts |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternRecord fields ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternRecord fields |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternListExact elements ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternListExact elements |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternVariable variableName ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternVariable variableName |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternVariant variant ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternVariant variant |> wrapInTypedNode
-            }
-
-        ElmSyntaxTypeInfer.PatternAs patternAs ->
-            { initialElements = initialElementsSoFarReverse |> List.reverse
-            , tail = ElmSyntaxTypeInfer.PatternAs patternAs |> wrapInTypedNode
-            }
 
 
 typeConstructReferenceToCoreFsharp :
@@ -3419,7 +3245,7 @@ printParenthesized config =
 
 
 {-| Transpile a list of [`Elm.Syntax.Declaration.Declaration`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Declaration#Declaration)s
-across multiple modules to value, function and [`FsharpTypeDeclaration`](#FsharpTypeDeclaration)s.
+across multiple modules to value, function and type declarations.
 Declarations that use unsupported stuff like parser kernel code (directly or indirectly)
 will not be present in the final declarations.
 Their errors can be found alongside the valid transpiled declarations.
@@ -4046,7 +3872,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         (\(Elm.Syntax.Node.Node _ declaration) ->
                                             case declaration of
                                                 Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                                    -- this is pretty shaky but works for now
+                                                    -- TODO this is pretty shaky but works for now
                                                     let
                                                         name : String
                                                         name =
@@ -4068,7 +3894,19 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                     else
                                                         Just syntaxValueOrFunctionDeclaration
 
-                                                _ ->
+                                                Elm.Syntax.Declaration.AliasDeclaration _ ->
+                                                    Nothing
+
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
+                                                    Nothing
+
+                                                Elm.Syntax.Declaration.PortDeclaration _ ->
+                                                    Nothing
+
+                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                    Nothing
+
+                                                Elm.Syntax.Declaration.Destructuring _ _ ->
                                                     Nothing
                                         )
                                     |> ElmSyntaxTypeInfer.valueAndFunctionDeclarations
@@ -5033,7 +4871,7 @@ patternTypedNodeIntroducedVariables patternTypedNode =
 
 
 patternIntroducedVariables :
-    ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableTypeVariable)
+    ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableTypeVariable_)
     -> FastSet.Set String
 patternIntroducedVariables inferredPattern =
     case inferredPattern of
@@ -7898,56 +7736,6 @@ printFsharpLetDestructuring letDestructuring =
             )
 
 
-printFsharpExpressionMatchCase :
-    { pattern : FsharpPattern
-    , patternType : FsharpType
-    , result : FsharpExpression
-    }
-    -> Print
-printFsharpExpressionMatchCase branch =
-    let
-        patternPrint : Print
-        patternPrint =
-            printFsharpPatternNotParenthesized branch.pattern
-
-        patternTypePrint : Print
-        patternTypePrint =
-            printFsharpTypeParenthesizedIfSpaceSeparated
-                branch.patternType
-    in
-    printParenthesized
-        { opening = "("
-        , closing = ")"
-        , inner =
-            Print.withIndentIncreasedBy 2
-                patternPrint
-
-        --|> Print.followedBy (Print.exactly ":")
-        --|> Print.followedBy
-        --    (Print.withIndentAtNextMultipleOf4
-        --        (Print.spaceOrLinebreakIndented
-        --            ((patternPrint |> Print.lineSpread)
-        --                |> Print.lineSpreadMergeWith
-        --                    (\() -> patternTypePrint |> Print.lineSpread)
-        --            )
-        --            |> Print.followedBy
-        --                patternTypePrint
-        --        )
-        --    )
-        }
-        |> Print.followedBy (Print.exactly " =>")
-        |> Print.followedBy
-            (Print.withIndentAtNextMultipleOf4
-                (Print.linebreakIndented
-                    |> Print.followedBy
-                        (printFsharpExpressionParenthesizedIfSpaceSeparated
-                            branch.result
-                        )
-                )
-            )
-        |> Print.followedBy (Print.exactly ",")
-
-
 fsharpTypeUnit : FsharpType
 fsharpTypeUnit =
     FsharpTypeConstruct
@@ -8866,31 +8654,6 @@ defaultDeclarations =
         | Parser_Problem of string
         | Parser_BadRepeat
 """
-
-
-resultAndThen3 :
-    (a -> b -> c -> Result error d)
-    -> Result error a
-    -> Result error b
-    -> Result error c
-    -> Result error d
-resultAndThen3 abToResult aResult bResult cResult =
-    case aResult of
-        Err error ->
-            Err error
-
-        Ok a ->
-            case bResult of
-                Err error ->
-                    Err error
-
-                Ok b ->
-                    case cResult of
-                        Err error ->
-                            Err error
-
-                        Ok c ->
-                            abToResult a b c
 
 
 fastDictMapAndToList :

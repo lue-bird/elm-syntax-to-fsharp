@@ -1,10 +1,9 @@
 module Print exposing
     ( Print(..), toString
     , exactly, empty, linebreak, spaceOrLinebreakIndented
-    , followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
+    , followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten
     , withIndentAtNextMultipleOf4, withIndentIncreasedBy, linebreakIndented, emptyOrLinebreakIndented
     , LineSpread(..), lineSpread, lineSpreadMergeWith, lineSpreadListMapAndCombine
-    , toStringWithIndent
     )
 
 {-| simple pretty printing
@@ -19,7 +18,7 @@ module Print exposing
 
 ### combine
 
-@docs followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten, listReverseAndMapAndIntersperseAndFlatten
+@docs followedBy, listIntersperseAndFlatten, listMapAndIntersperseAndFlatten
 
 
 ### indent
@@ -250,50 +249,12 @@ linebreak =
         |> Print.toString
     --> "ab"
 
-To append more than 2, use [`Print.listMapAndFlatten`](#listMapAndFlatten)
+To append more than 2, use helpers like [`Print.listIntersperseAndFlatten`](#listIntersperseAndFlatten)
 
 -}
 followedBy : Print -> Print -> Print
 followedBy =
     FollowedBy
-
-
-{-| Concatenate a given list of [`Print`](#Print)s
-one after the other after mapping each element
-
-    [ "a", "b" ]
-        |> Print.listMapAndFlatten Print.exactly
-        |> Print.toString
-    --> "ab"
-
-To only concatenate 2, use [`Print.followedBy`](#followedBy)
-
--}
-listMapAndFlatten : (a -> Print) -> List a -> Print
-listMapAndFlatten elementToPrint elements =
-    elements
-        |> List.foldl
-            (\next soFar -> soFar |> followedBy (next |> elementToPrint))
-            empty
-
-
-{-| Concatenate a given list of [`Print`](#Print)s
-one after the other after mapping each element
-
-    [ "a", "b" ]
-        |> Print.listReverseAndMapAndFlatten Print.exactly
-        |> Print.toString
-    --> "ba"
-
-To only concatenate 2, use [`Print.followedBy`](#followedBy)
-
--}
-listReverseAndMapAndFlatten : (a -> Print) -> List a -> Print
-listReverseAndMapAndFlatten elementToPrint elements =
-    elements
-        |> List.foldr
-            (\next soFar -> soFar |> followedBy (elementToPrint next))
-            empty
 
 
 {-| Concatenate a given list of [`Print`](#Print)s
@@ -355,65 +316,6 @@ listMapAndIntersperseAndFlatten elementToPrint inBetweenPrint prints =
                     (elementToPrint head)
 
 
-{-| Concatenate a given list of [`Print`](#Print)s
-one after the other
-
-    [ "a", "b" ]
-        |> List.map Print.exactly
-        |> Print.listReverseAndIntersperseAndFlatten
-            (Print.exactly ",")
-        |> Print.toString
-    --> "b,a"
-
-To only concatenate 2, use [`Print.followedBy`](#followedBy)
-
--}
-listReverseAndIntersperseAndFlatten : Print -> List Print -> Print
-listReverseAndIntersperseAndFlatten inBetweenPrint prints =
-    case prints of
-        [] ->
-            empty
-
-        head :: tail ->
-            tail
-                |> List.foldl
-                    (\next soFar ->
-                        next
-                            |> followedBy inBetweenPrint
-                            |> followedBy soFar
-                    )
-                    head
-
-
-{-| Concatenate a given list of [`Print`](#Print)s
-one after the other
-
-    [ "a", "b" ]
-        |> List.map Print.exactly
-        |> Print.listReverseAndIntersperseAndFlatten (Print.exactly ",")
-        |> Print.toString
-    --> "b,a"
-
-To only concatenate 2, use [`Print.followedBy`](#followedBy)
-
--}
-listReverseAndMapAndIntersperseAndFlatten : (a -> Print) -> Print -> List a -> Print
-listReverseAndMapAndIntersperseAndFlatten elementToPrint inBetweenPrint elements =
-    case elements of
-        [] ->
-            empty
-
-        head :: tail ->
-            tail
-                |> List.foldl
-                    (\next soFar ->
-                        elementToPrint next
-                            |> followedBy inBetweenPrint
-                            |> followedBy soFar
-                    )
-                    (elementToPrint head)
-
-
 {-| Set the indentation used by [`Print.linebreakIndented`](#linebreakIndented),
 [`Print.spaceOrLinebreakIndented`](#spaceOrLinebreakIndented)
 and [`Print.emptyOrLinebreakIndented`](#emptyOrLinebreakIndented)
@@ -444,7 +346,6 @@ type LineSpread
 {-| If either spans [`MultipleLines`](#LineSpread), gives [`MultipleLines`](#LineSpread).
 If both are [`SingleLine`](#LineSpread), gives [`SingleLine`](#LineSpread).
 
-To merge 2 already known [`LineSpread`](#LineSpread)s, use [`Print.lineSpreadMergeWithStrict`](#lineSpreadMergeWithStrict)
 To merge a list, use [`Print.lineSpreadListMapAndCombine`](#lineSpreadListMapAndCombine)
 
 -}
@@ -456,22 +357,6 @@ lineSpreadMergeWith bLineSpreadLazy aLineSpread =
 
         SingleLine ->
             bLineSpreadLazy ()
-
-
-{-| If either spans [`MultipleLines`](#LineSpread), gives [`MultipleLines`](#LineSpread).
-If both are [`SingleLine`](#LineSpread), gives [`SingleLine`](#LineSpread).
-
-To merge more a list, use [`Print.lineSpreadListMapAndCombine`](#lineSpreadListMapAndCombine)
-
--}
-lineSpreadMergeWithStrict : LineSpread -> LineSpread -> LineSpread
-lineSpreadMergeWithStrict bLineSpreadLazy aLineSpread =
-    case aLineSpread of
-        MultipleLines ->
-            MultipleLines
-
-        SingleLine ->
-            bLineSpreadLazy
 
 
 {-| If any element spans [`MultipleLines`](#LineSpread), gives [`MultipleLines`](#LineSpread).
