@@ -14,8 +14,4 @@
     <Compile Include="src/Program.fs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Fable.Core" Version="4.3.0" />
-  </ItemGroup>
-
 </Project>
