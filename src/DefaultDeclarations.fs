@@ -685,6 +685,68 @@ module DefaultDeclarations =
                 realStartIndex
                 (realEndIndexExclusive - realStartIndex)
     
+    
+    type JsonValue =
+        | JsonObject of Map<string, JsonValue>
+        | JsonArray of List<JsonValue>
+        | JsonString of string
+        | JsonNumber of float
+        | JsonBool of bool
+        | JsonNull
+    
+    let JsonEncode_null : JsonValue = JsonNull
+    let inline JsonEncode_bool (bool: bool) : JsonValue = JsonBool bool
+    let inline JsonEncode_string (string: string) : JsonValue = JsonString string
+    let inline JsonEncode_int (int: int64) : JsonValue = JsonNumber (float int)
+    let inline JsonEncode_float (float: float) : JsonValue = JsonNumber float
+    let inline JsonEncode_list (elementToValue: 'element -> JsonValue) (elements: List<'element>) : JsonValue =
+        JsonArray (List.map elementToValue elements)
+    let inline JsonEncode_array (elementToValue: 'element -> JsonValue) (elements: array<'element>) : JsonValue =
+        // can be optimized
+        JsonArray (Array.toList (Array.map elementToValue elements))
+    let inline JsonEncode_set (elementToValue: 'element -> JsonValue) (elements: Set<'element>) : JsonValue =
+        // can be optimized
+        JsonArray (List.map elementToValue (Set.toList elements))
+    let inline JsonEncode_object (fields: List<( string * JsonValue )>) : JsonValue =
+        JsonObject (Map.ofList fields)
+    let inline JsonEncode_dict
+        (keyToString: 'key -> string)
+        (valueToJson: 'value -> JsonValue)
+        (dict: Map<'key, 'value>)
+        : JsonValue =
+        JsonObject
+            (Map.fold
+                (fun soFar key value ->
+                    Map.add (keyToString key) (valueToJson value) soFar
+                )
+                Map.empty
+                dict
+            )
+
+    let rec jsonValueToNode (json: JsonValue) : System.Text.Json.Nodes.JsonNode =
+        match json with
+        | JsonNull -> System.Text.Json.Nodes.JsonValue.Create(null)
+        | JsonBool(bool) -> System.Text.Json.Nodes.JsonValue.Create(bool)
+        | JsonNumber(number) -> System.Text.Json.Nodes.JsonValue.Create(number)
+        | JsonString(string) -> System.Text.Json.Nodes.JsonValue.Create(string)
+        | JsonArray(elements) ->
+            // can be optimized
+            System.Text.Json.Nodes.JsonArray(Array.ofList (List.map jsonValueToNode elements))
+        | JsonObject(fields) ->
+            System.Text.Json.Nodes.JsonObject(
+                Map.map (fun _ value -> jsonValueToNode value) fields
+            )
+    
+    let JsonEncode_encode (indentDepth: int64) (json: JsonValue) =
+        let printOptions =
+            System.Text.Json.JsonSerializerOptions()
+        if (indentDepth <> 0) then
+            printOptions.WriteIndented <- true
+            printOptions.IndentSize <- int indentDepth
+        
+        (jsonValueToNode json).ToJsonString(printOptions)
+
+    
     let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
         System.Diagnostics.Debug.Print(StringRope.toString tag + ": {0}", value)
 

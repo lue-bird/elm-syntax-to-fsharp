@@ -36,9 +36,8 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 
 -   only a subset of elm is currently supported. not supported:
     -   ports, glsl
-    -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/json`, `elm/parser`, `elm/virtual-dom`,
-        `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
-    -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`
+    -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/parser`, `elm/virtual-dom`, `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
+    -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`, `Json.Decode`
     -   extensible record types. For example, these declarations won't work (at let or module level):
         ```elm
         -- in aliased type or variant value
