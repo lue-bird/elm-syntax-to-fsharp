@@ -535,28 +535,27 @@ module DefaultDeclarations =
     let inline Dict_size (dict: Map<'key, 'value>) : int64 =
         Map.count dict
 
-    let Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
+    let inline Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
 
-    let Dict_foldr
+    let inline Dict_foldr
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.foldBack reduce dict initialState
 
-    let Dict_foldl
+    let inline Dict_foldl
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
 
-
-    let Dict_keys (dict: Map<'key, 'value>) : List<'key> =
+    let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
         Seq.toList (Map.keys dict)
 
-    let Dict_values (dict: Map<'key, 'value>) : List<'value> =
+    let inline Dict_values (dict: Map<'key, 'value>) : List<'value> =
         Seq.toList (Map.values dict)
 
     let Dict_diff
@@ -607,6 +606,23 @@ module DefaultDeclarations =
         List.fold (fun result ( k, v ) -> leftStep k v result)
             intermediateResult
             leftovers
+
+    let inline Set_size (set: Set<'element>) : int64 =
+        Set.count set
+
+    let inline Set_foldr
+        (reduce: 'key -> 'state -> 'state)
+        (initialState: 'state)
+        (set: Set<'key>)
+        =
+        Set.foldBack reduce set initialState
+
+    let inline Set_foldl
+        (reduce: 'key -> 'state -> 'state)
+        (initialState: 'state)
+        (set: Set<'key>)
+        =
+        Set.fold (fun soFar k -> reduce k soFar) initialState set
     
     let inline Array_length (array: array<'a>) : int64 =
         Array.length array

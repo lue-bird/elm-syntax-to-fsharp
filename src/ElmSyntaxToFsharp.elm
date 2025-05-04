@@ -2369,6 +2369,14 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Set" ] ->
+            case reference.name of
+                "Set" ->
+                    Just { moduleOrigin = Nothing, name = "Set" }
+
+                _ ->
+                    Nothing
+
         [ "Array" ] ->
             case reference.name of
                 "Array" ->
@@ -2942,7 +2950,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "Map", name = "isEmpty" }
 
                 "map" ->
-                    Just { moduleOrigin = Nothing, name = "dictMap" }
+                    Just { moduleOrigin = Just "Map", name = "map" }
 
                 "partition" ->
                     Just { moduleOrigin = Just "Map", name = "partition" }
@@ -2982,6 +2990,59 @@ referenceToCoreFsharp reference =
 
                 "merge" ->
                     Just { moduleOrigin = Nothing, name = "Dict_merge" }
+
+                _ ->
+                    Nothing
+
+        [ "Set" ] ->
+            case reference.name of
+                "size" ->
+                    Just { moduleOrigin = Nothing, name = "Set_size" }
+
+                "empty" ->
+                    Just { moduleOrigin = Just "Set", name = "empty" }
+
+                "singleton" ->
+                    Just { moduleOrigin = Just "Set", name = "singleton" }
+
+                "fromList" ->
+                    Just { moduleOrigin = Just "Set", name = "ofList" }
+
+                "toList" ->
+                    Just { moduleOrigin = Just "Set", name = "toList" }
+
+                "isEmpty" ->
+                    Just { moduleOrigin = Just "Set", name = "isEmpty" }
+
+                "insert" ->
+                    Just { moduleOrigin = Just "Set", name = "add" }
+
+                "partition" ->
+                    Just { moduleOrigin = Just "Set", name = "partition" }
+
+                "foldl" ->
+                    Just { moduleOrigin = Nothing, name = "Set_foldl" }
+
+                "foldr" ->
+                    Just { moduleOrigin = Nothing, name = "Set_foldr" }
+
+                "filter" ->
+                    Just { moduleOrigin = Just "Set", name = "filter" }
+
+                "member" ->
+                    Just { moduleOrigin = Just "Set", name = "contains" }
+
+                "remove" ->
+                    Just { moduleOrigin = Just "Set", name = "remove" }
+
+                "union" ->
+                    Just { moduleOrigin = Just "Set", name = "union" }
+
+                "diff" ->
+                    Just { moduleOrigin = Just "Set", name = "difference" }
+
+                "intersect" ->
+                    Just { moduleOrigin = Just "Set", name = "intersect" }
 
                 _ ->
                     Nothing
@@ -8640,6 +8701,23 @@ defaultDeclarations =
         List.fold (fun result ( k, v ) -> leftStep k v result)
             intermediateResult
             leftovers
+
+    let inline Set_size (set: Set<'element>) : int64 =
+        Set.count set
+
+    let inline Set_foldr
+        (reduce: 'key -> 'state -> 'state)
+        (initialState: 'state)
+        (set: Set<'key>)
+        =
+        Set.foldBack reduce set initialState
+
+    let inline Set_foldl
+        (reduce: 'key -> 'state -> 'state)
+        (initialState: 'state)
+        (set: Set<'key>)
+        =
+        Set.fold (fun soFar k -> reduce k soFar) initialState set
     
     let inline Array_length (array: array<'a>) : int64 =
         Array.length array
