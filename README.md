@@ -114,7 +114,7 @@ Here's some special types you can expect:
     constructed type aliases for each field combination: `Elm.Generated_a_b<float, float>`.
     While the type might look weird, values can be created and used like any regular record.
 
-The rest is pretty obvious: `Float` → `float`, `Char` → `char` `()` → `()`, `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Order` → `Elm.Basics_Order` (enum).
+The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `()` → `()`, `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Order` → `Elm.Basics_Order` (enum).
 
 Compile the resulting F# to an executable:
 ```bash
