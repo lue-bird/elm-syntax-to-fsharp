@@ -2891,6 +2891,9 @@ referenceToCoreFsharp reference =
                 "map" ->
                     Just { moduleOrigin = Just "List", name = "map" }
 
+                "indexedMap" ->
+                    Just { moduleOrigin = Just "List", name = "mapi" }
+
                 "map2" ->
                     Just { moduleOrigin = Just "List", name = "map2" }
 
