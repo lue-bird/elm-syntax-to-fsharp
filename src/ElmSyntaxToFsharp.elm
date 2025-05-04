@@ -3723,9 +3723,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             [ "Json", "Decode" ] ->
                                 False
 
-                            [ "Json", "Encode" ] ->
-                                False
-
                             [ "Parser" ] ->
                                 False
 
@@ -4002,7 +3999,12 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     declarationTypesAndErrors.types
                         }
                     )
-                    { errors = [], types = ElmSyntaxTypeInfer.elmCoreTypes }
+                    { errors = []
+                    , types =
+                        FastDict.union
+                            ElmSyntaxTypeInfer.elmCoreTypes
+                            elmJsonTypes
+                    }
 
         syntaxModulesInferred :
             Result
@@ -4060,11 +4062,11 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                 |> Elm.Syntax.Node.value
                                                     in
                                                     if
-                                                        (name |> String.contains "encode")
-                                                            || (name |> String.contains "fromList")
-                                                            || (name
-                                                                    |> String.toLower
-                                                                    |> String.contains "decode"
+                                                        ((name |> String.toLower)
+                                                            |> String.contains "decode"
+                                                        )
+                                                            || ((moduleName == [ "Elm", "Syntax", "Range" ])
+                                                                    && (name == "fromList")
                                                                )
                                                     then
                                                         Nothing
@@ -5374,6 +5376,7 @@ fsharpKeywords =
         , "match"
         , "member"
         , "mod"
+        , "sig"
         , "module"
         , "mutable"
         , "namespace"
@@ -8807,7 +8810,7 @@ defaultDeclarations =
     let inline Array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
         Array.fold (fun state element -> reduce element state) initialState array
     let inline Array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
-        Array.foldBack (fun state element -> reduce element state) array initialState
+        Array.foldBack reduce array initialState
     let Array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
@@ -8845,7 +8848,8 @@ defaultDeclarations =
     
     let JsonEncode_null : JsonValue = JsonNull
     let inline JsonEncode_bool (bool: bool) : JsonValue = JsonBool bool
-    let inline JsonEncode_string (string: string) : JsonValue = JsonString string
+    let inline JsonEncode_string (string: StringRope) : JsonValue =
+        JsonString (StringRope.toString string)
     let inline JsonEncode_int (int: int64) : JsonValue = JsonNumber (float int)
     let inline JsonEncode_float (float: float) : JsonValue = JsonNumber float
     let inline JsonEncode_list (elementToValue: 'element -> JsonValue) (elements: List<'element>) : JsonValue =
@@ -8856,8 +8860,17 @@ defaultDeclarations =
     let inline JsonEncode_set (elementToValue: 'element -> JsonValue) (elements: Set<'element>) : JsonValue =
         // can be optimized
         JsonArray (List.map elementToValue (Set.toList elements))
-    let inline JsonEncode_object (fields: List<( string * JsonValue )>) : JsonValue =
-        JsonObject (Map.ofList fields)
+    let inline JsonEncode_object (fields: List<( StringRope * JsonValue )>) : JsonValue =
+        JsonObject
+            (List.fold
+                (fun soFar (fieldName, fieldValue) ->
+                    Map.add (StringRope.toString fieldName)
+                        fieldValue
+                        soFar
+                )
+                Map.empty
+                fields
+            )
     let inline JsonEncode_dict
         (keyToString: 'key -> string)
         (valueToJson: 'value -> JsonValue)
@@ -8968,3 +8981,2664 @@ printLinebreakLinebreakIndented =
 printExactlyUnderscore : Print
 printExactlyUnderscore =
     Print.exactly "_"
+
+
+elmJsonTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmJsonTypes =
+    FastDict.fromList
+        [ ( [ "Json", "Decode" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "andThen"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "array"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Array" ]
+                                                        , name = "Array"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "at"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "List" ]
+                                            , name = "List"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "bool"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Bool"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "decodeString"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Result" ]
+                                                        , name = "Result"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Error"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            , ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "decodeValue"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Result" ]
+                                                        , name = "Result"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Error"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            , ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "dict"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Dict" ]
+                                                        , name = "Dict"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            , ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "errorToString"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Error"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fail"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "field"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "index"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "int"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "keyValuePairs"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "List" ]
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeTuple
+                                                                    { part0 =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "String"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "String"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , part1 =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "a"
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "lazy"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    ElmSyntaxTypeInfer.TypeUnit
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "list"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "List" ]
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "value"
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "value"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map2"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "value"
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "value"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "value"
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "value"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map4"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "value"
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "value"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map5"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "e"
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "value"
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Json"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "e"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Json"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "value"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map6"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "e"
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "f"
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "value"
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Json"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "e"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                    { moduleOrigin =
+                                                                                                                        [ "Json"
+                                                                                                                        , "Decode"
+                                                                                                                        ]
+                                                                                                                    , name =
+                                                                                                                        "Decoder"
+                                                                                                                    , arguments =
+                                                                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "f"
+                                                                                                                        ]
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                    { moduleOrigin =
+                                                                                                                        [ "Json"
+                                                                                                                        , "Decode"
+                                                                                                                        ]
+                                                                                                                    , name =
+                                                                                                                        "Decoder"
+                                                                                                                    , arguments =
+                                                                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "value"
+                                                                                                                        ]
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map7"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "e"
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "f"
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                    { input =
+                                                                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "g"
+                                                                                                                    , output =
+                                                                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "value"
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Json"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "e"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                    { moduleOrigin =
+                                                                                                                        [ "Json"
+                                                                                                                        , "Decode"
+                                                                                                                        ]
+                                                                                                                    , name =
+                                                                                                                        "Decoder"
+                                                                                                                    , arguments =
+                                                                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "f"
+                                                                                                                        ]
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                    { input =
+                                                                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                                { moduleOrigin =
+                                                                                                                                    [ "Json"
+                                                                                                                                    , "Decode"
+                                                                                                                                    ]
+                                                                                                                                , name =
+                                                                                                                                    "Decoder"
+                                                                                                                                , arguments =
+                                                                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                        "g"
+                                                                                                                                    ]
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                    , output =
+                                                                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                                { moduleOrigin =
+                                                                                                                                    [ "Json"
+                                                                                                                                    , "Decode"
+                                                                                                                                    ]
+                                                                                                                                , name =
+                                                                                                                                    "Decoder"
+                                                                                                                                , arguments =
+                                                                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                        "value"
+                                                                                                                                    ]
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map8"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "e"
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "f"
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                    { input =
+                                                                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "g"
+                                                                                                                    , output =
+                                                                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                                { input =
+                                                                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                        "h"
+                                                                                                                                , output =
+                                                                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                        "value"
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Json"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Json"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Json"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "e"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                        { input =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                    { moduleOrigin =
+                                                                                                                        [ "Json"
+                                                                                                                        , "Decode"
+                                                                                                                        ]
+                                                                                                                    , name =
+                                                                                                                        "Decoder"
+                                                                                                                    , arguments =
+                                                                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                            "f"
+                                                                                                                        ]
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        , output =
+                                                                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                    { input =
+                                                                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                                { moduleOrigin =
+                                                                                                                                    [ "Json"
+                                                                                                                                    , "Decode"
+                                                                                                                                    ]
+                                                                                                                                , name =
+                                                                                                                                    "Decoder"
+                                                                                                                                , arguments =
+                                                                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                        "g"
+                                                                                                                                    ]
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                    , output =
+                                                                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                                                                { input =
+                                                                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                                            { moduleOrigin =
+                                                                                                                                                [ "Json"
+                                                                                                                                                , "Decode"
+                                                                                                                                                ]
+                                                                                                                                            , name =
+                                                                                                                                                "Decoder"
+                                                                                                                                            , arguments =
+                                                                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                                    "h"
+                                                                                                                                                ]
+                                                                                                                                            }
+                                                                                                                                        )
+                                                                                                                                , output =
+                                                                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                                                            { moduleOrigin =
+                                                                                                                                                [ "Json"
+                                                                                                                                                , "Decode"
+                                                                                                                                                ]
+                                                                                                                                            , name =
+                                                                                                                                                "Decoder"
+                                                                                                                                            , arguments =
+                                                                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                                                    "value"
+                                                                                                                                                ]
+                                                                                                                                            }
+                                                                                                                                        )
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                    }
+                                                                                                                )
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "maybe"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Maybe" ]
+                                                        , name = "Maybe"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "null"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "nullable"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Maybe" ]
+                                                        , name = "Maybe"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "oneOf"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "List" ]
+                                            , name = "List"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "oneOrMore"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "List"
+                                                                        ]
+                                                                    , name =
+                                                                        "List"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "a"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "value"
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "value"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "string"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "succeed"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "value"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Decode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases =
+                FastDict.fromList
+                    [ ( "Value"
+                      , { parameters = []
+                        , type_ =
+                            ElmSyntaxTypeInfer.TypeNotVariable
+                                (ElmSyntaxTypeInfer.TypeConstruct
+                                    { moduleOrigin = [ "Json", "Encode" ]
+                                    , name = "Value"
+                                    , arguments = []
+                                    }
+                                )
+                        , recordFieldOrder = Nothing
+                        }
+                      )
+                    ]
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Decoder"
+                      , { parameters = [ "a" ]
+                        , variants = FastDict.fromList []
+                        }
+                      )
+                    , ( "Error"
+                      , { parameters = []
+                        , variants =
+                            FastDict.fromList
+                                [ ( "Field"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            , name = "Error"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                  )
+                                , ( "Index"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            , name = "Error"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                  )
+                                , ( "OneOf"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "List" ]
+                                            , name = "List"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json", "Decode" ]
+                                                        , name = "Error"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                    ]
+                                  )
+                                , ( "Failure"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                  )
+                                ]
+                        }
+                      )
+                    ]
+            }
+          )
+        , ( [ "Json", "Encode" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "array"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Array" ]
+                                                        , name = "Array"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "bool"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Bool"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Encode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "dict"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "k"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "v"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Encode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Value"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Dict"
+                                                                        ]
+                                                                    , name =
+                                                                        "Dict"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "k"
+                                                                        , ElmSyntaxTypeInfer.TypeVariable
+                                                                            "v"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Encode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Value"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "encode"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Encode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "int"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Encode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "list"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "List" ]
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "null"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Json", "Encode" ]
+                                , name = "Value"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "object"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "List" ]
+                                            , name = "List"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeTuple
+                                                        { part0 =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , part1 =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Json"
+                                                                        , "Encode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Value"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Encode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "set"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Set" ]
+                                                        , name = "Set"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Json"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Value"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "string"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Json", "Encode" ]
+                                            , name = "Value"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Value"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        ]

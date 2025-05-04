@@ -658,7 +658,7 @@ module DefaultDeclarations =
     let inline Array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
         Array.fold (fun state element -> reduce element state) initialState array
     let inline Array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
-        Array.foldBack (fun state element -> reduce element state) array initialState
+        Array.foldBack reduce array initialState
     let Array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
@@ -696,7 +696,8 @@ module DefaultDeclarations =
     
     let JsonEncode_null : JsonValue = JsonNull
     let inline JsonEncode_bool (bool: bool) : JsonValue = JsonBool bool
-    let inline JsonEncode_string (string: string) : JsonValue = JsonString string
+    let inline JsonEncode_string (string: StringRope) : JsonValue =
+        JsonString (StringRope.toString string)
     let inline JsonEncode_int (int: int64) : JsonValue = JsonNumber (float int)
     let inline JsonEncode_float (float: float) : JsonValue = JsonNumber float
     let inline JsonEncode_list (elementToValue: 'element -> JsonValue) (elements: List<'element>) : JsonValue =
@@ -707,8 +708,17 @@ module DefaultDeclarations =
     let inline JsonEncode_set (elementToValue: 'element -> JsonValue) (elements: Set<'element>) : JsonValue =
         // can be optimized
         JsonArray (List.map elementToValue (Set.toList elements))
-    let inline JsonEncode_object (fields: List<( string * JsonValue )>) : JsonValue =
-        JsonObject (Map.ofList fields)
+    let inline JsonEncode_object (fields: List<( StringRope * JsonValue )>) : JsonValue =
+        JsonObject
+            (List.fold
+                (fun soFar (fieldName, fieldValue) ->
+                    Map.add (StringRope.toString fieldName)
+                        fieldValue
+                        soFar
+                )
+                Map.empty
+                fields
+            )
     let inline JsonEncode_dict
         (keyToString: 'key -> string)
         (valueToJson: 'value -> JsonValue)
