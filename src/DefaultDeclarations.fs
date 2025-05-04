@@ -259,6 +259,13 @@ module DefaultDeclarations =
 
     let String_cons (newHeadChar: char) (late: StringRope) : StringRope =
         StringRopeAppend (StringRopeOne (string newHeadChar), late)
+    
+    let String_uncons (stringRope: StringRope) : option<( char * StringRope )> =
+        let string: string = StringRope.toString stringRope
+        if System.String.IsNullOrEmpty(string) then
+            None
+        else
+            Some (( string[0], StringRopeOne(string[1..]) ))
 
     let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
         List.ofArray
