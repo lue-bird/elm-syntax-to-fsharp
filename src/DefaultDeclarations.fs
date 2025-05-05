@@ -1205,6 +1205,153 @@ module DefaultDeclarations =
 
     and errorToString (error: JsonDecode_Error) : string =
         errorToStringHelp error []
+    
+    
+    type Regex_Options =
+        { CaseInsensitive: bool
+        ; Multiline: bool
+        }
+    type Regex_Match =
+        { Match: StringRope
+        ; Index: int64
+        ; Number: int64
+        ; Submatches: List<option<StringRope>>
+        }
+    let Regex_fromString (string: StringRope) : option<System.Text.RegularExpressions.Regex> =
+        try
+            Some
+                (System.Text.RegularExpressions.Regex(
+                    StringRope.toString string,
+                    System.Text.RegularExpressions.RegexOptions.ECMAScript
+                ))
+        with
+        | _ ->
+            None
+    let Regex_fromStringWith (options: Regex_Options) (string: StringRope) : option<System.Text.RegularExpressions.Regex> =
+        try
+            Some
+                (System.Text.RegularExpressions.Regex(
+                    StringRope.toString string,
+                    if options.Multiline then
+                        if options.CaseInsensitive then
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Multiline
+                            ||| System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                        else
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Multiline
+
+                    else
+                        // !options.Multiline
+                        if options.CaseInsensitive then
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Singleline
+                            ||| System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                        else
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Singleline
+                ))
+        with
+        | _ ->
+            None
+    let Regex_never: System.Text.RegularExpressions.Regex =
+        System.Text.RegularExpressions.Regex("/.^/")
+    let inline Regex_contains (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : bool =
+        regex.IsMatch(StringRope.toString string)
+    let inline Regex_split (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<StringRope> =
+        // can be optimized
+        Array.toList (Array.map StringRopeOne (regex.Split(StringRope.toString string)))
+    let inline Regex_splitAtMost (maxSplitCount: int64) (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<StringRope> =
+        // can be optimized
+        Array.toList
+            (Array.map StringRopeOne
+                (regex.Split(StringRope.toString string, int maxSplitCount))
+            )
+
+    let inline regexMatchToRegex_MatchAtIndex0Based (matchNumber0Based: int64) (regexMatch: System.Text.RegularExpressions.Match) : Regex_Match =
+        { Match = StringRopeOne regexMatch.Value
+        ; Index = regexMatch.Index
+        ; Number = matchNumber0Based + 1L
+        ; Submatches =
+            Seq.toList
+                (Seq.map
+                    (fun (subMatch: System.Text.RegularExpressions.Group) ->
+                        // TODO when does elm return None?
+                        Some (StringRopeOne subMatch.Value)
+                    )
+                    regexMatch.Groups
+                )
+        }
+    let inline Regex_find (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<Regex_Match> =
+        Seq.toList
+            (Seq.mapi
+                (fun index regexMatch ->
+                    regexMatchToRegex_MatchAtIndex0Based index regexMatch
+                )
+                (regex.Matches(StringRope.toString string))
+            )
+    let inline Regex_findAtMost (maxMatchCount: int64) (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<Regex_Match> =
+        Seq.toList
+            (Seq.mapi
+                (fun index regexMatch ->
+                    regexMatchToRegex_MatchAtIndex0Based index regexMatch
+                )
+                (regex.Matches(StringRope.toString string, int maxMatchCount))
+            )
+    let inline createRegexMatchNumber0BasedMap (regex: System.Text.RegularExpressions.Regex) (string: string) : Map<string, int64> =
+        (Seq.fold
+            (fun (soFar: {| Index: int64; Map: Map<string, int64> |}) (regexMatch: System.Text.RegularExpressions.Match) ->
+                {| Index = soFar.Index + 1L
+                ;  Map = Map.add regexMatch.Value soFar.Index soFar.Map
+                |}
+            )
+            {| Index = 0L; Map = Map.empty |}
+            (regex.Matches(string))
+        ).Map
+    let inline Regex_replace
+        (regex: System.Text.RegularExpressions.Regex)
+        (replacementForMatch: Regex_Match -> StringRope)
+        (stringRope: StringRope) : StringRope =
+        let string = StringRope.toString stringRope
+        let matchNumbers0Based: Map<string, int64> =
+            createRegexMatchNumber0BasedMap regex string
+
+        StringRopeOne
+            (regex.Replace(
+                string,
+                System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
+                    StringRope.toString
+                        (replacementForMatch
+                            (regexMatchToRegex_MatchAtIndex0Based
+                                (Map.find regexMatch.Value matchNumbers0Based)
+                                regexMatch
+                            )
+                        )
+                )
+            ))
+    let inline Regex_replaceAtMost
+        (maxMatchReplacementCount: int64)
+        (regex: System.Text.RegularExpressions.Regex)
+        (replacementForMatch: Regex_Match -> StringRope)
+        (stringRope: StringRope) : StringRope =
+        let string = StringRope.toString stringRope
+        let matchNumbers0Based: Map<string, int64> =
+            createRegexMatchNumber0BasedMap regex string
+
+        StringRopeOne
+            (regex.Replace(
+                string,
+                System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
+                    StringRope.toString
+                        (replacementForMatch
+                            (regexMatchToRegex_MatchAtIndex0Based
+                                (Map.find regexMatch.Value matchNumbers0Based)
+                                regexMatch
+                            )
+                        )
+                ),
+                int maxMatchReplacementCount
+            ))
 
     
     let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
@@ -1215,6 +1362,7 @@ module DefaultDeclarations =
         StringRopeOne (value.ToString())
     let inline Debug_todo (message: string) : 'value =
         raise (new System.NotImplementedException(message))
+    
 
     type Parser_Problem =
         | Parser_Expecting of string

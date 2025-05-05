@@ -2519,6 +2519,20 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Regex" ] ->
+            case reference.name of
+                "Regex" ->
+                    Just { moduleOrigin = Just "System.Text.RegularExpressions", name = "Regex" }
+
+                "Options" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_Options" }
+
+                "Match" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_Match" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -3322,6 +3336,41 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Regex" ] ->
+            case reference.name of
+                "fromString" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_fromString" }
+
+                "fromStringWith" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_fromStringWith" }
+
+                "never" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_never" }
+
+                "contains" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_contains" }
+
+                "split" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_split" }
+
+                "find" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_find" }
+
+                "replace" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_replace" }
+
+                "splitAtMost" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_splitAtMost" }
+
+                "findAtMost" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_findAtMost" }
+
+                "replaceAtMost" ->
+                    Just { moduleOrigin = Nothing, name = "Regex_replaceAtMost" }
+
+                _ ->
+                    Nothing
+
         [ "Parser" ] ->
             case reference.name of
                 "Problem" ->
@@ -3943,16 +3992,10 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             [ "Task" ] ->
                                 False
 
-                            [ "Json", "Decode" ] ->
-                                False
-
                             [ "Parser" ] ->
                                 False
 
                             [ "Parser", "Advanced" ] ->
-                                False
-
-                            [ "Regex" ] ->
                                 False
 
                             [ "File" ] ->
@@ -4245,9 +4288,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                     )
                     { errors = []
                     , types =
-                        FastDict.union
-                            ElmSyntaxTypeInfer.elmCoreTypes
-                            elmJsonTypes
+                        ElmSyntaxTypeInfer.elmCoreTypes
+                            |> FastDict.union elmJsonTypes
+                            |> FastDict.union elmRegexTypes
                     }
 
         syntaxModulesInferred :
@@ -9663,6 +9706,153 @@ defaultDeclarations =
 
     and errorToString (error: JsonDecode_Error) : string =
         errorToStringHelp error []
+    
+    
+    type Regex_Options =
+        { CaseInsensitive: bool
+        ; Multiline: bool
+        }
+    type Regex_Match =
+        { Match: StringRope
+        ; Index: int64
+        ; Number: int64
+        ; Submatches: List<option<StringRope>>
+        }
+    let Regex_fromString (string: StringRope) : option<System.Text.RegularExpressions.Regex> =
+        try
+            Some
+                (System.Text.RegularExpressions.Regex(
+                    StringRope.toString string,
+                    System.Text.RegularExpressions.RegexOptions.ECMAScript
+                ))
+        with
+        | _ ->
+            None
+    let Regex_fromStringWith (options: Regex_Options) (string: StringRope) : option<System.Text.RegularExpressions.Regex> =
+        try
+            Some
+                (System.Text.RegularExpressions.Regex(
+                    StringRope.toString string,
+                    if options.Multiline then
+                        if options.CaseInsensitive then
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Multiline
+                            ||| System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                        else
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Multiline
+
+                    else
+                        // !options.Multiline
+                        if options.CaseInsensitive then
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Singleline
+                            ||| System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                        else
+                            System.Text.RegularExpressions.RegexOptions.ECMAScript
+                            ||| System.Text.RegularExpressions.RegexOptions.Singleline
+                ))
+        with
+        | _ ->
+            None
+    let Regex_never: System.Text.RegularExpressions.Regex =
+        System.Text.RegularExpressions.Regex("/.^/")
+    let inline Regex_contains (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : bool =
+        regex.IsMatch(StringRope.toString string)
+    let inline Regex_split (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<StringRope> =
+        // can be optimized
+        Array.toList (Array.map StringRopeOne (regex.Split(StringRope.toString string)))
+    let inline Regex_splitAtMost (maxSplitCount: int64) (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<StringRope> =
+        // can be optimized
+        Array.toList
+            (Array.map StringRopeOne
+                (regex.Split(StringRope.toString string, int maxSplitCount))
+            )
+
+    let inline regexMatchToRegex_MatchAtIndex0Based (matchNumber0Based: int64) (regexMatch: System.Text.RegularExpressions.Match) : Regex_Match =
+        { Match = StringRopeOne regexMatch.Value
+        ; Index = regexMatch.Index
+        ; Number = matchNumber0Based + 1L
+        ; Submatches =
+            Seq.toList
+                (Seq.map
+                    (fun (subMatch: System.Text.RegularExpressions.Group) ->
+                        // TODO when does elm return None?
+                        Some (StringRopeOne subMatch.Value)
+                    )
+                    regexMatch.Groups
+                )
+        }
+    let inline Regex_find (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<Regex_Match> =
+        Seq.toList
+            (Seq.mapi
+                (fun index regexMatch ->
+                    regexMatchToRegex_MatchAtIndex0Based index regexMatch
+                )
+                (regex.Matches(StringRope.toString string))
+            )
+    let inline Regex_findAtMost (maxMatchCount: int64) (regex: System.Text.RegularExpressions.Regex) (string: StringRope) : List<Regex_Match> =
+        Seq.toList
+            (Seq.mapi
+                (fun index regexMatch ->
+                    regexMatchToRegex_MatchAtIndex0Based index regexMatch
+                )
+                (regex.Matches(StringRope.toString string, int maxMatchCount))
+            )
+    let inline createRegexMatchNumber0BasedMap (regex: System.Text.RegularExpressions.Regex) (string: string) : Map<string, int64> =
+        (Seq.fold
+            (fun (soFar: {| Index: int64; Map: Map<string, int64> |}) (regexMatch: System.Text.RegularExpressions.Match) ->
+                {| Index = soFar.Index + 1L
+                ;  Map = Map.add regexMatch.Value soFar.Index soFar.Map
+                |}
+            )
+            {| Index = 0L; Map = Map.empty |}
+            (regex.Matches(string))
+        ).Map
+    let inline Regex_replace
+        (regex: System.Text.RegularExpressions.Regex)
+        (replacementForMatch: Regex_Match -> StringRope)
+        (stringRope: StringRope) : StringRope =
+        let string = StringRope.toString stringRope
+        let matchNumbers0Based: Map<string, int64> =
+            createRegexMatchNumber0BasedMap regex string
+
+        StringRopeOne
+            (regex.Replace(
+                string,
+                System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
+                    StringRope.toString
+                        (replacementForMatch
+                            (regexMatchToRegex_MatchAtIndex0Based
+                                (Map.find regexMatch.Value matchNumbers0Based)
+                                regexMatch
+                            )
+                        )
+                )
+            ))
+    let inline Regex_replaceAtMost
+        (maxMatchReplacementCount: int64)
+        (regex: System.Text.RegularExpressions.Regex)
+        (replacementForMatch: Regex_Match -> StringRope)
+        (stringRope: StringRope) : StringRope =
+        let string = StringRope.toString stringRope
+        let matchNumbers0Based: Map<string, int64> =
+            createRegexMatchNumber0BasedMap regex string
+
+        StringRopeOne
+            (regex.Replace(
+                string,
+                System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
+                    StringRope.toString
+                        (replacementForMatch
+                            (regexMatchToRegex_MatchAtIndex0Based
+                                (Map.find regexMatch.Value matchNumbers0Based)
+                                regexMatch
+                            )
+                        )
+                ),
+                int maxMatchReplacementCount
+            ))
 
     
     let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
@@ -12392,6 +12582,664 @@ elmJsonTypes =
             , choiceTypes =
                 FastDict.fromList
                     [ ( "Value"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        ]
+
+
+elmRegexTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmRegexTypes =
+    FastDict.fromList
+        [ ( [ "Regex" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "contains"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Regex" ]
+                                            , name = "Regex"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Bool"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "find"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Regex" ]
+                                            , name = "Regex"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "List" ]
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Regex"
+                                                                        ]
+                                                                    , name =
+                                                                        "Match"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "findAtMost"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Regex" ]
+                                                        , name = "Regex"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "List"
+                                                                        ]
+                                                                    , name =
+                                                                        "List"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Regex"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Match"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fromString"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Maybe" ]
+                                            , name = "Maybe"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Regex" ]
+                                                        , name = "Regex"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fromStringWith"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Regex" ]
+                                            , name = "Options"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Maybe" ]
+                                                        , name = "Maybe"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Regex"
+                                                                        ]
+                                                                    , name =
+                                                                        "Regex"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "never"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Regex" ]
+                                , name = "Regex"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "replace"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Regex" ]
+                                            , name = "Regex"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Regex"
+                                                                        ]
+                                                                    , name =
+                                                                        "Match"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "replaceAtMost"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Regex" ]
+                                                        , name = "Regex"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Regex"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Match"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "String"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "String"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "String"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "String"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "String"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "String"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "split"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Regex" ]
+                                            , name = "Regex"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "List" ]
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "splitAtMost"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Regex" ]
+                                                        , name = "Regex"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "String"
+                                                                        ]
+                                                                    , name =
+                                                                        "String"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "List"
+                                                                        ]
+                                                                    , name =
+                                                                        "List"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "String"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "String"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases =
+                FastDict.fromList
+                    [ ( "Match"
+                      , { parameters = []
+                        , type_ =
+                            ElmSyntaxTypeInfer.TypeNotVariable
+                                (ElmSyntaxTypeInfer.TypeRecord
+                                    (FastDict.fromList
+                                        [ ( "index"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "Basics" ]
+                                                    , name = "Int"
+                                                    , arguments = []
+                                                    }
+                                                )
+                                          )
+                                        , ( "match"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "String" ]
+                                                    , name = "String"
+                                                    , arguments = []
+                                                    }
+                                                )
+                                          )
+                                        , ( "number"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "Basics" ]
+                                                    , name = "Int"
+                                                    , arguments = []
+                                                    }
+                                                )
+                                          )
+                                        , ( "submatches"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "List" ]
+                                                    , name = "List"
+                                                    , arguments =
+                                                        [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                { moduleOrigin =
+                                                                    [ "Maybe"
+                                                                    ]
+                                                                , name =
+                                                                    "Maybe"
+                                                                , arguments =
+                                                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                            { moduleOrigin =
+                                                                                [ "String"
+                                                                                ]
+                                                                            , name =
+                                                                                "String"
+                                                                            , arguments =
+                                                                                []
+                                                                            }
+                                                                        )
+                                                                    ]
+                                                                }
+                                                            )
+                                                        ]
+                                                    }
+                                                )
+                                          )
+                                        ]
+                                    )
+                                )
+                        , recordFieldOrder =
+                            Just [ "match", "index", "number", "submatches" ]
+                        }
+                      )
+                    , ( "Options"
+                      , { parameters = []
+                        , type_ =
+                            ElmSyntaxTypeInfer.TypeNotVariable
+                                (ElmSyntaxTypeInfer.TypeRecord
+                                    (FastDict.fromList
+                                        [ ( "caseInsensitive"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "Basics" ]
+                                                    , name = "Bool"
+                                                    , arguments = []
+                                                    }
+                                                )
+                                          )
+                                        , ( "multiline"
+                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                    { moduleOrigin =
+                                                        [ "Basics" ]
+                                                    , name = "Bool"
+                                                    , arguments = []
+                                                    }
+                                                )
+                                          )
+                                        ]
+                                    )
+                                )
+                        , recordFieldOrder =
+                            Just [ "caseInsensitive", "multiline" ]
+                        }
+                      )
+                    ]
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Regex"
                       , { parameters = [], variants = FastDict.fromList [] }
                       )
                     ]

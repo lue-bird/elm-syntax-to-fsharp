@@ -36,7 +36,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 
 -   only a subset of elm is currently supported. not supported:
     -   ports, glsl
-    -   `elm/regex`, `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/parser`, `elm/virtual-dom`, `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
+    -   `elm/file`, `elm/bytes`, `elm/http`, `elm/random`, `elm/url`, `elm/parser`, `elm/virtual-dom`, `elm/html`, `elm/svg`, `elm/browser`, `elm/time`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
     -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`, `Json.Decode`
     -   extensible record types. For example, these declarations won't work (at let or module level):
         ```elm
@@ -117,6 +117,8 @@ Here's some special types you can expect:
   - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
     Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
+  - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
+    Create them like you would in elm with `Elm.Regex_fromString` or `Elm.Regex_fromStringWith` or `Elm.Regex_never`
 
 The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Order` → `Elm.Basics_Order` (enum).
 
