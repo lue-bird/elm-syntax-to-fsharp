@@ -2404,7 +2404,7 @@ typeConstructReferenceToCoreFsharp reference =
         [ "Json", "Encode" ] ->
             case reference.name of
                 "Value" ->
-                    Just { moduleOrigin = Nothing, name = "JsonValue" }
+                    Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
 
                 _ ->
                     Nothing
@@ -2412,7 +2412,13 @@ typeConstructReferenceToCoreFsharp reference =
         [ "Json", "Decode" ] ->
             case reference.name of
                 "Value" ->
-                    Just { moduleOrigin = Nothing, name = "JsonValue" }
+                    Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
+
+                "Decoder" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_Decoder" }
+
+                "Error" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_Error" }
 
                 _ ->
                     Nothing
@@ -3103,6 +3109,119 @@ referenceToCoreFsharp reference =
 
                 "dict" ->
                     Just { moduleOrigin = Nothing, name = "JsonEncode_dict" }
+
+                _ ->
+                    Nothing
+
+        [ "Json", "Decode" ] ->
+            case reference.name of
+                "Field" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_Field" }
+
+                "Index" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_Index" }
+
+                "OneOf" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_OneOf" }
+
+                "Failure" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_Failure" }
+
+                "string" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_string" }
+
+                "bool" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_bool" }
+
+                "int" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_int" }
+
+                "float" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_float" }
+
+                "nullable" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_nullable" }
+
+                "list" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_list" }
+
+                "array" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_array" }
+
+                "dict" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_dict" }
+
+                "keyValuePairs" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_keyValuePairs" }
+
+                "oneOrMore" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_oneOrMore" }
+
+                "field" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_field" }
+
+                "at" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_at" }
+
+                "index" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_index" }
+
+                "maybe" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_maybe" }
+
+                "oneOf" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_oneOf" }
+
+                "decodeString" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_decodeString" }
+
+                "decodeValue" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_decodeValue" }
+
+                "errorToString" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_errorToString" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map5" }
+
+                "map6" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map6" }
+
+                "map7" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map7" }
+
+                "map8" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_map8" }
+
+                "lazy" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_lazy" }
+
+                "value" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_value" }
+
+                "null" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_null" }
+
+                "succeed" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_succeed" }
+
+                "fail" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_fail" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Nothing, name = "JsonDecode_andThen" }
 
                 _ ->
                     Nothing
@@ -5700,6 +5819,7 @@ expression context expressionTypedNode =
                         )
 
                 Nothing ->
+                    -- TODO record type alias constructor
                     case context.variantLookup |> FastDict.get ( reference.qualification, reference.name ) of
                         Just _ ->
                             let
@@ -8422,7 +8542,7 @@ defaultDeclarations =
         if System.String.IsNullOrEmpty(string) then
             None
         else
-            Some(( string[0], StringRopeOne(string[1..]) ))
+            Some (( string[0], StringRopeOne(string[1..]) ))
 
     let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
         List.ofArray
@@ -8699,28 +8819,27 @@ defaultDeclarations =
     let inline Dict_size (dict: Map<'key, 'value>) : int64 =
         Map.count dict
 
-    let Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
+    let inline Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
 
-    let Dict_foldr
+    let inline Dict_foldr
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.foldBack reduce dict initialState
 
-    let Dict_foldl
+    let inline Dict_foldl
         (reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
 
-
-    let Dict_keys (dict: Map<'key, 'value>) : List<'key> =
+    let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
         Seq.toList (Map.keys dict)
 
-    let Dict_values (dict: Map<'key, 'value>) : List<'value> =
+    let inline Dict_values (dict: Map<'key, 'value>) : List<'value> =
         Seq.toList (Map.values dict)
 
     let Dict_diff
@@ -8850,32 +8969,28 @@ defaultDeclarations =
                 realStartIndex
                 (realEndIndexExclusive - realStartIndex)
     
-
-    type JsonValue =
-        | JsonObject of Map<string, JsonValue>
-        | JsonArray of List<JsonValue>
-        | JsonString of string
-        | JsonNumber of float
-        | JsonBool of bool
-        | JsonNull
     
-    let JsonEncode_null : JsonValue = JsonNull
-    let inline JsonEncode_bool (bool: bool) : JsonValue = JsonBool bool
-    let inline JsonEncode_string (string: StringRope) : JsonValue =
-        JsonString (StringRope.toString string)
-    let inline JsonEncode_int (int: int64) : JsonValue = JsonNumber (float int)
-    let inline JsonEncode_float (float: float) : JsonValue = JsonNumber float
-    let inline JsonEncode_list (elementToValue: 'element -> JsonValue) (elements: List<'element>) : JsonValue =
-        JsonArray (List.map elementToValue elements)
-    let inline JsonEncode_array (elementToValue: 'element -> JsonValue) (elements: array<'element>) : JsonValue =
+    let JsonEncode_null : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(null)
+    let inline JsonEncode_bool (bool: bool) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(bool)
+    let inline JsonEncode_string (string: StringRope) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(StringRope.toString string)
+    let inline JsonEncode_int (int: int64) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(int)
+    let inline JsonEncode_float (float: float) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(float)
+    let inline JsonEncode_list (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: List<'element>) : System.Text.Json.Nodes.JsonNode =
         // can be optimized
-        JsonArray (Array.toList (Array.map elementToValue elements))
-    let inline JsonEncode_set (elementToValue: 'element -> JsonValue) (elements: Set<'element>) : JsonValue =
+        System.Text.Json.Nodes.JsonArray(Array.ofList (List.map elementToValue elements))
+    let inline JsonEncode_array (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: array<'element>) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonArray(Array.map elementToValue elements)
+    let inline JsonEncode_set (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: Set<'element>) : System.Text.Json.Nodes.JsonNode =
         // can be optimized
-        JsonArray (List.map elementToValue (Set.toList elements))
-    let inline JsonEncode_object (fields: List<( StringRope * JsonValue )>) : JsonValue =
-        JsonObject
-            (List.fold
+        System.Text.Json.Nodes.JsonArray(Array.map elementToValue (Set.toArray elements))
+    let inline JsonEncode_object (fields: List<( StringRope * System.Text.Json.Nodes.JsonNode )>) : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonObject(
+            List.fold
                 (fun soFar (fieldName, fieldValue) ->
                     Map.add (StringRope.toString fieldName)
                         fieldValue
@@ -8883,13 +8998,13 @@ defaultDeclarations =
                 )
                 Map.empty
                 fields
-            )
+        )
     let inline JsonEncode_dict
         (keyToString: 'key -> string)
-        (valueToJson: 'value -> JsonValue)
+        (valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
         (dict: Map<'key, 'value>)
-        : JsonValue =
-        JsonObject
+        : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonObject
             (Map.fold
                 (fun soFar key value ->
                     Map.add (keyToString key) (valueToJson value) soFar
@@ -8897,29 +9012,476 @@ defaultDeclarations =
                 Map.empty
                 dict
             )
-
-    let rec jsonValueToNode (json: JsonValue) : System.Text.Json.Nodes.JsonNode =
-        match json with
-        | JsonNull -> System.Text.Json.Nodes.JsonValue.Create(null)
-        | JsonBool(bool) -> System.Text.Json.Nodes.JsonValue.Create(bool)
-        | JsonNumber(number) -> System.Text.Json.Nodes.JsonValue.Create(number)
-        | JsonString(string) -> System.Text.Json.Nodes.JsonValue.Create(string)
-        | JsonArray(elements) ->
-            // can be optimized
-            System.Text.Json.Nodes.JsonArray(Array.ofList (List.map jsonValueToNode elements))
-        | JsonObject(fields) ->
-            System.Text.Json.Nodes.JsonObject(
-                Map.map (fun _ value -> jsonValueToNode value) fields
-            )
+            
     
-    let JsonEncode_encode (indentDepth: int64) (json: JsonValue) =
+    let JsonEncode_encode (indentDepth: int64) (json: System.Text.Json.Nodes.JsonNode) =
         let printOptions =
             System.Text.Json.JsonSerializerOptions()
         if (indentDepth <> 0) then
             printOptions.WriteIndented <- true
             printOptions.IndentSize <- int indentDepth
         
-        (jsonValueToNode json).ToJsonString(printOptions)
+        json.ToJsonString(printOptions)
+    
+    type JsonDecode_Error =
+        | JsonDecode_Field of ( StringRope * JsonDecode_Error )
+        | JsonDecode_Index of ( int64 * JsonDecode_Error )
+        | JsonDecode_OneOf of List<JsonDecode_Error>
+        | JsonDecode_Failure of ( StringRope * System.Text.Json.Nodes.JsonNode )
+    type JsonDecode_Decoder<'value> =
+        System.Text.Json.Nodes.JsonNode -> Result<'value, JsonDecode_Error>
+    
+    let inline JsonDecode_decodeValue (decoder: JsonDecode_Decoder<'value>) (value: System.Text.Json.Nodes.JsonNode) : Result<'value, JsonDecode_Error> =
+        decoder value
+    let inline JsonDecode_decodeString (decoder: JsonDecode_Decoder<'value>) (string: StringRope) : Result<'value, JsonDecode_Error> =
+        try decoder (System.Text.Json.Nodes.JsonNode.Parse(StringRope.toString string)) with
+        | :? System.Text.Json.JsonException ->
+            Error(
+                JsonDecode_Failure(
+                    StringRopeOne "This is not valid JSON!",
+                    System.Text.Json.Nodes.JsonValue.Create(StringRope.toString string)
+                )
+            )
+    
+    let inline JsonDecode_succeed (value: 'value) : JsonDecode_Decoder<'value> =
+        fun _ -> Ok(value)
+    let inline JsonDecode_fail (errorMessage: StringRope) : JsonDecode_Decoder<'value> =
+        fun jsonDomNode ->
+            Error(JsonDecode_Failure(errorMessage, jsonDomNode))
+    let inline JsonDecode_map (valueChange: 'a -> 'b) (decoder: JsonDecode_Decoder<'a>) : JsonDecode_Decoder<'b> =
+        fun jsonDomNode ->
+            match decoder jsonDomNode with
+            | Error(error) -> Error(error)
+            | Ok(value) -> Ok(valueChange value)
+    let JsonDecode_lazy (lazilyConstructDecoder: unit -> JsonDecode_Decoder<'value>) : JsonDecode_Decoder<'value> =
+        fun json ->
+            lazilyConstructDecoder () json
+    let inline JsonDecode_andThen (decoderBasedOnValue: 'a -> JsonDecode_Decoder<'b>) (decoder: JsonDecode_Decoder<'a>) : JsonDecode_Decoder<'b> =
+        fun json ->
+            match decoder json with
+            | Error(error) -> Error(error)
+            | Ok(value) -> decoderBasedOnValue value json
+    let inline JsonDecode_map2
+        (combine: 'a -> 'b -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b -> Ok (combine a b)
+    let inline JsonDecode_map3
+        (combine: 'a -> 'b -> 'c -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c -> Ok (combine a b c)
+    let inline JsonDecode_map4
+        (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        (dDecoder: JsonDecode_Decoder<'d>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c ->
+                        match dDecoder json with
+                        | Error error -> Error error
+                        | Ok d -> Ok (combine a b c d)
+    let inline JsonDecode_map5
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        (dDecoder: JsonDecode_Decoder<'d>)
+        (eDecoder: JsonDecode_Decoder<'e>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c ->
+                        match dDecoder json with
+                        | Error error -> Error error
+                        | Ok d ->
+                            match eDecoder json with
+                            | Error error -> Error error
+                            | Ok e -> Ok (combine a b c d e)
+    let inline JsonDecode_map6
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        (dDecoder: JsonDecode_Decoder<'d>)
+        (eDecoder: JsonDecode_Decoder<'e>)
+        (fDecoder: JsonDecode_Decoder<'f>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c ->
+                        match dDecoder json with
+                        | Error error -> Error error
+                        | Ok d ->
+                            match eDecoder json with
+                            | Error error -> Error error
+                            | Ok e ->
+                                match fDecoder json with
+                                | Error error -> Error error
+                                | Ok f -> Ok (combine a b c d e f)
+    let inline JsonDecode_map7
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        (dDecoder: JsonDecode_Decoder<'d>)
+        (eDecoder: JsonDecode_Decoder<'e>)
+        (fDecoder: JsonDecode_Decoder<'f>)
+        (gDecoder: JsonDecode_Decoder<'g>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c ->
+                        match dDecoder json with
+                        | Error error -> Error error
+                        | Ok d ->
+                            match eDecoder json with
+                            | Error error -> Error error
+                            | Ok e ->
+                                match fDecoder json with
+                                | Error error -> Error error
+                                | Ok f ->
+                                    match gDecoder json with
+                                    | Error error -> Error error
+                                    | Ok g -> Ok (combine a b c d e f g)
+    let inline JsonDecode_map8
+        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'combined)
+        (aDecoder: JsonDecode_Decoder<'a>)
+        (bDecoder: JsonDecode_Decoder<'b>)
+        (cDecoder: JsonDecode_Decoder<'c>)
+        (dDecoder: JsonDecode_Decoder<'d>)
+        (eDecoder: JsonDecode_Decoder<'e>)
+        (fDecoder: JsonDecode_Decoder<'f>)
+        (gDecoder: JsonDecode_Decoder<'g>)
+        (hDecoder: JsonDecode_Decoder<'h>)
+        : JsonDecode_Decoder<'combined> =
+        fun json ->
+            match aDecoder json with
+            | Error error -> Error error
+            | Ok a ->
+                match bDecoder json with
+                | Error error -> Error error
+                | Ok b ->
+                    match cDecoder json with
+                    | Error error -> Error error
+                    | Ok c ->
+                        match dDecoder json with
+                        | Error error -> Error error
+                        | Ok d ->
+                            match eDecoder json with
+                            | Error error -> Error error
+                            | Ok e ->
+                                match fDecoder json with
+                                | Error error -> Error error
+                                | Ok f ->
+                                    match gDecoder json with
+                                    | Error error -> Error error
+                                    | Ok g ->
+                                        match hDecoder json with
+                                        | Error error -> Error error
+                                        | Ok h -> Ok (combine a b c d e f g h)
+    let JsonDecode_maybe (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<option<'value>> =
+        fun json ->
+            Ok
+                (match valueDecoder json with
+                 | Ok valueDecodeResult -> Some valueDecodeResult
+                 | Error valueError -> None
+                )
+    let rec JsonDecode_oneOfWithErrorsReverse (errorsReverse: List<JsonDecode_Error>) (options: List<JsonDecode_Decoder<'value>>) : JsonDecode_Decoder<'value> =
+        fun json ->
+            match options with
+            | [] -> Error (JsonDecode_OneOf (List.rev errorsReverse))
+            | nextOptionToTry :: remainingOptions ->
+                match nextOptionToTry json with
+                | Ok value -> Ok value
+                | Error error ->
+                    JsonDecode_oneOfWithErrorsReverse
+                        (error :: errorsReverse)
+                        remainingOptions
+                        json
+    let JsonDecode_oneOf (options: List<JsonDecode_Decoder<'value>>) : JsonDecode_Decoder<'value> =
+        JsonDecode_oneOfWithErrorsReverse [] options
+
+
+    let JsonDecode_value : JsonDecode_Decoder<System.Text.Json.Nodes.JsonNode> =
+        fun json -> Ok json
+    let JsonDecode_string : JsonDecode_Decoder<StringRope> =
+        fun json ->
+            try Ok (StringRopeOne (json.AsValue().GetValue<string>())) with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting a STRING", json ))
+    let JsonDecode_int : JsonDecode_Decoder<int64> =
+        fun json ->
+            try Ok (json.AsValue().GetValue<int64>()) with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting an INT", json ))
+    let JsonDecode_float : JsonDecode_Decoder<float> =
+        fun json ->
+            try Ok (json.AsValue().GetValue<float>()) with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting a FLOAT", json ))
+    let JsonDecode_bool : JsonDecode_Decoder<bool> =
+        fun json ->
+            try Ok (json.AsValue().GetValue<bool>()) with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting a BOOL", json ))
+    let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
+        fun json ->
+            match json.GetValueKind() with
+            | System.Text.Json.JsonValueKind.Null ->
+                Ok value
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting NULL", json ))
+    let JsonDecode_index (index: int64) (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<'element> =
+        fun json ->
+            if index <= 0 then
+                Error
+                    (JsonDecode_Failure
+                        ( StringRopeOne
+                            ("Expecting an element at array index " + string index +
+                                " (likely a logic error in decoder code)"
+                            )
+                        , json
+                        )
+                    )
+            else
+            try
+                let jsonArray: System.Text.Json.Nodes.JsonArray = json.AsArray()
+                if index >= jsonArray.Count then
+                    Error
+                        (JsonDecode_Failure
+                            ( StringRopeOne
+                                ("Expecting a LONGER array. Need index " + string index +
+                                    " but only see " + string jsonArray.Count + " elements"
+                                )
+                            , json
+                            )
+                        )
+                else
+                    match elementDecoder (jsonArray[int index]) with
+                    | Ok elementDecoded ->
+                        Ok elementDecoded
+                    | Error error ->
+                        Error (JsonDecode_Index ( index, error ))
+            with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting an ARRAY", json ))
+    let JsonDecode_list (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<List<'element>> =
+        fun json ->
+            try
+                let jsonArray: System.Text.Json.Nodes.JsonArray = json.AsArray()
+                let folded =
+                    Seq.foldBack
+                        (fun element (soFar: {| Index: int64; Result: Result<List<'element>, JsonDecode_Error> |}) ->
+                            match soFar.Result with
+                            | Error _ -> soFar
+                            | Ok tail ->
+                                {| Index = soFar.Index - 1L
+                                ;  Result =
+                                    match elementDecoder element with
+                                    | Error error ->
+                                        Error (JsonDecode_Index ( soFar.Index, error ))
+                                    | Ok head ->
+                                        Ok (head :: tail)
+                                |}
+                        )
+                        jsonArray
+                        {| Index = int64 jsonArray.Count; Result = Ok [] |}
+                
+                folded.Result
+            with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting a LIST", json ))
+    let JsonDecode_array (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<array<'element>> =
+        // can be optimized
+        JsonDecode_map Array.ofList (JsonDecode_list elementDecoder)
+    
+    let JsonDecode_field (fieldNameStringRope: StringRope) (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<'value> =
+        let fieldNameString = StringRope.toString fieldNameStringRope
+        fun json ->
+            try
+                let jsonObject: System.Text.Json.Nodes.JsonObject = json.AsObject()
+                
+                match jsonObject[fieldNameString] with
+                | null ->
+                    Error
+                        (JsonDecode_Failure ( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json ))
+                | fieldValueJson ->
+                    match valueDecoder fieldValueJson with
+                    | Ok fieldValue ->
+                        Ok fieldValue
+                    | Error error ->
+                        Error (JsonDecode_Field ( fieldNameStringRope, error ))
+            with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json ))
+    let JsonDecode_at (fieldNames: List<StringRope>) (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<'value> =
+        List.foldBack
+            (fun (fieldName: StringRope) (decoderSoFar: JsonDecode_Decoder<'value>) ->
+                JsonDecode_field fieldName decoderSoFar
+            )
+            fieldNames
+            valueDecoder
+    let JsonDecode_dict (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<Map<StringRope, 'value>> =
+        fun json ->
+            try
+                let jsonObject: System.Text.Json.Nodes.JsonObject = json.AsObject()
+
+                Seq.foldBack
+                    (fun (field: System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode>) (soFarOrError: Result<Map<StringRope, 'value>, JsonDecode_Error>) ->
+                        match soFarOrError with
+                        | Error _ -> soFarOrError
+                        | Ok soFar ->
+                            match valueDecoder field.Value with
+                            | Error error ->
+                                Error (JsonDecode_Field ( StringRopeOne field.Key, error ))
+                            | Ok fieldValue ->
+                                Ok (Map.add (StringRopeOne field.Key) fieldValue soFar)
+                    )
+                    jsonObject
+                    (Ok Map.empty)
+            with
+            | _ ->
+                Error (JsonDecode_Failure ( StringRopeOne "Expecting an OBJECT", json ))
+    let JsonDecode_keyValuePairs (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<List<( StringRope * 'value )>> =
+        // can be optimized
+        JsonDecode_map Map.toList (JsonDecode_dict valueDecoder)
+    
+    let JsonDecode_nullable (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<option<'value>> =
+        fun json ->
+            match JsonDecode_null None json with
+            | Ok nullDecodeResult -> Ok nullDecodeResult
+            | Error nullError ->
+                match valueDecoder json with
+                | Ok valueDecodeResult -> Ok (Some valueDecodeResult)
+                | Error valueError ->   
+                    Error (JsonDecode_OneOf [nullError; valueError])
+    let JsonDecoder_oneOrMore
+        (combineHeadTail: 'element -> List<'element> -> 'combined)
+        (elementDecoder: JsonDecode_Decoder<'element>)
+        : JsonDecode_Decoder<'combined> =
+        JsonDecode_map2 combineHeadTail
+            elementDecoder
+            (JsonDecode_list elementDecoder)
+
+    let inline indent (str: string) : string =
+        String.concat "\\n    " (Array.toList (str.Split("\\n")))
+    let rec errorOneOf (i: int) (error: JsonDecode_Error) : string =
+        "\\n\\n(" + string (i + 1) + ") " + indent (errorToString error)
+    
+    and errorToStringHelp (error: JsonDecode_Error) (context: List<string>) : string =
+        match error with
+        | JsonDecode_Field(f, err) ->
+            let isSimple =
+                match String_uncons f with
+                | None ->
+                    false
+                | Some(char, rest) ->
+                    System.Char.IsLetter(char)
+                        && String_all System.Char.IsLetter rest
+
+            let fieldName =
+                if isSimple then
+                     "." + StringRope.toString f
+                else
+                    "['" + StringRope.toString f + "']"
+            
+            errorToStringHelp err (fieldName :: context)
+
+        | JsonDecode_Index(i, err) ->
+            let indexName =
+                "[" + string i + "]"
+            
+            errorToStringHelp err (indexName :: context)
+
+        | JsonDecode_OneOf(errors) ->
+            match errors with
+            | [] ->
+                "Ran into a Json.Decode.oneOf with no possibilities" +
+                    (match context with
+                     | [] ->
+                        "!"
+                     | _ :: _ ->
+                        " at json" + String.concat "" (List.rev context)
+                    )
+
+            | [ err ] ->
+                errorToStringHelp err context
+
+            | _ :: _ :: _ ->
+                let starter =
+                    match context with
+                    | [] ->
+                        "Json.Decode.oneOf"
+                    | _ :: _ ->
+                        "The Json.Decode.oneOf at json" + String.concat "" (List.rev context)
+
+                let introduction =
+                    starter + " failed in the following " + string (List.length errors) + " ways:"
+                
+                String.concat "\\n\\n" (introduction :: List.mapi errorOneOf errors)
+
+        | JsonDecode_Failure(msg, json) ->
+            let introduction =
+                match context with
+                | [] ->
+                    "Problem with the given value:\\n\\n"
+                | _ :: _ ->
+                    "Problem with the value at json" + String.concat "" (List.rev context) + ":\\n\\n    "
+            
+            introduction + indent (JsonEncode_encode 4 json) + "\\n\\n" + StringRope.toString msg
+
+    and errorToString (error: JsonDecode_Error) : string =
+        errorToStringHelp error []
 
     
     let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
