@@ -6886,7 +6886,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 let
                                     parameterTypePrint : Print
                                     parameterTypePrint =
-                                        printFsharpTypeParenthesizedIfSpaceSeparated
+                                        printFsharpTypeNotParenthesized
                                             parameter.type_
                                 in
                                 printParenthesized
@@ -7007,27 +7007,27 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 let
                                     parameterTypePrint : Print
                                     parameterTypePrint =
-                                        printFsharpTypeParenthesizedIfSpaceSeparated
+                                        printFsharpTypeNotParenthesized
                                             parameter.type_
                                 in
-                                Print.exactly "("
-                                    |> Print.followedBy
-                                        (parameter.pattern
+                                printParenthesized
+                                    { opening = "("
+                                    , closing = ")"
+                                    , inner =
+                                        parameter.pattern
                                             |> printFsharpPatternParenthesizedIfSpaceSeparated
-                                        )
-                                    |> Print.followedBy (Print.exactly ":")
-                                    |> Print.followedBy
-                                        (Print.withIndentIncreasedBy 1
-                                            (Print.withIndentAtNextMultipleOf4
-                                                (Print.spaceOrLinebreakIndented
-                                                    (parameterTypePrint |> Print.lineSpread)
-                                                    |> Print.followedBy
-                                                        parameterTypePrint
+                                            |> Print.followedBy (Print.exactly ":")
+                                            |> Print.followedBy
+                                                (Print.withIndentIncreasedBy 1
+                                                    (Print.withIndentAtNextMultipleOf4
+                                                        (Print.spaceOrLinebreakIndented
+                                                            (parameterTypePrint |> Print.lineSpread)
+                                                            |> Print.followedBy
+                                                                parameterTypePrint
+                                                        )
+                                                    )
                                                 )
-                                            )
-                                        )
-                                    |> Print.followedBy
-                                        (Print.exactly ")")
+                                    }
                             )
 
                 parametersLineSpread : Print.LineSpread
@@ -7055,7 +7055,7 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
-                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                        (printFsharpExpressionNotParenthesized
                                             function.result
                                         )
                                 )
@@ -7698,7 +7698,7 @@ printFsharpExpressionLambda syntaxLambda =
                         let
                             parameterTypePrint : Print
                             parameterTypePrint =
-                                printFsharpTypeParenthesizedIfSpaceSeparated
+                                printFsharpTypeNotParenthesized
                                     parameter.type_
                         in
                         printParenthesized
