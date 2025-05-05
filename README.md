@@ -112,7 +112,10 @@ Here's some special types you can expect:
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
   - elm records like `{ a : Float, b : Float }` will provided as
     constructed type aliases for each field combination: `Elm.Generated_a_b<float, float>`.
-    While the type might look weird, values can be created and used like any regular record.
+    While the type might look weird, values can be created and used like any regular record
+  - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
+    [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
+    Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
 
 The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Order` → `Elm.Basics_Order` (enum).
 
