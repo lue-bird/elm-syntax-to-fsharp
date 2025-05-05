@@ -241,11 +241,9 @@ runningInterface state =
                                                         if
                                                             (sourceDirectoryPath |> String.contains "stil4m/elm-syntax")
                                                                 && ((subPath |> String.contains "Elm/Writer")
-                                                                        || (subPath |> String.contains "Elm/Processing")
                                                                         || (subPath |> String.contains "Elm/Parser")
                                                                         || (subPath |> String.contains "ParserFast")
                                                                         || (subPath |> String.contains "ParserWithComments")
-                                                                        || (subPath |> String.contains "Elm/Interface")
                                                                    )
                                                         then
                                                             Nothing
