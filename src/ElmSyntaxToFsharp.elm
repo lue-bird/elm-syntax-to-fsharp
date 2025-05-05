@@ -6889,24 +6889,25 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                         printFsharpTypeParenthesizedIfSpaceSeparated
                                             parameter.type_
                                 in
-                                Print.exactly "("
-                                    |> Print.followedBy
+                                printParenthesized
+                                    { opening = "("
+                                    , closing = ")"
+                                    , inner =
                                         (parameter.pattern
                                             |> printFsharpPatternParenthesizedIfSpaceSeparated
                                         )
-                                    |> Print.followedBy (Print.exactly ":")
-                                    |> Print.followedBy
-                                        (Print.withIndentIncreasedBy 1
-                                            (Print.withIndentAtNextMultipleOf4
-                                                (Print.spaceOrLinebreakIndented
-                                                    (parameterTypePrint |> Print.lineSpread)
-                                                    |> Print.followedBy
-                                                        parameterTypePrint
+                                            |> Print.followedBy (Print.exactly ":")
+                                            |> Print.followedBy
+                                                (Print.withIndentIncreasedBy 1
+                                                    (Print.withIndentAtNextMultipleOf4
+                                                        (Print.spaceOrLinebreakIndented
+                                                            (parameterTypePrint |> Print.lineSpread)
+                                                            |> Print.followedBy
+                                                                parameterTypePrint
+                                                        )
+                                                    )
                                                 )
-                                            )
-                                        )
-                                    |> Print.followedBy
-                                        (Print.exactly ")")
+                                    }
                             )
 
                 parametersLineSpread : Print.LineSpread
@@ -6927,8 +6928,11 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                     (Print.withIndentIncreasedBy 4
                         (parameterPrints
                             |> Print.listMapAndIntersperseAndFlatten
-                                (\parameterPrint -> parameterPrint)
-                                (Print.spaceOrLinebreakIndented parametersLineSpread)
+                                (\parameterPrint ->
+                                    Print.spaceOrLinebreakIndented parametersLineSpread
+                                        |> Print.followedBy parameterPrint
+                                )
+                                Print.empty
                         )
                     )
                 |> Print.followedBy
@@ -6937,7 +6941,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
-                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                        (printFsharpExpressionNotParenthesized
                                             function.result
                                         )
                                 )
@@ -7697,28 +7701,25 @@ printFsharpExpressionLambda syntaxLambda =
                                 printFsharpTypeParenthesizedIfSpaceSeparated
                                     parameter.type_
                         in
-                        Print.exactly "("
-                            |> Print.followedBy
+                        printParenthesized
+                            { opening = "("
+                            , closing = ")"
+                            , inner =
                                 (parameter.pattern
                                     |> printFsharpPatternParenthesizedIfSpaceSeparated
                                 )
-                            |> Print.followedBy (Print.exactly ":")
-                            |> Print.followedBy
-                                (Print.withIndentIncreasedBy 1
-                                    (Print.withIndentAtNextMultipleOf4
-                                        (Print.spaceOrLinebreakIndented
-                                            (parameterTypePrint |> Print.lineSpread)
-                                            |> Print.followedBy
-                                                parameterTypePrint
+                                    |> Print.followedBy (Print.exactly ":")
+                                    |> Print.followedBy
+                                        (Print.withIndentIncreasedBy 1
+                                            (Print.withIndentAtNextMultipleOf4
+                                                (Print.spaceOrLinebreakIndented
+                                                    (parameterTypePrint |> Print.lineSpread)
+                                                    |> Print.followedBy
+                                                        parameterTypePrint
+                                                )
+                                            )
                                         )
-                                    )
-                                )
-                            |> Print.followedBy
-                                (Print.emptyOrLinebreakIndented
-                                    (parameterTypePrint |> Print.lineSpread)
-                                )
-                            |> Print.followedBy
-                                (Print.exactly ")")
+                            }
                     )
 
         parametersLineSpread : Print.LineSpread
@@ -7741,7 +7742,7 @@ printFsharpExpressionLambda syntaxLambda =
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
                     |> Print.followedBy
-                        (printFsharpExpressionParenthesizedIfSpaceSeparated
+                        (printFsharpExpressionNotParenthesized
                             syntaxLambda.result
                         )
                 )
