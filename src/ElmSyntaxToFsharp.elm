@@ -176,6 +176,10 @@ type alias ModuleContext =
             { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
             , valueCount : Int
             }
+    , recordTypeAliasLookup :
+        FastDict.Dict
+            ( Elm.Syntax.ModuleName.ModuleName, String )
+            (List String)
     }
 
 
@@ -192,6 +196,8 @@ importsToModuleContext :
         { valueOrFunctionOrTypeAliasNames : FastSet.Set String
         , choiceTypesExposingVariants :
             FastDict.Dict String (FastDict.Dict String { valueCount : Int })
+        , recordTypeAliases :
+            FastDict.Dict String (List String)
         }
     -> List (Elm.Syntax.Node.Node Elm.Syntax.Import.Import)
     -> ModuleContext
@@ -205,6 +211,8 @@ importsToModuleContext moduleExposes imports =
                     FastSet.Set String
                 , exposedVariants :
                     FastDict.Dict String { valueCount : Int }
+                , exposedRecordTypeAliases :
+                    FastDict.Dict String (List String)
                 }
         importsNormal =
             implicitImports
@@ -221,6 +229,8 @@ importsToModuleContext moduleExposes imports =
                                             FastSet.Set String
                                         , variants :
                                             FastDict.Dict String { valueCount : Int }
+                                        , recordTypeAliases :
+                                            FastDict.Dict String (List String)
                                         }
                                     exposes =
                                         case syntaxImport.exposingList of
@@ -228,6 +238,7 @@ importsToModuleContext moduleExposes imports =
                                                 { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                     FastSet.empty
                                                 , variants = FastDict.empty
+                                                , recordTypeAliases = FastDict.empty
                                                 }
 
                                             Just (Elm.Syntax.Node.Node _ syntaxExposing) ->
@@ -236,6 +247,7 @@ importsToModuleContext moduleExposes imports =
                                                         { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                             FastSet.empty
                                                         , variants = FastDict.empty
+                                                        , recordTypeAliases = FastDict.empty
                                                         }
 
                                                     Just moduleExposedNames ->
@@ -253,6 +265,8 @@ importsToModuleContext moduleExposes imports =
                                                                         |> FastDict.foldl
                                                                             (\_ variantNames soFar -> FastDict.union variantNames soFar)
                                                                             FastDict.empty
+                                                                , recordTypeAliases =
+                                                                    moduleExposedNames.recordTypeAliases
                                                                 }
 
                                                             Elm.Syntax.Exposing.Explicit explicitEposes ->
@@ -268,6 +282,14 @@ importsToModuleContext moduleExposes imports =
                                                                                         soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                                                                             |> FastSet.insert name
                                                                                     , variants = soFar.variants
+                                                                                    , recordTypeAliases =
+                                                                                        case moduleExposedNames.recordTypeAliases |> FastDict.get name of
+                                                                                            Nothing ->
+                                                                                                soFar.recordTypeAliases
+
+                                                                                            Just fieldOrder ->
+                                                                                                soFar.recordTypeAliases
+                                                                                                    |> FastDict.insert name fieldOrder
                                                                                     }
 
                                                                                 Elm.Syntax.Exposing.FunctionExpose name ->
@@ -275,6 +297,7 @@ importsToModuleContext moduleExposes imports =
                                                                                         soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                                                                             |> FastSet.insert name
                                                                                     , variants = soFar.variants
+                                                                                    , recordTypeAliases = soFar.recordTypeAliases
                                                                                     }
 
                                                                                 Elm.Syntax.Exposing.TypeExpose choiceTypeExpose ->
@@ -298,11 +321,13 @@ importsToModuleContext moduleExposes imports =
                                                                                                         FastDict.union
                                                                                                             soFar.variants
                                                                                                             choiceTypeDeclared
+                                                                                    , recordTypeAliases = soFar.recordTypeAliases
                                                                                     }
                                                                         )
                                                                         { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                                             FastSet.empty
                                                                         , variants = FastDict.empty
+                                                                        , recordTypeAliases = FastDict.empty
                                                                         }
                                 in
                                 { moduleName = importModuleName
@@ -316,6 +341,8 @@ importsToModuleContext moduleExposes imports =
                                     exposes.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
                                 , exposedVariants =
                                     exposes.variants
+                                , exposedRecordTypeAliases =
+                                    exposes.recordTypeAliases
                                 }
                             )
                    )
@@ -329,6 +356,8 @@ importsToModuleContext moduleExposes imports =
                         { valuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                             FastSet.Set String
                         , variants : FastDict.Dict String { valueCount : Int }
+                        , recordTypeAliases :
+                            FastDict.Dict String (List String)
                         }
                     importedModuleMembers =
                         case moduleExposes |> FastDict.get syntaxImport.moduleName of
@@ -336,6 +365,7 @@ importsToModuleContext moduleExposes imports =
                                 { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                     FastSet.empty
                                 , variants = FastDict.empty
+                                , recordTypeAliases = FastDict.empty
                                 }
 
                             Just moduleExposedNames ->
@@ -354,6 +384,8 @@ importsToModuleContext moduleExposes imports =
                                                 FastDict.union variantNames variantsSoFar
                                             )
                                             FastDict.empty
+                                , recordTypeAliases =
+                                    moduleExposedNames.recordTypeAliases
                                 }
                 in
                 moduleContextMerge
@@ -376,6 +408,15 @@ importsToModuleContext moduleExposes imports =
                                         dictSoFar
                                             |> FastDict.insert ( [], expose )
                                                 syntaxImport.moduleName
+                                    )
+                                    FastDict.empty
+                        , recordTypeAliasLookup =
+                            syntaxImport.exposedRecordTypeAliases
+                                |> FastDict.foldl
+                                    (\typeAliasName fieldOrder dictSoFar ->
+                                        dictSoFar
+                                            |> FastDict.insert ( [], typeAliasName )
+                                                fieldOrder
                                     )
                                     FastDict.empty
                         }
@@ -403,6 +444,15 @@ importsToModuleContext moduleExposes imports =
                                                         }
                                             )
                                             FastDict.empty
+                                , recordTypeAliasLookup =
+                                    syntaxImport.exposedRecordTypeAliases
+                                        |> FastDict.foldl
+                                            (\typeAliasName fieldOrder dictSoFar ->
+                                                dictSoFar
+                                                    |> FastDict.insert ( syntaxImport.moduleName, typeAliasName )
+                                                        fieldOrder
+                                            )
+                                            FastDict.empty
                                 }
 
                             Just importAlias ->
@@ -428,6 +478,15 @@ importsToModuleContext moduleExposes imports =
                                                         }
                                             )
                                             FastDict.empty
+                                , recordTypeAliasLookup =
+                                    syntaxImport.exposedRecordTypeAliases
+                                        |> FastDict.foldl
+                                            (\typeAliasName fieldOrder dictSoFar ->
+                                                dictSoFar
+                                                    |> FastDict.insert ( [ importAlias ], typeAliasName )
+                                                        fieldOrder
+                                            )
+                                            FastDict.empty
                                 }
                         )
                     )
@@ -435,8 +494,8 @@ importsToModuleContext moduleExposes imports =
             )
             { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                 FastDict.empty
-            , variantLookup =
-                FastDict.empty
+            , variantLookup = FastDict.empty
+            , recordTypeAliasLookup = FastDict.empty
             }
 
 
@@ -450,6 +509,10 @@ moduleContextMerge a b =
         FastDict.union
             a.variantLookup
             b.variantLookup
+    , recordTypeAliasLookup =
+        FastDict.union
+            a.recordTypeAliasLookup
+            b.recordTypeAliasLookup
     }
 
 
@@ -461,10 +524,13 @@ implicitImports :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
+        , exposedRecordTypeAliases :
+            FastDict.Dict String (List String)
         }
 implicitImports =
     [ { moduleName = [ "Basics" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "EQ", { valueCount = 0 } )
@@ -520,12 +586,14 @@ implicitImports =
       }
     , { moduleName = [ "List" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "List" ]
       }
     , { moduleName = [ "Maybe" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "Just", { valueCount = 1 } )
@@ -536,6 +604,7 @@ implicitImports =
       }
     , { moduleName = [ "Result" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "Ok", { valueCount = 1 } )
@@ -546,42 +615,49 @@ implicitImports =
       }
     , { moduleName = [ "String" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "String" ]
       }
     , { moduleName = [ "Char" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Char" ]
       }
     , { moduleName = [ "Tuple" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
     , { moduleName = [ "Debug" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
     , { moduleName = [ "Platform" ]
       , alias = Nothing
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Program" ]
       }
     , { moduleName = [ "Platform", "Cmd" ]
       , alias = Just "Cmd"
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Cmd" ]
       }
     , { moduleName = [ "Platform", "Sub" ]
       , alias = Just "Sub"
+      , exposedRecordTypeAliases = FastDict.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Sub" ]
@@ -597,6 +673,8 @@ importsCombine :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
+        , exposedRecordTypeAliases :
+            FastDict.Dict String (List String)
         }
     ->
         List
@@ -606,6 +684,8 @@ importsCombine :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
+            , exposedRecordTypeAliases :
+                FastDict.Dict String (List String)
             }
 importsCombine syntaxImports =
     importsCombineFrom [] syntaxImports
@@ -619,6 +699,8 @@ importsCombineFrom :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
+        , exposedRecordTypeAliases :
+            FastDict.Dict String (List String)
         }
     ->
         List
@@ -628,6 +710,8 @@ importsCombineFrom :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
+            , exposedRecordTypeAliases :
+                FastDict.Dict String (List String)
             }
     ->
         List
@@ -637,6 +721,8 @@ importsCombineFrom :
                 FastSet.Set String
             , exposedVariants :
                 FastDict.Dict String { valueCount : Int }
+            , exposedRecordTypeAliases :
+                FastDict.Dict String (List String)
             }
 importsCombineFrom soFar syntaxImports =
     case syntaxImports of
@@ -666,6 +752,8 @@ importsMerge :
         FastSet.Set String
     , exposedVariants :
         FastDict.Dict String { valueCount : Int }
+    , exposedRecordTypeAliases :
+        FastDict.Dict String (List String)
     }
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
@@ -674,6 +762,8 @@ importsMerge :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
+        , exposedRecordTypeAliases :
+            FastDict.Dict String (List String)
         }
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
@@ -682,6 +772,8 @@ importsMerge :
             FastSet.Set String
         , exposedVariants :
             FastDict.Dict String { valueCount : Int }
+        , exposedRecordTypeAliases :
+            FastDict.Dict String (List String)
         }
 importsMerge earlier later =
     { moduleName = earlier.moduleName
@@ -700,6 +792,10 @@ importsMerge earlier later =
         FastDict.union
             earlier.exposedVariants
             later.exposedVariants
+    , exposedRecordTypeAliases =
+        FastDict.union
+            earlier.exposedRecordTypeAliases
+            later.exposedRecordTypeAliases
     }
 
 
@@ -1495,26 +1591,26 @@ printFsharpTypeFunction typeFunction =
 
 fsharpTypeExpandFunctionOutput : FsharpType -> List FsharpType
 fsharpTypeExpandFunctionOutput fsharpType =
-    fsharpTypeExpandFunctionOutputInto [] fsharpType
+    fsharpTypeExpandFunctionIntoReverse [] fsharpType
         |> List.reverse
 
 
-fsharpTypeExpandFunctionOutputInto : List FsharpType -> FsharpType -> List FsharpType
-fsharpTypeExpandFunctionOutputInto soFar fsharpType =
+fsharpTypeExpandFunctionIntoReverse : List FsharpType -> FsharpType -> List FsharpType
+fsharpTypeExpandFunctionIntoReverse soFarReverse fsharpType =
     case fsharpType of
         FsharpTypeFunction function ->
-            fsharpTypeExpandFunctionOutputInto
-                (function.input :: soFar)
+            fsharpTypeExpandFunctionIntoReverse
+                (function.input :: soFarReverse)
                 function.output
 
         FsharpTypeConstruct construct ->
-            FsharpTypeConstruct construct :: soFar
+            FsharpTypeConstruct construct :: soFarReverse
 
         FsharpTypeTuple parts ->
-            FsharpTypeTuple parts :: soFar
+            FsharpTypeTuple parts :: soFarReverse
 
         FsharpTypeVariable variable ->
-            FsharpTypeVariable variable :: soFar
+            FsharpTypeVariable variable :: soFarReverse
 
 
 printFsharpTypeTuple :
@@ -3803,6 +3899,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                 { valueOrFunctionOrTypeAliasNames : FastSet.Set String
                 , choiceTypesExposingVariants :
                     FastDict.Dict String (FastDict.Dict String { valueCount : Int })
+                , recordTypeAliases :
+                    FastDict.Dict String (List String)
                 }
         moduleMembers =
             syntaxDeclarationsIncludingOverwrittenOnes
@@ -4020,6 +4118,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                 )
                                                     , choiceTypesExposingVariants =
                                                         membersSoFar.choiceTypesExposingVariants
+                                                    , recordTypeAliases =
+                                                        membersSoFar.recordTypeAliases
                                                     }
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
@@ -4043,17 +4143,35 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                         )
                                                                         FastDict.empty
                                                                 )
+                                                    , recordTypeAliases =
+                                                        membersSoFar.recordTypeAliases
                                                     }
 
                                                 Elm.Syntax.Declaration.AliasDeclaration typeAlias ->
+                                                    let
+                                                        typeAliasName =
+                                                            typeAlias.name
+                                                                |> Elm.Syntax.Node.value
+                                                    in
                                                     { valueOrFunctionOrTypeAliasNames =
                                                         membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                            |> FastSet.insert
-                                                                (typeAlias.name
-                                                                    |> Elm.Syntax.Node.value
-                                                                )
+                                                            |> FastSet.insert typeAliasName
                                                     , choiceTypesExposingVariants =
                                                         membersSoFar.choiceTypesExposingVariants
+                                                    , recordTypeAliases =
+                                                        case typeAlias.typeAnnotation |> Elm.Syntax.Node.value of
+                                                            Elm.Syntax.TypeAnnotation.Record fields ->
+                                                                membersSoFar.recordTypeAliases
+                                                                    |> FastDict.insert typeAliasName
+                                                                        (fields
+                                                                            |> List.map
+                                                                                (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ fieldName, _ )) ->
+                                                                                    fieldName |> stringFirstCharToUpper
+                                                                                )
+                                                                        )
+
+                                                            _ ->
+                                                                membersSoFar.recordTypeAliases
                                                     }
 
                                                 Elm.Syntax.Declaration.PortDeclaration _ ->
@@ -4069,6 +4187,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         )
                                         { valueOrFunctionOrTypeAliasNames = FastSet.empty
                                         , choiceTypesExposingVariants = FastDict.empty
+                                        , recordTypeAliases = FastDict.empty
                                         }
                                 )
                     )
@@ -4177,27 +4296,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         (\(Elm.Syntax.Node.Node _ declaration) ->
                                             case declaration of
                                                 Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                                    -- TODO this is pretty shaky but works for now
-                                                    let
-                                                        name : String
-                                                        name =
-                                                            syntaxValueOrFunctionDeclaration.declaration
-                                                                |> Elm.Syntax.Node.value
-                                                                |> .name
-                                                                |> Elm.Syntax.Node.value
-                                                    in
-                                                    if
-                                                        ((name |> String.toLower)
-                                                            |> String.contains "decode"
-                                                        )
-                                                            || ((moduleName == [ "Elm", "Syntax", "Range" ])
-                                                                    && (name == "fromList")
-                                                               )
-                                                    then
-                                                        Nothing
-
-                                                    else
-                                                        Just syntaxValueOrFunctionDeclaration
+                                                    Just syntaxValueOrFunctionDeclaration
 
                                                 Elm.Syntax.Declaration.AliasDeclaration _ ->
                                                     Nothing
@@ -4299,6 +4398,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                     { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                                                         FastDict.empty
                                                     , variantLookup = FastDict.empty
+                                                    , recordTypeAliasLookup = FastDict.empty
                                                     }
 
                                                 Just moduleLocalNames ->
@@ -4333,6 +4433,15 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                                         }
                                                                             )
                                                                             soFarAcrossChoiceTypes
+                                                                )
+                                                                FastDict.empty
+                                                    , recordTypeAliasLookup =
+                                                        moduleLocalNames.recordTypeAliases
+                                                            |> FastDict.foldl
+                                                                (\name fieldOrder soFar ->
+                                                                    soFar
+                                                                        |> FastDict.insert ( [], name )
+                                                                            fieldOrder
                                                                 )
                                                                 FastDict.empty
                                                     }
@@ -5437,8 +5546,8 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
                     |> expression
                         { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                             moduleContext.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                        , variantLookup =
-                            moduleContext.variantLookup
+                        , variantLookup = moduleContext.variantLookup
+                        , recordTypeAliasLookup = moduleContext.recordTypeAliasLookup
                         , variablesFromWithinDeclarationInScope =
                             parameters
                                 |> listMapToFastSetsAndUnify .introducedVariables
@@ -5561,6 +5670,10 @@ expressionContextAddVariablesInScope :
                 { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
                 , valueCount : Int
                 }
+        , recordTypeAliasLookup :
+            FastDict.Dict
+                ( Elm.Syntax.ModuleName.ModuleName, String )
+                (List String)
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
     ->
@@ -5574,13 +5687,17 @@ expressionContextAddVariablesInScope :
                 { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
                 , valueCount : Int
                 }
+        , recordTypeAliasLookup :
+            FastDict.Dict
+                ( Elm.Syntax.ModuleName.ModuleName, String )
+                (List String)
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
 expressionContextAddVariablesInScope additionalVariablesInScope context =
     { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
         context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-    , variantLookup =
-        context.variantLookup
+    , variantLookup = context.variantLookup
+    , recordTypeAliasLookup = context.recordTypeAliasLookup
     , variablesFromWithinDeclarationInScope =
         FastSet.union
             additionalVariablesInScope
@@ -5599,6 +5716,10 @@ expression :
             { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
             , valueCount : Int
             }
+    , recordTypeAliasLookup :
+        FastDict.Dict
+            ( Elm.Syntax.ModuleName.ModuleName, String )
+            (List String)
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -5906,28 +6027,75 @@ expression context expressionTypedNode =
                                         )
 
                         Nothing ->
-                            Ok
-                                (FsharpExpressionReference
-                                    (case
-                                        { moduleOrigin = reference.moduleOrigin
-                                        , name = reference.name
-                                        , type_ = expressionTypedNode.type_
-                                        }
-                                            |> referenceToCoreFsharp
-                                     of
-                                        Just fsharpReference ->
-                                            fsharpReference
+                            case context.recordTypeAliasLookup |> FastDict.get ( reference.qualification, reference.name ) of
+                                Just fieldOrder ->
+                                    case fieldOrder of
+                                        [] ->
+                                            Ok (FsharpExpressionRecord FastDict.empty)
 
-                                        Nothing ->
-                                            { moduleOrigin = Nothing
-                                            , name =
-                                                referenceToFsharpName
-                                                    { moduleOrigin = reference.moduleOrigin
-                                                    , name = reference.name
+                                        fieldName0 :: fieldName1Up ->
+                                            Result.map
+                                                (\fsharpType ->
+                                                    let
+                                                        parameterTypes : List FsharpType
+                                                        parameterTypes =
+                                                            fsharpTypeExpandFunctionIntoReverse []
+                                                                fsharpType
+                                                                |> List.drop 1
+                                                                |> List.reverse
+                                                    in
+                                                    FsharpExpressionLambda
+                                                        { parameters =
+                                                            List.map2
+                                                                (\fieldName fieldType ->
+                                                                    { pattern = FsharpPatternVariable ("generated_" ++ fieldName)
+                                                                    , type_ = fieldType
+                                                                    }
+                                                                )
+                                                                (fieldName0 :: fieldName1Up)
+                                                                parameterTypes
+                                                        , result =
+                                                            FsharpExpressionRecord
+                                                                ((fieldName0 :: fieldName1Up)
+                                                                    |> List.foldl
+                                                                        (\fieldName soFar ->
+                                                                            soFar
+                                                                                |> FastDict.insert fieldName
+                                                                                    (FsharpExpressionReference
+                                                                                        { moduleOrigin = Nothing
+                                                                                        , name = "generated_" ++ fieldName
+                                                                                        }
+                                                                                    )
+                                                                        )
+                                                                        FastDict.empty
+                                                                )
+                                                        }
+                                                )
+                                                (expressionTypedNode.type_ |> type_)
+
+                                Nothing ->
+                                    Ok
+                                        (FsharpExpressionReference
+                                            (case
+                                                { moduleOrigin = reference.moduleOrigin
+                                                , name = reference.name
+                                                , type_ = expressionTypedNode.type_
+                                                }
+                                                    |> referenceToCoreFsharp
+                                             of
+                                                Just fsharpReference ->
+                                                    fsharpReference
+
+                                                Nothing ->
+                                                    { moduleOrigin = Nothing
+                                                    , name =
+                                                        referenceToFsharpName
+                                                            { moduleOrigin = reference.moduleOrigin
+                                                            , name = reference.name
+                                                            }
                                                     }
-                                            }
-                                    )
-                                )
+                                            )
+                                        )
 
         ElmSyntaxTypeInfer.ExpressionIfThenElse ifThenElse ->
             Result.map3
@@ -6411,6 +6579,10 @@ case_ :
             { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
             , valueCount : Int
             }
+    , recordTypeAliasLookup :
+        FastDict.Dict
+            ( Elm.Syntax.ModuleName.ModuleName, String )
+            (List String)
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -6462,6 +6634,10 @@ letDeclaration :
             { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
             , valueCount : Int
             }
+    , recordTypeAliasLookup :
+        FastDict.Dict
+            ( Elm.Syntax.ModuleName.ModuleName, String )
+            (List String)
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     -> ElmSyntaxTypeInfer.LetDeclaration (ElmSyntaxTypeInfer.Type String)
@@ -6499,6 +6675,10 @@ letValueOrFunctionDeclaration :
             { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
             , valueCount : Int
             }
+    , recordTypeAliasLookup :
+        FastDict.Dict
+            ( Elm.Syntax.ModuleName.ModuleName, String )
+            (List String)
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -6558,8 +6738,8 @@ letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
                     |> expression
                         { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
                             context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                        , variantLookup =
-                            context.variantLookup
+                        , variantLookup = context.variantLookup
+                        , recordTypeAliasLookup = context.recordTypeAliasLookup
                         , variablesFromWithinDeclarationInScope =
                             FastSet.union
                                 (parameters
