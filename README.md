@@ -112,8 +112,8 @@ Here's some special types you can expect:
     You can create them with `Elm.StringRopeOne yourFsharpString`
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
   - elm records like `{ a : Float, b : Float }` will provided as
-    constructed type aliases for each field combination: `Elm.Generated_a_b<float, float>`.
-    While the type might look weird, values can be created and used like any regular record
+    constructed type aliases for each field combination: `Elm.Generated_A_B<float, float>`.
+    While the type might look weird, values can be created and used like any regular record, just with uppercase field names
   - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
     Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
