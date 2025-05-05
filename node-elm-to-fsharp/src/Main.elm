@@ -73,18 +73,6 @@ interface state =
                                                     ++ ((application.depsDirect
                                                             ++ application.depsIndirect
                                                         )
-                                                            |> List.filter
-                                                                (\( dependencyName, _ ) ->
-                                                                    case dependencyName |> Elm.Package.toString of
-                                                                        "rtfeldman/elm-hex" ->
-                                                                            False
-
-                                                                        "stil4m/structured-writer" ->
-                                                                            False
-
-                                                                        _ ->
-                                                                            True
-                                                                )
                                                             |> List.map
                                                                 (\( dependencyName, dependencyVersion ) ->
                                                                     packageSourceDirectoryPath
