@@ -62,6 +62,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         ```
         Incidentally, avoiding extensible record types
         also tends to improve your elm code because it's simpler and makes the compiler errors more concrete
+-   dependencies cannot internally use the same module names as the transpiled project
 -   no compile checks are performed before transpiling to F#
 -   the resulting code might not be readable or even conventionally formatted and comments are not preserved
 
