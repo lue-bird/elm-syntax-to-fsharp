@@ -1582,14 +1582,16 @@ printFsharpTypeFunction typeFunction =
         :: (outputPrints
                 |> List.map
                     (\outputPartPrint ->
-                        Print.withIndentIncreasedBy 3
+                        Print.withIndentAtNextMultipleOf4
                             outputPartPrint
                     )
            )
         |> Print.listIntersperseAndFlatten
-            (Print.spaceOrLinebreakIndented fullLineSpread
+            (Print.exactly " ->"
                 |> Print.followedBy
-                    (Print.exactly "-> ")
+                    (Print.withIndentAtNextMultipleOf4
+                        (Print.spaceOrLinebreakIndented fullLineSpread)
+                    )
             )
 
 
@@ -2541,6 +2543,17 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Random" ] ->
+            case reference.name of
+                "Seed" ->
+                    Just { moduleOrigin = Nothing, name = "Random_Seed" }
+
+                "Generator" ->
+                    Just { moduleOrigin = Nothing, name = "Random_Generator" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -3459,6 +3472,68 @@ referenceToCoreFsharp reference =
 
                 "foldr" ->
                     Just { moduleOrigin = Nothing, name = "Array_foldr" }
+
+                _ ->
+                    Nothing
+
+        [ "Random" ] ->
+            case reference.name of
+                "int" ->
+                    Just { moduleOrigin = Nothing, name = "Random_int" }
+
+                "float" ->
+                    Just { moduleOrigin = Nothing, name = "Random_float" }
+
+                "uniform" ->
+                    Just { moduleOrigin = Nothing, name = "Random_uniform" }
+
+                "weighted" ->
+                    Just { moduleOrigin = Nothing, name = "Random_weighted" }
+
+                "constant" ->
+                    Just { moduleOrigin = Nothing, name = "Random_constant" }
+
+                "list" ->
+                    Just { moduleOrigin = Nothing, name = "Random_list" }
+
+                "pair" ->
+                    Just { moduleOrigin = Nothing, name = "Random_pair" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "Random_map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "Random_map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "Random_map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "Random_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "Random_map5" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Nothing, name = "Random_andThen" }
+
+                "lazy" ->
+                    Just { moduleOrigin = Nothing, name = "Random_lazy" }
+
+                "minInt" ->
+                    Just { moduleOrigin = Nothing, name = "Random_minInt" }
+
+                "maxInt" ->
+                    Just { moduleOrigin = Nothing, name = "Random_maxInt" }
+
+                "step" ->
+                    Just { moduleOrigin = Nothing, name = "Random_step" }
+
+                "initialSeed" ->
+                    Just { moduleOrigin = Nothing, name = "Random_initialSeed" }
+
+                "independentSeed" ->
+                    Just { moduleOrigin = Nothing, name = "Random_independentSeed" }
 
                 _ ->
                     Nothing
@@ -7498,7 +7573,7 @@ printFsharpExpressionTuple parts =
                     (\partPrint ->
                         Print.withIndentIncreasedBy 2 partPrint
                     )
-                    (Print.spaceOrLinebreakIndented lineSpread
+                    (Print.emptyOrLinebreakIndented lineSpread
                         |> Print.followedBy
                             (Print.exactly ", ")
                     )
@@ -7864,118 +7939,111 @@ printFsharpExpressionWithLetDeclarations :
     }
     -> Print
 printFsharpExpressionWithLetDeclarations syntaxLetIn =
-    printParenthesized
-        { opening = "("
-        , closing = ")"
-        , inner =
-            let
-                letDestructurings :
-                    List
-                        { pattern : FsharpPattern
-                        , patternType : FsharpType
-                        , expression : FsharpExpression
-                        }
-                letDestructurings =
-                    (syntaxLetIn.declaration0 :: syntaxLetIn.declaration1Up)
-                        |> List.filterMap
-                            (\declaration ->
-                                case declaration of
-                                    FsharpLetDestructuring letDestructuring ->
-                                        Just letDestructuring
+    let
+        letDestructurings :
+            List
+                { pattern : FsharpPattern
+                , patternType : FsharpType
+                , expression : FsharpExpression
+                }
+        letDestructurings =
+            (syntaxLetIn.declaration0 :: syntaxLetIn.declaration1Up)
+                |> List.filterMap
+                    (\declaration ->
+                        case declaration of
+                            FsharpLetDestructuring letDestructuring ->
+                                Just letDestructuring
 
-                                    FsharpLetDeclarationValueOrFunction _ ->
-                                        Nothing
-                            )
-
-                letValueOrFunctions :
-                    List
-                        { name : String
-                        , result : FsharpExpression
-                        , type_ : FsharpType
-                        }
-                letValueOrFunctions =
-                    (syntaxLetIn.declaration0 :: syntaxLetIn.declaration1Up)
-                        |> List.filterMap
-                            (\declaration ->
-                                case declaration of
-                                    FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                                        Just letValueOrFunction
-
-                                    FsharpLetDestructuring _ ->
-                                        Nothing
-                            )
-
-                ordered :
-                    { mostToLeastDependedOn :
-                        List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
-                    }
-                ordered =
-                    { mostToLeastDependedOn =
-                        letValueOrFunctions
-                            |> fsharpValueOrFunctionDeclarationsGroupByDependencies
-                            |> .mostToLeastDependedOn
-                            |> List.map
-                                (\fsharpValueOrFunctionDependencyBucket ->
-                                    case fsharpValueOrFunctionDependencyBucket of
-                                        FsharpValueOrFunctionDependencySingle fsharpValueOrFunction ->
-                                            FsharpValueOrFunctionDependencySingle
-                                                (FsharpLetDeclarationValueOrFunction fsharpValueOrFunction)
-
-                                        FsharpValueOrFunctionDependencyRecursiveBucket recursiveBucket ->
-                                            FsharpValueOrFunctionDependencyRecursiveBucket
-                                                (recursiveBucket
-                                                    |> List.map FsharpLetDeclarationValueOrFunction
-                                                )
-                                )
-                    }
-                        |> fsharpLetDeclarationsInsertFsharpLetDestructurings
-                            letDestructurings
-            in
-            (ordered.mostToLeastDependedOn
-                |> Print.listMapAndIntersperseAndFlatten
-                    (\dependencyGroup ->
-                        case dependencyGroup of
-                            FsharpValueOrFunctionDependencySingle fsharpLetDeclaration ->
-                                case fsharpLetDeclaration of
-                                    FsharpLetDestructuring letDestructuring ->
-                                        Print.exactly "let "
-                                            |> Print.followedBy
-                                                (letDestructuring |> printFsharpLetDestructuring)
-                                            |> Print.followedBy Print.linebreakIndented
-                                            |> Print.followedBy Print.linebreakIndented
-
-                                    FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                                        Print.exactly "let "
-                                            |> Print.followedBy
-                                                (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
-                                            |> Print.followedBy Print.linebreakIndented
-                                            |> Print.followedBy Print.linebreakIndented
-
-                            FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
-                                Print.exactly "let "
-                                    |> -- I would have thought let rec
-                                       -- but the compiler disagrees
-                                       Print.followedBy
-                                        (recursiveGroup
-                                            |> Print.listMapAndIntersperseAndFlatten
-                                                (\fsharpLetDeclaration ->
-                                                    case fsharpLetDeclaration of
-                                                        FsharpLetDestructuring letDestructuring ->
-                                                            (letDestructuring |> printFsharpLetDestructuring)
-                                                                |> Print.followedBy Print.linebreakIndented
-
-                                                        FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                                                            (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
-                                                                |> Print.followedBy Print.linebreakIndented
-                                                )
-                                                (Print.exactly "and ")
-                                        )
+                            FsharpLetDeclarationValueOrFunction _ ->
+                                Nothing
                     )
-                    Print.empty
+
+        letValueOrFunctions :
+            List
+                { name : String
+                , result : FsharpExpression
+                , type_ : FsharpType
+                }
+        letValueOrFunctions =
+            (syntaxLetIn.declaration0 :: syntaxLetIn.declaration1Up)
+                |> List.filterMap
+                    (\declaration ->
+                        case declaration of
+                            FsharpLetDeclarationValueOrFunction letValueOrFunction ->
+                                Just letValueOrFunction
+
+                            FsharpLetDestructuring _ ->
+                                Nothing
+                    )
+
+        ordered :
+            { mostToLeastDependedOn :
+                List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+            }
+        ordered =
+            { mostToLeastDependedOn =
+                letValueOrFunctions
+                    |> fsharpValueOrFunctionDeclarationsGroupByDependencies
+                    |> .mostToLeastDependedOn
+                    |> List.map
+                        (\fsharpValueOrFunctionDependencyBucket ->
+                            case fsharpValueOrFunctionDependencyBucket of
+                                FsharpValueOrFunctionDependencySingle fsharpValueOrFunction ->
+                                    FsharpValueOrFunctionDependencySingle
+                                        (FsharpLetDeclarationValueOrFunction fsharpValueOrFunction)
+
+                                FsharpValueOrFunctionDependencyRecursiveBucket recursiveBucket ->
+                                    FsharpValueOrFunctionDependencyRecursiveBucket
+                                        (recursiveBucket
+                                            |> List.map FsharpLetDeclarationValueOrFunction
+                                        )
+                        )
+            }
+                |> fsharpLetDeclarationsInsertFsharpLetDestructurings
+                    letDestructurings
+    in
+    (ordered.mostToLeastDependedOn
+        |> Print.listMapAndIntersperseAndFlatten
+            (\dependencyGroup ->
+                case dependencyGroup of
+                    FsharpValueOrFunctionDependencySingle fsharpLetDeclaration ->
+                        case fsharpLetDeclaration of
+                            FsharpLetDestructuring letDestructuring ->
+                                Print.exactly "let "
+                                    |> Print.followedBy
+                                        (letDestructuring |> printFsharpLetDestructuring)
+                                    |> Print.followedBy Print.linebreakIndented
+                                    |> Print.followedBy Print.linebreakIndented
+
+                            FsharpLetDeclarationValueOrFunction letValueOrFunction ->
+                                Print.exactly "let "
+                                    |> Print.followedBy
+                                        (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
+                                    |> Print.followedBy Print.linebreakIndented
+                                    |> Print.followedBy Print.linebreakIndented
+
+                    FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
+                        Print.exactly "let rec "
+                            |> Print.followedBy
+                                (recursiveGroup
+                                    |> Print.listMapAndIntersperseAndFlatten
+                                        (\fsharpLetDeclaration ->
+                                            case fsharpLetDeclaration of
+                                                FsharpLetDestructuring letDestructuring ->
+                                                    (letDestructuring |> printFsharpLetDestructuring)
+                                                        |> Print.followedBy Print.linebreakIndented
+
+                                                FsharpLetDeclarationValueOrFunction letValueOrFunction ->
+                                                    (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
+                                                        |> Print.followedBy Print.linebreakIndented
+                                        )
+                                        (Print.exactly "and ")
+                                )
             )
-                |> Print.followedBy
-                    (printFsharpExpressionNotParenthesized syntaxLetIn.result)
-        }
+            Print.empty
+    )
+        |> Print.followedBy
+            (printFsharpExpressionNotParenthesized syntaxLetIn.result)
 
 
 fsharpLetDeclarationsInsertFsharpLetDestructurings :
@@ -9976,6 +10044,264 @@ defaultDeclarations =
         match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
         | null -> None
         | decodedString -> Some (StringRopeOne decodedString)
+
+
+    [<Struct>]
+    type Random_Seed =
+        | Random_Seed of Random_Seed:
+            // can be optimized by switching to int32
+            (struct( int64 * int64 ))
+    
+    type Random_Generator<'a> =
+        Random_Seed -> (struct( 'a * Random_Seed ))
+
+    let Random_step (generator: Random_Generator<'a>) (seed: Random_Seed) =
+        generator seed
+
+    let Random_peel (Random_Seed(state, _): Random_Seed) =
+        let word: int64 =
+            (*) ((^^^) state (Bitwise_shiftRightZfBy ((+) (Bitwise_shiftRightZfBy 28L state) 4L) state)) 277803737L
+         
+        Bitwise_shiftRightZfBy 0L ((^^^) (Bitwise_shiftRightZfBy 22L word) word)
+
+    let Random_next (Random_Seed(state0, incr): Random_Seed) =
+        Random_Seed (struct( Bitwise_shiftRightZfBy 0L ((+) ((*) state0 1664525L) incr), incr ))
+
+    let Random_minInt: int64 =
+        -2147483648L
+
+    let Random_maxInt: int64 =
+        2147483647L
+
+    let Random_map5 (func: 'a -> 'b -> 'c -> 'd -> 'e -> 'f) (genA: Random_Generator<'a>) (genB: Random_Generator<'b>) (genC: Random_Generator<'c>) (genD: Random_Generator<'d>) (genE: Random_Generator<'e>) =
+        fun (seed0: Random_Seed) ->
+            let ((struct( a, seed1 )):  (struct( 'a * Random_Seed ))) =
+                genA seed0
+                
+            let ((struct( b, seed2 )): (struct( 'b * Random_Seed ))) =
+                genB seed1
+                
+            let ((struct( c, seed3 )): (struct( 'c * Random_Seed ))) =
+                genC seed2
+                
+            let ((struct( d, seed4 )): (struct( 'd * Random_Seed ))) =
+                genD seed3
+                
+            let ((struct( e, seed5 )): (struct( 'e * Random_Seed ))) =
+                genE seed4
+                
+            (struct( func a b c d e , seed5 ))
+
+    let Random_map4 (func: 'a -> 'b -> 'c -> 'd -> 'e) (genA: Random_Generator<'a>) (genB: Random_Generator<'b>) (genC: Random_Generator<'c>) (genD: Random_Generator<'d>) =
+        fun (seed0: Random_Seed) ->
+            let ((struct( a, seed1 )): (struct( 'a * Random_Seed ))) =
+                genA seed0
+            
+            let ((struct( b, seed2 )): (struct( 'b * Random_Seed ))) =
+                genB seed1
+            
+            let ((struct( c, seed3 )): (struct( 'c * Random_Seed ))) =
+                genC seed2
+            
+            let ((struct( d, seed4 )): (struct( 'd * Random_Seed ))) =
+                genD seed3
+            
+            (struct( func a b c d , seed4 ))
+
+    let Random_map3 (func: 'a -> 'b -> 'c -> 'd) (genA: Random_Generator<'a>) (genB: Random_Generator<'b>) (genC: Random_Generator<'c>) =
+        fun (seed0: Random_Seed) ->
+            let ((struct( a, seed1 )): (struct( 'a * Random_Seed ))) =
+                genA seed0
+                
+            let ((struct( b, seed2 )): (struct( 'b * Random_Seed ))) =
+                genB seed1
+                
+            let ((struct( c, seed3 )): (struct( 'c * Random_Seed ))) =
+                genC seed2
+                
+            (struct( func a b c , seed3 ))
+
+    let Random_map2 (func: 'a -> 'b -> 'c) (genA: Random_Generator<'a>) (genB: Random_Generator<'b>) =
+        fun (seed0: Random_Seed) ->
+            let ((struct( a, seed1 )): (struct( 'a * Random_Seed ))) =
+                genA seed0
+                
+            let ((struct( b, seed2 )): (struct( 'b * Random_Seed ))) =
+                genB seed1
+                
+            (struct( func a b , seed2 ))
+
+    let Random_pair (genA: Random_Generator<'a>) (genB: Random_Generator<'b>) =
+        Random_map2
+            (fun (a: 'a) (b: 'b) ->
+                (struct( a , b ))
+            )
+            genA
+            genB
+
+    let Random_map (func: 'a -> 'b) (genA: Random_Generator<'a>) =
+        fun (seed0: Random_Seed) ->
+            let ((struct( a, seed1 )): (struct( 'a * Random_Seed ))) =
+                genA seed0
+                
+            (struct( func a , seed1 ))
+
+    let rec Random_listHelp
+        (revList: List<'a>)
+        (n: int64)
+        (gen: Random_Seed -> (struct( 'a * Random_Seed )))
+        (seed: Random_Seed) =
+        if (<) n 1L then
+            (struct( revList , seed ))
+
+        else
+            let ((struct( value, newSeed )): (struct( 'a * Random_Seed ))) =
+                gen seed
+             
+            Random_listHelp (List_cons value revList) ((-) n 1L) gen newSeed
+
+    let Random_list (n: int64) (gen: Random_Generator<'a>) =
+        fun (seed: Random_Seed) ->
+            Random_listHelp [] n gen seed
+
+    let Random_lazy (callback: unit -> Random_Generator<'a>) =
+        fun (seed: Random_Seed) ->
+            let (gen: Random_Generator<'a>) =
+                callback ()
+                
+            gen seed
+
+    let Random_int (a: int64) (b: int64) =
+        fun (seed0: Random_Seed) ->
+                let ((struct( lo, hi )):
+                        (struct(
+                          int64
+                        * int64
+                        ))
+                    ) =
+                    if (<) a b then
+                        (struct( a , b ))
+
+                    else
+                        (struct( b , a ))
+                 
+                let range: int64 =
+                    (+) ((-) hi lo) 1L
+                 
+                if Basics_eq ((&&&) ((-) range 1L) range) 0L then
+                    (struct( (+) (Bitwise_shiftRightZfBy 0L ((&&&) ((-) range 1L) (Random_peel seed0))) lo , Random_next seed0 ))
+
+                else
+                    let threshold: int64 =
+                        Bitwise_shiftRightZfBy 0L (Basics_remainderBy range (Bitwise_shiftRightZfBy 0L (Basics_inegate range)))
+                     
+                    let rec accountForBias (seed: Random_Seed) =
+                        let x: int64 =
+                            Random_peel seed
+                         
+                        let seedN: Random_Seed =
+                            Random_next seed
+                         
+                        if (<) x threshold then
+                            accountForBias seedN
+
+                        else
+                            (struct( (+) (Basics_remainderBy range x) lo, seedN ))
+                    
+                    accountForBias seed0
+
+    let Random_initialSeed (x: int64) =
+        let (Random_Seed(state1, incr): Random_Seed) =
+            Random_next (Random_Seed (struct( 0L , 1013904223L )))
+         
+        let state2: int64 =
+            Bitwise_shiftRightZfBy 0L ((+) state1 x)
+         
+        Random_next (Random_Seed (struct( state2 , incr )))
+
+    let Random_independentSeed: Random_Generator<Random_Seed> =
+        fun (seed0: Random_Seed) ->
+            let makeIndependentSeed (state: int64) (b: int64) (c: int64) =
+                Random_next (Random_Seed (struct( state, Bitwise_shiftRightZfBy 0L ((|||) 1L ((^^^) b c)) )))
+                
+            let gen: Random_Generator<int64> =
+                Random_int 0L 4294967295L
+                
+            Random_step (Random_map3 makeIndependentSeed gen gen gen) seed0
+
+    let rec Random_getByWeight
+        ((struct( weight, value )): (struct( float * 'a )))
+        (others: List<(struct( float * 'a ))>)
+        (countdown: float) =
+        match others with
+        | [] ->
+            value
+
+        | second :: otherOthers ->
+            if (<=) countdown (Basics_fabs weight) then
+                value
+
+            else
+                Random_getByWeight second otherOthers ((-) countdown (Basics_fabs weight))
+
+    let Random_float (a: float) (b: float) =
+        fun (seed0: Random_Seed) ->
+            let seed1: Random_Seed =
+                Random_next seed0
+                
+            let range: float =
+                Basics_fabs ((-) b a)
+                
+            let n1: int64 =
+                Random_peel seed1
+                
+            let n0: int64 =
+                Random_peel seed0
+                
+            let lo: float =
+                (*) (float ((&&&) 134217727L n1)) 1.0
+                
+            let hi: float =
+                (*) (float ((&&&) 67108863L n0)) 1.0
+                
+            let val_: float =
+                (/) ((+) ((*) hi 134217728.0) lo) 9007199254740992.0
+                
+            let scaled: float =
+                (+) ((*) val_ range) a
+                
+            (struct( scaled , Random_next seed1 ))
+
+    let Random_weighted
+        (first: (struct( float * 'a )))
+        (others: List<(struct( float * 'a ))>) =
+        let normalize ((struct( weight, _ )): (struct( float * 'ignored ))) =
+            Basics_fabs weight
+         
+        let total: float =
+            (+) (normalize first) (List.sum (List.map normalize others))
+         
+        Random_map (Random_getByWeight first others) (Random_float 0.0 total)
+
+    let inline Random_constant (value: 'a) : Random_Generator<'a> =
+        fun (seed: Random_Seed) ->
+            (struct( value , seed ))
+
+    let Random_andThen (callback: 'a -> Random_Generator<'b>) (genA: Random_Generator<'a>) =
+        fun (seed: Random_Seed) ->
+            let ((struct( result, newSeed )): (struct( 'a * Random_Seed ))) =
+                genA seed
+                
+            let (genB: Random_Generator<'b>) =
+                callback result
+            
+            genB newSeed
+
+    let Random_addOne (value: 'a) =
+        (struct( 1.0 , value ))
+
+    let Random_uniform (value: 'a) (valueList: List<'a>) =
+        Random_weighted (struct( 1.0, value )) (List.map Random_addOne valueList)
 """
 
 
