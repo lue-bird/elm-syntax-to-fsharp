@@ -2554,6 +2554,26 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Time" ] ->
+            case reference.name of
+                "Posix" ->
+                    Just { moduleOrigin = Nothing, name = "Time_Posix" }
+
+                "Zone" ->
+                    Just { moduleOrigin = Nothing, name = "Time_Zone" }
+
+                "Month" ->
+                    Just { moduleOrigin = Nothing, name = "Time_Month" }
+
+                "Weekday" ->
+                    Just { moduleOrigin = Nothing, name = "Time_Weekday" }
+
+                "Time_ZoneName" ->
+                    Just { moduleOrigin = Nothing, name = "Time_ZoneName" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -2617,13 +2637,13 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "System.Math", name = "Pi" }
 
                 "ceiling" ->
-                    Just { moduleOrigin = Nothing, name = "ceil" }
+                    Just { moduleOrigin = Nothing, name = "Basics_ceiling" }
 
                 "floor" ->
-                    Just { moduleOrigin = Nothing, name = "floor" }
+                    Just { moduleOrigin = Nothing, name = "Basics_floor" }
 
                 "round" ->
-                    Just { moduleOrigin = Nothing, name = "round" }
+                    Just { moduleOrigin = Nothing, name = "Basics_round" }
 
                 "truncate" ->
                     Just { moduleOrigin = Nothing, name = "truncate" }
@@ -3534,6 +3554,47 @@ referenceToCoreFsharp reference =
 
                 "independentSeed" ->
                     Just { moduleOrigin = Nothing, name = "Random_independentSeed" }
+
+                _ ->
+                    Nothing
+
+        [ "Time" ] ->
+            case reference.name of
+                "posixToMillis" ->
+                    Just { moduleOrigin = Nothing, name = "Time_posixToMillis" }
+
+                "millisToPosix" ->
+                    Just { moduleOrigin = Nothing, name = "Time_millisToPosix" }
+
+                "utc" ->
+                    Just { moduleOrigin = Nothing, name = "Time_utc" }
+
+                "toYear" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toYear" }
+
+                "toMonth" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toMonth" }
+
+                "toDay" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toDay" }
+
+                "toWeekday" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toWeekday" }
+
+                "toHour" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toHour" }
+
+                "toMinute" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toMinute" }
+
+                "toSecond" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toSecond" }
+
+                "toMillis" ->
+                    Just { moduleOrigin = Nothing, name = "Time_toMillis" }
+
+                "customZone" ->
+                    Just { moduleOrigin = Nothing, name = "Time_customZone" }
 
                 _ ->
                     Nothing
@@ -8540,6 +8601,12 @@ defaultDeclarations =
         else if comparisonMagnitude < 0 then Basics_Order.LT
         else Basics_Order.GT
 
+    let inline Basics_ceiling (n: float) : int64 =
+        int64 (System.Math.Ceiling(n))
+    let inline Basics_floor (n: float) : int64 =
+        int64 (System.Math.Floor(n))
+    let inline Basics_round (n: float) : int64 =
+        int64 (System.Math.Round(n))
     let inline Basics_fabs (n: float) : float = System.Double.Abs(n)
     let inline Basics_iabs (n: int64) : int64 = System.Int64.Abs(n)
     let inline Basics_fnegate (n: float) : float = -n
@@ -10302,6 +10369,131 @@ defaultDeclarations =
 
     let Random_uniform (value: 'a) (valueList: List<'a>) =
         Random_weighted (struct( 1.0, value )) (List.map Random_addOne valueList)
+
+
+    [<Struct>]
+    type Time_Posix =
+        | Time_Posix of int64
+
+    [<Struct>]
+    type Time_Era =
+        { Start: int64; Offset: int64 }
+    
+    [<Struct>]
+    type Time_Zone =
+        | Time_Zone of (struct( int64 * List<Time_Era> ))
+
+    [<Struct>]
+    type Time_Weekday =
+        | Time_Mon
+        | Time_Tue
+        | Time_Wed
+        | Time_Thu
+        | Time_Fri
+        | Time_Sat
+        | Time_Sun
+
+    [<Struct>]
+    type Time_Month =
+        | Time_Jan
+        | Time_Feb
+        | Time_Mar
+        | Time_Apr
+        | Time_May
+        | Time_Jun
+        | Time_Jul
+        | Time_Aug
+        | Time_Sep
+        | Time_Oct
+        | Time_Nov
+        | Time_Dec
+    
+    [<Struct>]
+    type Time_ZoneName =
+        | Time_Name of Time_Name:
+            StringRope
+        | Time_Offset of Time_Offset:
+            int64
+    
+    [<Struct>]
+    type Time_Civil =
+        { Year: int64; Month: int64; Day: int64 }
+        
+    let inline Time_posixToMillis ((Time_Posix millis): Time_Posix) : int64 =
+        millis
+    let inline Time_millisToPosix (millis: int64) : Time_Posix =
+        Time_Posix millis
+
+    let Time_utc: Time_Zone =
+        Time_Zone (struct( 0L, [] ))
+    let Time_customZone (n: int64) (eras: List<Time_Era>) : Time_Zone =
+        Time_Zone (struct( n, eras ))
+    
+    let inline flooredDiv (numerator: int64) (denominator: int64) : int64 =
+        int64 (floor (float numerator / float denominator))
+    let rec Time_toAdjustedMinutesHelp (defaultOffset: int64) (posixMinutes: int64) (eras: List<Time_Era>) : int64 =
+        match eras with
+        | [] ->
+            posixMinutes + defaultOffset
+
+        | era :: olderEras ->
+            if era.Start < posixMinutes then
+                posixMinutes + era.Offset
+            else
+                Time_toAdjustedMinutesHelp defaultOffset posixMinutes olderEras
+    let Time_toAdjustedMinutes ((Time_Zone (struct( defaultOffset, eras ))): Time_Zone) (time: Time_Posix) =
+        Time_toAdjustedMinutesHelp defaultOffset (flooredDiv (Time_posixToMillis time) 60000) eras
+    
+    let Time_toCivil (minutes: int64) : Time_Civil =
+        let rawDay    = flooredDiv minutes (60L * 24L) + 719468L
+        let era       = (if rawDay >= 0 then rawDay else rawDay - 146096L) / 146097L
+        let dayOfEra  = rawDay - era * 146097L // [0, 146096]
+        let yearOfEra = (dayOfEra - dayOfEra / 1460L + dayOfEra / 36524L - dayOfEra / 146096L) / 365L // [0, 399]
+        let year      = yearOfEra + era * 400L
+        let dayOfYear = dayOfEra - (365L * yearOfEra + yearOfEra / 4L - yearOfEra / 100L) // [0, 365]
+        let mp        = (5L * dayOfYear + 2L) / 153L // [0, 11]
+        let month     = mp + (if mp < 10 then 3L else -9L) // [1, 12]
+        
+        { Year = year + (if month <= 2 then 1L else 0L)
+        ; Month = month
+        ; Day = dayOfYear - (153L * mp + 2L) / 5L + 1L // [1, 31]
+        }
+
+    let Time_toYear (zone: Time_Zone) (time: Time_Posix) : int64 =
+        (Time_toCivil (Time_toAdjustedMinutes zone time)).Year
+    let Time_toMonth (zone: Time_Zone) (time: Time_Posix) : Time_Month =
+        match (Time_toCivil (Time_toAdjustedMinutes zone time)).Month with
+        | 1L  -> Time_Jan
+        | 2L  -> Time_Feb
+        | 3L  -> Time_Mar
+        | 4L  -> Time_Apr
+        | 5L  -> Time_May
+        | 6L  -> Time_Jun
+        | 7L  -> Time_Jul
+        | 8L  -> Time_Aug
+        | 9L  -> Time_Sep
+        | 10L -> Time_Oct
+        | 11L -> Time_Nov
+        | _  -> Time_Dec
+    let Time_toDay (zone: Time_Zone) (time: Time_Posix) : int64 =
+        (Time_toCivil (Time_toAdjustedMinutes zone time)).Day
+    let Time_toWeekday (zone: Time_Zone) (time: Time_Posix) : Time_Weekday =
+        match Basics_modBy 7 (flooredDiv (Time_toAdjustedMinutes zone time) (60L * 24L)) with
+        | 0L -> Time_Thu
+        | 1L -> Time_Fri
+        | 2L -> Time_Sat
+        | 3L -> Time_Sun
+        | 4L -> Time_Mon
+        | 5L -> Time_Tue
+        | _ -> Time_Wed
+    let Time_toHour zone time =
+        Basics_modBy 24 (flooredDiv (Time_toAdjustedMinutes zone time) 60)
+    let Time_toMinute (zone: Time_Zone) (time: Time_Posix) : int64 =
+        Basics_modBy 60 (Time_toAdjustedMinutes zone time)
+    let inline Time_toSecond (_: Time_Zone) (time: Time_Posix) : int64 =
+        Basics_modBy 60 (flooredDiv (Time_posixToMillis time) 1000)
+    let inline Time_toMillis (_: Time_Zone) (time: Time_Posix) : int64 =
+        Basics_modBy 1000 (Time_posixToMillis time)
 """
 
 
