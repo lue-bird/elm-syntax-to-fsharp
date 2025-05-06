@@ -121,7 +121,7 @@ Here's some special types you can expect:
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
     Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
-    Create them like you would in elm with `Elm.Regex_fromString` or `Elm.Regex_fromStringWith` or `Elm.Regex_never`
+    Create them like you would in elm with `Elm.Regex_fromString`, `Elm.Regex_fromStringWith` or `Elm.Regex_never`
 
 The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
 
