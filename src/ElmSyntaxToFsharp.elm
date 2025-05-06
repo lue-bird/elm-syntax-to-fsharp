@@ -1175,14 +1175,18 @@ printFsharpTypeAliasDeclaration fsharpTypeAliasDeclaration =
 
 printFsharpRecordTypeDeclaration : List String -> Print
 printFsharpRecordTypeDeclaration fsharpRecordFields =
-    Print.exactly
-        ("type "
-            ++ generatedFsharpRecordTypeAliasName fsharpRecordFields
-            ++ (fsharpRecordFields
-                    |> fsharpTypeParametersToString
-               )
-            ++ " ="
-        )
+    Print.exactly "[<Struct>]"
+        |> Print.followedBy Print.linebreakIndented
+        |> Print.followedBy
+            (Print.exactly
+                ("type "
+                    ++ generatedFsharpRecordTypeAliasName fsharpRecordFields
+                    ++ (fsharpRecordFields
+                            |> fsharpTypeParametersToString
+                       )
+                    ++ " ="
+                )
+            )
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
