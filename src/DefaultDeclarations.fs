@@ -1384,18 +1384,141 @@ module DefaultDeclarations =
         raise (new System.NotImplementedException(message))
     
 
-    type Parser_Problem =
-        | Parser_Expecting of StringRope
-        | Parser_ExpectingInt
-        | Parser_ExpectingHex
-        | Parser_ExpectingOctal
-        | Parser_ExpectingBinary
-        | Parser_ExpectingFloat
-        | Parser_ExpectingNumber
-        | Parser_ExpectingVariable
-        | Parser_ExpectingSymbol of StringRope
-        | Parser_ExpectingKeyword of StringRope
-        | Parser_ExpectingEnd
-        | Parser_UnexpectedChar
-        | Parser_Problem of StringRope
-        | Parser_BadRepeat
+    let ElmKernelParser_isSubString
+        (smallStringRope: StringRope)
+        (offsetOriginal: int64)
+        (rowOriginal: int64)
+        (colOriginal: int64)
+        (bigStringRope: StringRope)
+        : struct( int64 * int64 * int64 ) =
+        let smallString = StringRope.toString smallStringRope
+        let bigString = StringRope.toString bigStringRope
+        let smallLength = String.length smallString
+        let mutable row = int rowOriginal
+        let mutable col = int colOriginal
+        let mutable offset = int offsetOriginal
+        let mutable isGood = int offset + smallLength <= String.length bigString
+        let mutable i = 0
+        while isGood && i < smallLength do
+            let code = int (bigString[offset])
+            isGood <- smallString[i] = bigString[offset]
+            if code = 0x000A then // \n
+                i <- i + 1
+                row <- row + 1
+                col <- 1
+            else
+                col <- col + 1
+                if (code &&& 0xF800) = 0xD800 then
+                    isGood <- isGood && (smallString[i + 1] = bigString[offset + 1])
+                    i <- i + 2
+                    offset <- offset + 2
+                else
+                    i <- i + 1
+        done
+
+        (struct( (if isGood then offset else -1), row, col ))
+    
+    let ElmKernelParser_isSubChar (predicate: char -> bool) (offset: int64) (stringRope: StringRope) : int64 =
+        let string = StringRope.toString stringRope
+        if String.length string <= int offset then
+            -1
+        else if (int (string[int offset]) &&& 0xF800) = 0xD800 then
+            (if predicate (char (string.Substring(int offset, 2))) then
+                offset + 2L
+             else
+                -1L
+            )
+        else if predicate (string[int offset]) then
+            (if (string[int offset] = '\n') then
+                -2L
+             else
+                offset + 1L
+            )
+        else
+            -1
+
+    let inline ElmKernelParser_isAsciiCode (code: int64) (offset: int64) (string: StringRope) : bool =
+        int64 ((StringRope.toString string)[int offset]) = code
+
+    let ElmKernelParser_chompBase10 (offsetOriginal: int64) (stringRope: StringRope) : int64 =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable foundNonBase10 = false
+        while (offset < String.length string) && not foundNonBase10 do
+            foundNonBase10 <- not (System.Char.IsAsciiDigit(string[offset]))
+            offset <- offset + 1
+        done
+        offset
+
+    let ElmKernelParser_consumeBase
+        (base_: int64)
+        (offsetOriginal: int64)
+        (stringRope: StringRope)
+        : struct( int64 * int64 ) =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable total = 0
+        let mutable foundNonBase = false
+        while (offset < String.length string) && not foundNonBase do
+            let digit = int (string[offset]) - 0x30
+            if (digit < 0 || base_ <= digit) then
+                foundNonBase <- true
+            else
+                total <- int base_ * total + digit
+                offset <- offset + 1
+        done
+        (struct( offset, total ))
+
+    let ElmKernelParser_consumeBase16
+        (offsetOriginal: int64)
+        (stringRope: StringRope)
+        : struct( int64 * int64 ) =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable total = 0
+        let mutable foundNonBase16 = false
+        while (offset < String.length string) && not foundNonBase16 do
+            let code = int (string[offset])
+            if (0x30 <= code && code <= 0x39) then
+                total <- 16 * total + code - 0x30
+            else if (0x41 <= code && code <= 0x46) then
+                total <- 16 * total + code - 55
+            else if (0x61 <= code && code <= 0x66) then
+                total <- 16 * total + code - 87
+            else
+                foundNonBase16 <- true
+        done
+        (struct( offset, total ))
+
+    let ElmKernelParser_findSubString
+        (smallStringRope: StringRope)
+        (offsetOriginal: int64)
+        (rowOriginal: int64)
+        (colOriginal: int64)
+        (bigStringRope: StringRope)
+        : struct( int64 * int64 * int64 ) =
+        let smallString = StringRope.toString smallStringRope
+        let bigString = StringRope.toString bigStringRope
+        let newOffset = bigString.IndexOf(smallString, int offsetOriginal)
+        let target =
+            if newOffset < 0 then 
+                String.length bigString
+            else
+                newOffset + String.length smallString
+        let mutable row = int rowOriginal
+        let mutable col = int colOriginal
+        let mutable offset = int offsetOriginal
+
+        while (offset < target) do
+            let code = int(bigString[offset])
+            offset <- offset + 1
+            if code = 0x000A then // \n
+                col <- 1
+                row <- row + 1
+            else
+                col <- col + 1
+                if (code &&& 0xF800) = 0xD800 then
+                    offset <- offset + 1
+        done
+
+        (struct( newOffset, row, col ))

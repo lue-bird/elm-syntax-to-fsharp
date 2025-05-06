@@ -2489,14 +2489,6 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Parser" ] ->
-            case reference.name of
-                "Problem" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_Problem" }
-
-                _ ->
-                    Nothing
-
         [ "Maybe" ] ->
             case reference.name of
                 "Maybe" ->
@@ -3387,53 +3379,6 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Parser" ] ->
-            case reference.name of
-                "Problem" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_Problem" }
-
-                "Expecting" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_Expecting" }
-
-                "ExpectingInt" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingInt" }
-
-                "ExpectingHex" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingHex" }
-
-                "ExpectingOctal" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingOctal" }
-
-                "ExpectingBinary" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingBinary" }
-
-                "ExpectingFloat" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingFloat" }
-
-                "ExpectingNumber" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingNumber" }
-
-                "ExpectingVariable" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingVariable" }
-
-                "ExpectingSymbol" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingSymbol" }
-
-                "ExpectingKeyword" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingKeyword" }
-
-                "ExpectingEnd" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_ExpectingEnd" }
-
-                "UnexpectedChar" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_UnexpectedChar" }
-
-                "BadRepeat" ->
-                    Just { moduleOrigin = Nothing, name = "Parser_BadRepeat" }
-
-                _ ->
-                    Nothing
-
         [ "Maybe" ] ->
             case reference.name of
                 "Nothing" ->
@@ -3721,7 +3666,7 @@ printParenthesized config =
 
 {-| Transpile a list of [`Elm.Syntax.Declaration.Declaration`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Declaration#Declaration)s
 across multiple modules to value, function and type declarations.
-Declarations that use unsupported stuff like parser kernel code (directly or indirectly)
+Declarations that use unsupported stuff like html kernel code (directly or indirectly)
 will not be present in the final declarations.
 Their errors can be found alongside the valid transpiled declarations.
 
@@ -3817,12 +3762,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 False
 
                             [ "Json", "Encode" ] ->
-                                False
-
-                            [ "Parser" ] ->
-                                False
-
-                            [ "Parser", "Advanced" ] ->
                                 False
 
                             [ "Regex" ] ->
@@ -4017,12 +3956,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 False
 
                             [ "Task" ] ->
-                                False
-
-                            [ "Parser" ] ->
-                                False
-
-                            [ "Parser", "Advanced" ] ->
                                 False
 
                             [ "File" ] ->
@@ -4318,6 +4251,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         ElmSyntaxTypeInfer.elmCoreTypes
                             |> FastDict.union elmJsonTypes
                             |> FastDict.union elmRegexTypes
+                            |> FastDict.union elmKernelParserTypes
                     }
 
         syntaxModulesInferred :
@@ -6935,6 +6869,12 @@ expressionOperatorToFsharpFunctionReference operator =
         "<<" ->
             Ok { moduleOrigin = Nothing, name = "(<<)" }
 
+        "|=" ->
+            Ok { moduleOrigin = Nothing, name = "ParserAdvanced_keeper" }
+
+        "|." ->
+            Ok { moduleOrigin = Nothing, name = "ParserAdvanced_ignorer" }
+
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
 
@@ -6990,13 +6930,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                             Print.lineSpread
             in
             Print.exactly
-                (fsharpValueOrFunctionDeclaration.name
-                    ++ (fsharpValueOrFunctionDeclaration.type_
-                            |> fsharpTypeContainedVariables
-                            |> FastSet.toList
-                            |> fsharpTypeParametersToString
-                       )
-                )
+                fsharpValueOrFunctionDeclaration.name
                 |> Print.followedBy
                     (Print.withIndentIncreasedBy 4
                         (parameterPrints
@@ -7023,13 +6957,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
 
         resultNotFunction ->
             Print.exactly
-                (fsharpValueOrFunctionDeclaration.name
-                    ++ (fsharpValueOrFunctionDeclaration.type_
-                            |> fsharpTypeContainedVariables
-                            |> FastSet.toList
-                            |> fsharpTypeParametersToString
-                       )
-                )
+                fsharpValueOrFunctionDeclaration.name
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
                         ((let
@@ -9919,21 +9847,144 @@ defaultDeclarations =
         raise (new System.NotImplementedException(message))
     
 
-    type Parser_Problem =
-        | Parser_Expecting of StringRope
-        | Parser_ExpectingInt
-        | Parser_ExpectingHex
-        | Parser_ExpectingOctal
-        | Parser_ExpectingBinary
-        | Parser_ExpectingFloat
-        | Parser_ExpectingNumber
-        | Parser_ExpectingVariable
-        | Parser_ExpectingSymbol of StringRope
-        | Parser_ExpectingKeyword of StringRope
-        | Parser_ExpectingEnd
-        | Parser_UnexpectedChar
-        | Parser_Problem of StringRope
-        | Parser_BadRepeat
+    let ElmKernelParser_isSubString
+        (smallStringRope: StringRope)
+        (offsetOriginal: int64)
+        (rowOriginal: int64)
+        (colOriginal: int64)
+        (bigStringRope: StringRope)
+        : struct( int64 * int64 * int64 ) =
+        let smallString = StringRope.toString smallStringRope
+        let bigString = StringRope.toString bigStringRope
+        let smallLength = String.length smallString
+        let mutable row = int rowOriginal
+        let mutable col = int colOriginal
+        let mutable offset = int offsetOriginal
+        let mutable isGood = int offset + smallLength <= String.length bigString
+        let mutable i = 0
+        while isGood && i < smallLength do
+            let code = int (bigString[offset])
+            isGood <- smallString[i] = bigString[offset]
+            if code = 0x000A then // \\n
+                i <- i + 1
+                row <- row + 1
+                col <- 1
+            else
+                col <- col + 1
+                if (code &&& 0xF800) = 0xD800 then
+                    isGood <- isGood && (smallString[i + 1] = bigString[offset + 1])
+                    i <- i + 2
+                    offset <- offset + 2
+                else
+                    i <- i + 1
+        done
+
+        (struct( (if isGood then offset else -1), row, col ))
+    
+    let ElmKernelParser_isSubChar (predicate: char -> bool) (offset: int64) (stringRope: StringRope) : int64 =
+        let string = StringRope.toString stringRope
+        if String.length string <= int offset then
+            -1
+        else if (int (string[int offset]) &&& 0xF800) = 0xD800 then
+            (if predicate (char (string.Substring(int offset, 2))) then
+                offset + 2L
+             else
+                -1L
+            )
+        else if predicate (string[int offset]) then
+            (if (string[int offset] = '\\n') then
+                -2L
+             else
+                offset + 1L
+            )
+        else
+            -1
+
+    let inline ElmKernelParser_isAsciiCode (code: int64) (offset: int64) (string: StringRope) : bool =
+        int64 ((StringRope.toString string)[int offset]) = code
+
+    let ElmKernelParser_chompBase10 (offsetOriginal: int64) (stringRope: StringRope) : int64 =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable foundNonBase10 = false
+        while (offset < String.length string) && not foundNonBase10 do
+            foundNonBase10 <- not (System.Char.IsAsciiDigit(string[offset]))
+            offset <- offset + 1
+        done
+        offset
+
+    let ElmKernelParser_consumeBase
+        (base_: int64)
+        (offsetOriginal: int64)
+        (stringRope: StringRope)
+        : struct( int64 * int64 ) =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable total = 0
+        let mutable foundNonBase = false
+        while (offset < String.length string) && not foundNonBase do
+            let digit = int (string[offset]) - 0x30
+            if (digit < 0 || base_ <= digit) then
+                foundNonBase <- true
+            else
+                total <- int base_ * total + digit
+                offset <- offset + 1
+        done
+        (struct( offset, total ))
+
+    let ElmKernelParser_consumeBase16
+        (offsetOriginal: int64)
+        (stringRope: StringRope)
+        : struct( int64 * int64 ) =
+        let string = StringRope.toString stringRope
+        let mutable offset = int offsetOriginal
+        let mutable total = 0
+        let mutable foundNonBase16 = false
+        while (offset < String.length string) && not foundNonBase16 do
+            let code = int (string[offset])
+            if (0x30 <= code && code <= 0x39) then
+                total <- 16 * total + code - 0x30
+            else if (0x41 <= code && code <= 0x46) then
+                total <- 16 * total + code - 55
+            else if (0x61 <= code && code <= 0x66) then
+                total <- 16 * total + code - 87
+            else
+                foundNonBase16 <- true
+        done
+        (struct( offset, total ))
+
+    let ElmKernelParser_findSubString
+        (smallStringRope: StringRope)
+        (offsetOriginal: int64)
+        (rowOriginal: int64)
+        (colOriginal: int64)
+        (bigStringRope: StringRope)
+        : struct( int64 * int64 * int64 ) =
+        let smallString = StringRope.toString smallStringRope
+        let bigString = StringRope.toString bigStringRope
+        let newOffset = bigString.IndexOf(smallString, int offsetOriginal)
+        let target =
+            if newOffset < 0 then 
+                String.length bigString
+            else
+                newOffset + String.length smallString
+        let mutable row = int rowOriginal
+        let mutable col = int colOriginal
+        let mutable offset = int offsetOriginal
+
+        while (offset < target) do
+            let code = int(bigString[offset])
+            offset <- offset + 1
+            if code = 0x000A then // \\n
+                col <- 1
+                row <- row + 1
+            else
+                col <- col + 1
+                if (code &&& 0xF800) = 0xD800 then
+                    offset <- offset + 1
+        done
+
+        (struct( newOffset, row, col ))
 """
 
 
@@ -9982,6 +10033,141 @@ printLinebreakLinebreakIndented =
 printExactlyUnderscore : Print
 printExactlyUnderscore =
     Print.exactly "_"
+
+
+elmKernelParserTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmKernelParserTypes =
+    FastDict.singleton
+        [ "Elm", "Kernel", "Parser" ]
+        { signatures =
+            FastDict.fromList
+                [ ( "isSubString"
+                  , inferredTypeFunction
+                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeTriple
+                                { part0 = typeInt
+                                , part1 = typeInt
+                                , part2 = typeInt
+                                }
+                            )
+                        )
+                  )
+                , ( "isSubChar"
+                  , inferredTypeFunction
+                        [ inferredTypeFunction [ typeChar ] typeBool, typeInt, typeString ]
+                        typeInt
+                  )
+                , ( "isAsciiCode"
+                  , inferredTypeFunction
+                        [ typeInt, typeInt, typeString ]
+                        typeBool
+                  )
+                , ( "chompBase10"
+                  , inferredTypeFunction
+                        [ typeInt, typeString ]
+                        typeInt
+                  )
+                , ( "consumeBase"
+                  , inferredTypeFunction [ typeInt, typeInt, typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeTuple
+                                { part0 = typeInt
+                                , part1 = typeInt
+                                }
+                            )
+                        )
+                  )
+                , ( "consumeBase16"
+                  , inferredTypeFunction
+                        [ typeInt, typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeTuple
+                                { part0 = typeInt
+                                , part1 = typeInt
+                                }
+                            )
+                        )
+                  )
+                , ( "findSubString"
+                  , inferredTypeFunction
+                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeTriple
+                                { part0 = typeInt
+                                , part1 = typeInt
+                                , part2 = typeInt
+                                }
+                            )
+                        )
+                  )
+                ]
+        , typeAliases = FastDict.empty
+        , choiceTypes = FastDict.empty
+        }
+
+
+inferredTypeFunction :
+    List (ElmSyntaxTypeInfer.Type variable)
+    -> ElmSyntaxTypeInfer.Type variable
+    -> ElmSyntaxTypeInfer.Type variable
+inferredTypeFunction inputs output =
+    case inputs of
+        [] ->
+            output
+
+        input :: remainingInputs ->
+            ElmSyntaxTypeInfer.TypeNotVariable
+                (ElmSyntaxTypeInfer.TypeFunction
+                    { input = input
+                    , output =
+                        inferredTypeFunction remainingInputs output
+                    }
+                )
+
+
+typeBool : ElmSyntaxTypeInfer.Type variable_
+typeBool =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = [ "Basics" ]
+            , name = "Bool"
+            , arguments = []
+            }
+        )
+
+
+typeInt : ElmSyntaxTypeInfer.Type variable_
+typeInt =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = [ "Basics" ]
+            , name = "Int"
+            , arguments = []
+            }
+        )
+
+
+typeString : ElmSyntaxTypeInfer.Type variable_
+typeString =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = [ "String" ]
+            , name = "String"
+            , arguments = []
+            }
+        )
+
+
+typeChar : ElmSyntaxTypeInfer.Type variable_
+typeChar =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = [ "Char" ]
+            , name = "Char"
+            , arguments = []
+            }
+        )
 
 
 elmJsonTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
