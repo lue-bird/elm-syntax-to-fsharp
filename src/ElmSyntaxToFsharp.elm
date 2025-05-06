@@ -1635,7 +1635,7 @@ printFsharpTypeTuple parts =
             parts.part2Up
                 |> List.map printFsharpTypeNotParenthesized
     in
-    Print.exactly "( "
+    Print.exactly "(struct( "
         |> Print.followedBy
             ((part0Print :: part1Print :: part2UpPrints)
                 |> Print.listMapAndIntersperseAndFlatten
@@ -1650,7 +1650,7 @@ printFsharpTypeTuple parts =
             )
         |> Print.followedBy
             Print.linebreakIndented
-        |> Print.followedBy (Print.exactly ")")
+        |> Print.followedBy (Print.exactly "))")
 
 
 printFsharpTypeConstruct :
@@ -3077,10 +3077,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "Dict_singleton" }
 
                 "fromList" ->
-                    Just { moduleOrigin = Just "Map", name = "ofList" }
+                    Just { moduleOrigin = Nothing, name = "Dict_fromList" }
 
                 "toList" ->
-                    Just { moduleOrigin = Just "Map", name = "toList" }
+                    Just { moduleOrigin = Nothing, name = "Dict_toList" }
 
                 "keys" ->
                     Just { moduleOrigin = Nothing, name = "Dict_keys" }
@@ -3596,14 +3596,14 @@ printFsharpPatternNotParenthesized fsharpPattern =
             printFsharpPatternAs patternAs
 
         FsharpPatternTuple parts ->
-            Print.exactly "( "
+            Print.exactly "(struct( "
                 |> Print.followedBy
                     ((parts.part0 :: parts.part1 :: parts.part2Up)
                         |> Print.listMapAndIntersperseAndFlatten
                             printFsharpPatternNotParenthesized
                             (Print.exactly ", ")
                     )
-                |> Print.followedBy (Print.exactly " )")
+                |> Print.followedBy (Print.exactly " ))")
 
 
 printFsharpPatternListExact : List FsharpPattern -> Print
@@ -7552,7 +7552,9 @@ printFsharpExpressionTuple parts =
                                 Print.lineSpread
                     )
     in
-    Print.exactly "( "
+    Print.exactly "(struct("
+        |> Print.followedBy
+            (Print.spaceOrLinebreakIndented lineSpread)
         |> Print.followedBy
             ((part0Print :: part1Print :: part2UpPrints)
                 |> Print.listMapAndIntersperseAndFlatten
@@ -7566,7 +7568,7 @@ printFsharpExpressionTuple parts =
             )
         |> Print.followedBy
             (Print.spaceOrLinebreakIndented lineSpread)
-        |> Print.followedBy (Print.exactly ")")
+        |> Print.followedBy (Print.exactly "))")
 
 
 printFsharpExpressionCall :
@@ -8576,12 +8578,14 @@ defaultDeclarations =
         (angleInDegrees * System.Math.PI) / 180.0
     let inline Basics_turns (angleInTurns: float) : float =
         (System.Math.PI * 2.0) * angleInTurns
-    let Basics_fromPolar (( radius: float, theta: float )) : ( float * float ) =
-        ( radius * (System.Double.Cos(theta))
+    let Basics_fromPolar (struct( radius: float, theta: float )) : struct( float * float ) =
+        struct(
+          radius * (System.Double.Cos(theta))
         , radius * (System.Double.Sin(theta))
         )
-    let Basics_toPolar ( x: float, y: float ): ( float * float ) =
-        ( System.Double.Sqrt((x * x) + (y * y))
+    let Basics_toPolar (struct( x: float, y: float )): struct( float * float ) =
+        struct (
+          System.Double.Sqrt((x * x) + (y * y))
         , System.Double.Atan2(y, x)
         )
 
@@ -8767,12 +8771,12 @@ defaultDeclarations =
     let String_cons (newHeadChar: char) (late: StringRope) : StringRope =
         StringRopeAppend (StringRopeOne (string newHeadChar), late)
     
-    let String_uncons (stringRope: StringRope) : option<( char * StringRope )> =
+    let String_uncons (stringRope: StringRope) : option<struct( char * StringRope )> =
         let string: string = StringRope.toString stringRope
         if System.String.IsNullOrEmpty(string) then
             None
         else
-            Some (( string[0], StringRopeOne(string[1..]) ))
+            Some (struct( string[0], StringRopeOne(string[1..]) ))
 
     let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
         List.ofArray
@@ -9051,6 +9055,19 @@ defaultDeclarations =
 
     let inline Dict_singleton (key: 'key) (value: 'value) : Map<'key, 'value> =
         Map [ (key, value) ]
+    
+    let inline Dict_toList (dict: Map<'key, 'value>) : List<struct('key * 'value)> =
+        Map.foldBack
+            (fun key value soFar -> (struct( key, value )) :: soFar)
+            dict
+            []
+    let inline Dict_fromList (keyValuePairs: List<struct('key * 'value)>) : Map<'key, 'value> =
+        List.fold
+            (fun soFar (struct( key, value )) ->
+                Map.add key value soFar
+            )
+            Map.empty
+            keyValuePairs
 
     let inline Dict_foldr
         (reduce: 'key -> 'value -> 'state -> 'state)
@@ -9157,11 +9174,11 @@ defaultDeclarations =
         Array.append array [| newLastElement |]
     let inline Array_indexedMap (elementChange: int64 -> 'a -> 'b) (array: array<'a>) : array<'b> =
         Array.mapi (fun index element -> elementChange index element) array
-    let Array_toIndexedList (array: array<'a>) : List<( int64 * 'a )> =
+    let Array_toIndexedList (array: array<'a>) : List<struct( int64 * 'a )> =
         (Array.foldBack
-            (fun (element: 'a) (soFar: {| Index: int64; List: List<( int64 * 'a )> |}) ->
+            (fun (element: 'a) (soFar: {| Index: int64; List: List<struct( int64 * 'a )> |}) ->
                 {| Index = soFar.Index - 1L
-                ;  List = ( soFar.Index, element ) :: soFar.List
+                ;  List = (struct( soFar.Index, element )) :: soFar.List
                 |}
             )
             array
@@ -9218,10 +9235,10 @@ defaultDeclarations =
     let inline JsonEncode_set (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: Set<'element>) : System.Text.Json.Nodes.JsonNode =
         // can be optimized
         System.Text.Json.Nodes.JsonArray(Array.map elementToValue (Set.toArray elements))
-    let inline JsonEncode_object (fields: List<( StringRope * System.Text.Json.Nodes.JsonNode )>) : System.Text.Json.Nodes.JsonNode =
+    let inline JsonEncode_object (fields: List<struct( StringRope * System.Text.Json.Nodes.JsonNode )>) : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonObject(
             List.fold
-                (fun soFar (fieldName, fieldValue) ->
+                (fun soFar (struct( fieldName, fieldValue )) ->
                     Map.add (StringRope.toString fieldName)
                         fieldValue
                         soFar
@@ -9254,10 +9271,10 @@ defaultDeclarations =
         json.ToJsonString(printOptions)
     
     type JsonDecode_Error =
-        | JsonDecode_Field of ( StringRope * JsonDecode_Error )
-        | JsonDecode_Index of ( int64 * JsonDecode_Error )
+        | JsonDecode_Field of (struct( StringRope * JsonDecode_Error ))
+        | JsonDecode_Index of (struct( int64 * JsonDecode_Error ))
         | JsonDecode_OneOf of List<JsonDecode_Error>
-        | JsonDecode_Failure of ( StringRope * System.Text.Json.Nodes.JsonNode )
+        | JsonDecode_Failure of (struct( StringRope * System.Text.Json.Nodes.JsonNode ))
     type JsonDecode_Decoder<'value> =
         System.Text.Json.Nodes.JsonNode -> Result<'value, JsonDecode_Error>
     
@@ -9488,40 +9505,41 @@ defaultDeclarations =
         fun json ->
             try Ok (StringRopeOne (json.AsValue().GetValue<string>())) with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting a STRING", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting a STRING", json )))
     let JsonDecode_int : JsonDecode_Decoder<int64> =
         fun json ->
             try Ok (json.AsValue().GetValue<int64>()) with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting an INT", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting an INT", json )))
     let JsonDecode_float : JsonDecode_Decoder<float> =
         fun json ->
             try Ok (json.AsValue().GetValue<float>()) with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting a FLOAT", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting a FLOAT", json )))
     let JsonDecode_bool : JsonDecode_Decoder<bool> =
         fun json ->
             try Ok (json.AsValue().GetValue<bool>()) with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting a BOOL", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting a BOOL", json )))
     let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
         fun json ->
             match json.GetValueKind() with
             | System.Text.Json.JsonValueKind.Null ->
                 Ok value
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting NULL", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting NULL", json )))
     let JsonDecode_index (index: int64) (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<'element> =
         fun json ->
             if index <= 0 then
                 Error
                     (JsonDecode_Failure
-                        ( StringRopeOne
+                        (struct(
+                          StringRopeOne
                             ("Expecting an element at array index " + string index +
                                 " (likely a logic error in decoder code)"
                             )
                         , json
-                        )
+                        ))
                     )
             else
             try
@@ -9529,22 +9547,23 @@ defaultDeclarations =
                 if index >= jsonArray.Count then
                     Error
                         (JsonDecode_Failure
-                            ( StringRopeOne
+                            (struct(
+                              StringRopeOne
                                 ("Expecting a LONGER array. Need index " + string index +
                                     " but only see " + string jsonArray.Count + " elements"
                                 )
                             , json
-                            )
+                            ))
                         )
                 else
                     match elementDecoder (jsonArray[int index]) with
                     | Ok elementDecoded ->
                         Ok elementDecoded
                     | Error error ->
-                        Error (JsonDecode_Index ( index, error ))
+                        Error (JsonDecode_Index (struct( index, error )))
             with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting an ARRAY", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting an ARRAY", json )))
     let JsonDecode_list (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<List<'element>> =
         fun json ->
             try
@@ -9559,7 +9578,7 @@ defaultDeclarations =
                                 ;  Result =
                                     match elementDecoder element with
                                     | Error error ->
-                                        Error (JsonDecode_Index ( soFar.Index, error ))
+                                        Error (JsonDecode_Index (struct( soFar.Index, error )))
                                     | Ok head ->
                                         Ok (head :: tail)
                                 |}
@@ -9570,7 +9589,7 @@ defaultDeclarations =
                 folded.Result
             with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting a LIST", json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting a LIST", json )))
     let JsonDecode_array (elementDecoder: JsonDecode_Decoder<'element>) : JsonDecode_Decoder<array<'element>> =
         // can be optimized
         JsonDecode_map Array.ofList (JsonDecode_list elementDecoder)
@@ -9584,16 +9603,16 @@ defaultDeclarations =
                 match jsonObject[fieldNameString] with
                 | null ->
                     Error
-                        (JsonDecode_Failure ( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json ))
+                        (JsonDecode_Failure (struct( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json )))
                 | fieldValueJson ->
                     match valueDecoder fieldValueJson with
                     | Ok fieldValue ->
                         Ok fieldValue
                     | Error error ->
-                        Error (JsonDecode_Field ( fieldNameStringRope, error ))
+                        Error (JsonDecode_Field (struct( fieldNameStringRope, error )))
             with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json ))
+                Error (JsonDecode_Failure (struct( StringRopeOne ("Expecting an OBJECT with a field named '" + fieldNameString + "'"), json )))
     let JsonDecode_at (fieldNames: List<StringRope>) (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<'value> =
         List.foldBack
             (fun (fieldName: StringRope) (decoderSoFar: JsonDecode_Decoder<'value>) ->
@@ -9613,7 +9632,7 @@ defaultDeclarations =
                         | Ok soFar ->
                             match valueDecoder field.Value with
                             | Error error ->
-                                Error (JsonDecode_Field ( StringRopeOne field.Key, error ))
+                                Error (JsonDecode_Field (struct( StringRopeOne field.Key, error )))
                             | Ok fieldValue ->
                                 Ok (Map.add (StringRopeOne field.Key) fieldValue soFar)
                     )
@@ -9621,10 +9640,10 @@ defaultDeclarations =
                     (Ok Map.empty)
             with
             | _ ->
-                Error (JsonDecode_Failure ( StringRopeOne "Expecting an OBJECT", json ))
-    let JsonDecode_keyValuePairs (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<List<( StringRope * 'value )>> =
+                Error (JsonDecode_Failure (struct( StringRopeOne "Expecting an OBJECT", json )))
+    let JsonDecode_keyValuePairs (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<List<struct( StringRope * 'value )>> =
         // can be optimized
-        JsonDecode_map Map.toList (JsonDecode_dict valueDecoder)
+        JsonDecode_map Dict_toList (JsonDecode_dict valueDecoder)
     
     let JsonDecode_nullable (valueDecoder: JsonDecode_Decoder<'value>) : JsonDecode_Decoder<option<'value>> =
         fun json ->
@@ -9869,6 +9888,7 @@ defaultDeclarations =
         StringRopeOne (value.ToString())
     let inline Debug_todo (message: string) : 'value =
         raise (new System.NotImplementedException(message))
+    
 
     type Parser_Problem =
         | Parser_Expecting of StringRope
