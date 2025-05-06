@@ -1072,7 +1072,7 @@ printFsharpChoiceTypeDeclaration fsharpChoiceType =
                             |> FastDict.toList
                             |> Print.listMapAndIntersperseAndFlatten
                                 (\( name, maybeValue ) ->
-                                    printFsharpVariant
+                                    printFsharpVariantDeclaration
                                         { name = name
                                         , maybeValue = maybeValue
                                         }
@@ -1083,8 +1083,8 @@ printFsharpChoiceTypeDeclaration fsharpChoiceType =
             )
 
 
-printFsharpVariant : { name : String, maybeValue : Maybe FsharpType } -> Print
-printFsharpVariant fsharpVariant =
+printFsharpVariantDeclaration : { name : String, maybeValue : Maybe FsharpType } -> Print
+printFsharpVariantDeclaration fsharpVariant =
     Print.exactly ("| " ++ fsharpVariant.name)
         |> Print.followedBy
             (case fsharpVariant.maybeValue of
@@ -1097,7 +1097,7 @@ printFsharpVariant fsharpVariant =
                         valuePrint =
                             value |> printFsharpTypeParenthesizedIfSpaceSeparated
                     in
-                    Print.exactly " of"
+                    Print.exactly (" of " ++ fsharpVariant.name ++ ":")
                         |> Print.followedBy
                             (Print.withIndentAtNextMultipleOf4
                                 (Print.spaceOrLinebreakIndented
@@ -8392,7 +8392,9 @@ module Elm =
                                 FsharpValueOrFunctionDependencySingle single ->
                                     case single of
                                         FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
-                                            Print.exactly "type "
+                                            Print.exactly "[<Struct>]"
+                                                |> Print.followedBy Print.linebreakIndented
+                                                |> Print.followedBy (Print.exactly "type ")
                                                 |> Print.followedBy
                                                     (printFsharpChoiceTypeDeclaration
                                                         fsharpChoiceTypeDeclaration
