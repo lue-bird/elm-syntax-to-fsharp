@@ -3856,18 +3856,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             [ "Random" ] ->
                                 False
 
-                            [ "Url" ] ->
-                                False
-
-                            [ "Url", "Builder" ] ->
-                                False
-
-                            [ "Url", "Parser" ] ->
-                                False
-
-                            [ "Url", "Parser", "Query" ] ->
-                                False
-
                             [ "Markdown" ] ->
                                 False
 
@@ -4045,18 +4033,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 False
 
                             [ "Random" ] ->
-                                False
-
-                            [ "Url" ] ->
-                                False
-
-                            [ "Url", "Builder" ] ->
-                                False
-
-                            [ "Url", "Parser" ] ->
-                                False
-
-                            [ "Url", "Parser", "Query" ] ->
                                 False
 
                             [ "Markdown" ] ->
@@ -4252,6 +4228,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             |> FastDict.union elmJsonTypes
                             |> FastDict.union elmRegexTypes
                             |> FastDict.union elmKernelParserTypes
+                            |> FastDict.union elmKernelUrlTypes
                     }
 
         syntaxModulesInferred :
@@ -6874,6 +6851,12 @@ expressionOperatorToFsharpFunctionReference operator =
 
         "|." ->
             Ok { moduleOrigin = Nothing, name = "ParserAdvanced_ignorer" }
+
+        "</>" ->
+            Ok { moduleOrigin = Nothing, name = "UrlParser_slash" }
+
+        "<?>" ->
+            Ok { moduleOrigin = Nothing, name = "UrlParser_questionMark" }
 
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
@@ -9985,6 +9968,14 @@ defaultDeclarations =
         done
 
         (struct( newOffset, row, col ))
+
+    let inline ElmKernelUrl_percentEncode (string: StringRope) : StringRope =
+        StringRopeOne
+            (System.Net.WebUtility.UrlEncode(StringRope.toString string))
+    let inline ElmKernelUrl_percentDecode (string: StringRope) : option<StringRope> =
+        match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
+        | null -> None
+        | decodedString -> Some (StringRopeOne decodedString)
 """
 
 
@@ -10085,6 +10076,47 @@ elmKernelParserTypes =
                             (ElmSyntaxTypeInfer.TypeTuple
                                 { part0 = typeInt
                                 , part1 = typeInt
+                                }
+                            )
+                        )
+                  )
+                , ( "findSubString"
+                  , inferredTypeFunction
+                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeTriple
+                                { part0 = typeInt
+                                , part1 = typeInt
+                                , part2 = typeInt
+                                }
+                            )
+                        )
+                  )
+                ]
+        , typeAliases = FastDict.empty
+        , choiceTypes = FastDict.empty
+        }
+
+
+elmKernelUrlTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmKernelUrlTypes =
+    FastDict.singleton
+        [ "Elm", "Kernel", "Url" ]
+        { signatures =
+            FastDict.fromList
+                [ ( "percentEncode"
+                  , inferredTypeFunction
+                        [ typeString ]
+                        typeString
+                  )
+                , ( "percentDecode"
+                  , inferredTypeFunction
+                        [ typeString ]
+                        (ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Maybe" ]
+                                , name = "Maybe"
+                                , arguments = [ typeString ]
                                 }
                             )
                         )

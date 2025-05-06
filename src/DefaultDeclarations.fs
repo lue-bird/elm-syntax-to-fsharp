@@ -1522,3 +1522,11 @@ module DefaultDeclarations =
         done
 
         (struct( newOffset, row, col ))
+
+    let inline ElmKernelUrl_percentEncode (string: StringRope) : StringRope =
+        StringRopeOne
+            (System.Net.WebUtility.UrlEncode(StringRope.toString string))
+    let inline ElmKernelUrl_percentDecode (string: StringRope) : option<StringRope> =
+        match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
+        | null -> None
+        | decodedString -> Some (StringRopeOne decodedString)
