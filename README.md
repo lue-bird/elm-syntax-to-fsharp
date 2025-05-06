@@ -113,14 +113,17 @@ Here's some special types you can expect:
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
   - elm records like `{ a : Float, b : Float }` will provided as
     constructed type aliases for each field combination: `Elm.Generated_A_B<float, float>`.
-    While the type might look weird, values can be created and used like any regular record, just with uppercase field names
+    While the type might look weird, values can be created and used like any regular record with uppercase field names, e.g. `{ A = 1.1; B = 2.2 }`
+  - elm tuples/triples like `( float, float )`
+    will be of type `(struct( float * float ))`.
+    You can create them with `struct( 1.1, 2.2 )` und destructure them with `struct( a, b )`
   - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
     Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
     Create them like you would in elm with `Elm.Regex_fromString` or `Elm.Regex_fromStringWith` or `Elm.Regex_never`
 
-The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
+The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
 
 Compile the resulting F# to an executable:
 ```bash
