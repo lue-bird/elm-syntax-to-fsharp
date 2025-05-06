@@ -90,6 +90,9 @@ module DefaultDeclarations =
     let inline Basics_and (a: bool) (b: bool) : bool = a && b
     let inline Basics_or (a: bool) (b: bool) : bool = a || b
 
+    type Result_Result<'error, 'value> =
+        Result<'value, 'error>
+
     type Basics_Never =
         | JustOneMore of Basics_Never
     let rec Basics_never (JustOneMore ever: Basics_Never) =

@@ -1635,7 +1635,11 @@ printFsharpTypeTuple parts =
             parts.part2Up
                 |> List.map printFsharpTypeNotParenthesized
     in
-    Print.exactly "(struct( "
+    Print.exactly "(struct("
+        |> Print.followedBy
+            (Print.withIndentIncreasedBy 2
+                Print.linebreakIndented
+            )
         |> Print.followedBy
             ((part0Print :: part1Print :: part2UpPrints)
                 |> Print.listMapAndIntersperseAndFlatten
@@ -2497,6 +2501,14 @@ typeConstructReferenceToCoreFsharp reference =
             case reference.name of
                 "Maybe" ->
                     Just { moduleOrigin = Nothing, name = "option" }
+
+                _ ->
+                    Nothing
+
+        [ "Result" ] ->
+            case reference.name of
+                "Result" ->
+                    Just { moduleOrigin = Nothing, name = "Result_Result" }
 
                 _ ->
                     Nothing
@@ -3429,6 +3441,17 @@ referenceToCoreFsharp reference =
 
                 "Just" ->
                     Just { moduleOrigin = Nothing, name = "Some" }
+
+                _ ->
+                    Nothing
+
+        [ "Result" ] ->
+            case reference.name of
+                "Err" ->
+                    Just { moduleOrigin = Nothing, name = "Error" }
+
+                "Ok" ->
+                    Just { moduleOrigin = Nothing, name = "Ok" }
 
                 _ ->
                     Nothing
@@ -4570,6 +4593,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
                                                     case syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value of
                                                         "Maybe" ->
+                                                            soFar
+
+                                                        "Result" ->
                                                             soFar
 
                                                         _ ->
@@ -8598,6 +8624,9 @@ defaultDeclarations =
 
     let inline Basics_and (a: bool) (b: bool) : bool = a && b
     let inline Basics_or (a: bool) (b: bool) : bool = a || b
+
+    type Result_Result<'error, 'value> =
+        Result<'value, 'error>
 
     type Basics_Never =
         | JustOneMore of Basics_Never

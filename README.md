@@ -120,7 +120,7 @@ Here's some special types you can expect:
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
     Create them like you would in elm with `Elm.Regex_fromString` or `Elm.Regex_fromStringWith` or `Elm.Regex_never`
 
-The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Order` → `Elm.Basics_Order` (enum).
+The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `( float, float )` → `( float * float )`, `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<Float>`, `Dict Float Float` → `Map<Float, Float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
 
 Compile the resulting F# to an executable:
 ```bash
