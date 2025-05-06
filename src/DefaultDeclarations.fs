@@ -1365,7 +1365,7 @@ module DefaultDeclarations =
     
 
     type Parser_Problem =
-        | Parser_Expecting of string
+        | Parser_Expecting of StringRope
         | Parser_ExpectingInt
         | Parser_ExpectingHex
         | Parser_ExpectingOctal
@@ -1373,9 +1373,9 @@ module DefaultDeclarations =
         | Parser_ExpectingFloat
         | Parser_ExpectingNumber
         | Parser_ExpectingVariable
-        | Parser_ExpectingSymbol of string
-        | Parser_ExpectingKeyword of string
+        | Parser_ExpectingSymbol of StringRope
+        | Parser_ExpectingKeyword of StringRope
         | Parser_ExpectingEnd
         | Parser_UnexpectedChar
-        | Parser_Problem of string
+        | Parser_Problem of StringRope
         | Parser_BadRepeat
