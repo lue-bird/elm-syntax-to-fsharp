@@ -84,7 +84,6 @@ Add a project config
     <RootNamespace>yourProjectName</RootNamespace>
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Speed</OptimizationPreference>
-    <StripSymbols>true</StripSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/Elm.fs" />
