@@ -8774,7 +8774,6 @@ defaultDeclarations =
         ([<InlineIfLambda>] charChange: char -> char)
         (string: StringRope)
         : StringRope =
-        // can be optimized
         StringRopeOne
             (String.map charChange (StringRope.toString string))
 
@@ -8782,7 +8781,6 @@ defaultDeclarations =
         ([<InlineIfLambda>] charShouldBeKept: char -> bool)
         (string: StringRope)
         : StringRope =
-        // can be optimized
         StringRopeOne
             (String.filter charShouldBeKept (StringRope.toString string))
 
@@ -8791,18 +8789,16 @@ defaultDeclarations =
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
-        // can be optimized
-        Array.fold (fun soFar char -> reduce char soFar) initialFolded
-            ((StringRope.toString string).ToCharArray())
+        Seq.fold (fun soFar char -> reduce char soFar) initialFolded
+            (StringRope.toString string)
 
     let inline String_foldr
         ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
-        // can be optimized
-        Array.foldBack reduce
-            ((StringRope.toString string).ToCharArray())
+        Seq.foldBack reduce
+            (StringRope.toString string)
             initialFolded
 
     let inline String_trim (string: StringRope) : StringRope =
@@ -8903,7 +8899,7 @@ defaultDeclarations =
     let String_concat (strings: list<StringRope>) : StringRope =
         // can be optimized
         StringRopeOne
-            (String.concat "" (List.map StringRope.toString strings))
+            (System.String.Concat(List.map StringRope.toString strings))
 
     let inline String_padLeft
         (newMinimumLength: int64)
