@@ -8589,6 +8589,7 @@ defaultDeclarations =
     let inline Basics_fge (a: float) (b: float) : bool = a >= b
     let inline Basics_ige (a: int64) (b: int64) : bool = a >= b
 
+    [<Struct>]
     type Basics_Order =
         | LT = -1
         | EQ = 0
