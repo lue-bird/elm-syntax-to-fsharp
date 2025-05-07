@@ -8735,59 +8735,59 @@ defaultDeclarations =
         | StringRopeAppend (left, right) ->
             String_isEmpty left && String_isEmpty right
 
-    let String_length (str: StringRope) : int64 =
+    let inline String_length (str: StringRope) : int64 =
         String.length (StringRope.toString str)
 
-    let String_repeat (repetitions: int64) (segment: StringRope) : StringRope =
+    let inline String_repeat (repetitions: int64) (segment: StringRope) : StringRope =
         StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
 
     let String_toList (string: StringRope) : list<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
 
-    let String_fromList (chars: list<char>) : StringRope =
+    let inline String_fromList (chars: list<char>) : StringRope =
         StringRopeOne (new string (List.toArray chars))
 
-    let String_contains (substringRope: StringRope) (string: StringRope) : bool =
+    let inline String_contains (substringRope: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).Contains(StringRope.toString substringRope)
 
-    let String_startsWith (start: StringRope) (string: StringRope) : bool =
+    let inline String_startsWith (start: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).StartsWith(StringRope.toString start)
 
-    let String_endsWith (ending: StringRope) (string: StringRope) : bool =
+    let inline String_endsWith (ending: StringRope) (string: StringRope) : bool =
         (StringRope.toString string).EndsWith(StringRope.toString ending)
 
-    let String_any
-        (charIsNeedle: char -> bool)
+    let inline String_any
+        ([<InlineIfLambda>] charIsNeedle: char -> bool)
         (string: StringRope)
         : bool =
         // can be optimized
         String.exists charIsNeedle (StringRope.toString string)
 
-    let String_all
-        (charIsExpected: char -> bool)
+    let inline String_all
+        ([<InlineIfLambda>] charIsExpected: char -> bool)
         (string: StringRope)
         : bool =
         // can be optimized
         String.forall charIsExpected (StringRope.toString string)
 
-    let String_map
-        (charChange: char -> char)
+    let inline String_map
+        ([<InlineIfLambda>] charChange: char -> char)
         (string: StringRope)
         : StringRope =
         // can be optimized
         StringRopeOne
             (String.map charChange (StringRope.toString string))
 
-    let String_filter
-        (charShouldBeKept: char -> bool)
+    let inline String_filter
+        ([<InlineIfLambda>] charShouldBeKept: char -> bool)
         (string: StringRope)
         : StringRope =
         // can be optimized
         StringRopeOne
             (String.filter charShouldBeKept (StringRope.toString string))
 
-    let String_foldl
-        (reduce: char -> 'folded -> 'folded)
+    let inline String_foldl
+        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
@@ -8795,8 +8795,8 @@ defaultDeclarations =
         Array.fold (fun soFar char -> reduce char soFar) initialFolded
             ((StringRope.toString string).ToCharArray())
 
-    let String_foldr
-        (reduce: char -> 'folded -> 'folded)
+    let inline String_foldr
+        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
@@ -8805,27 +8805,27 @@ defaultDeclarations =
             ((StringRope.toString string).ToCharArray())
             initialFolded
 
-    let String_trim (string: StringRope) : StringRope =
+    let inline String_trim (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).Trim())
-    let String_trimLeft (string: StringRope) : StringRope =
+    let inline String_trimLeft (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimStart())
-    let String_trimRight (string: StringRope) : StringRope =
+    let inline String_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
     let String_right (takenElementCount: int64) (stringRope: StringRope): StringRope =
-        let string : string = StringRope.toString stringRope
+        let string: string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 String.length string - int takenElementCount,
                 int takenElementCount
             ))
 
-    let String_left (skippedElementCount: int64) (string: StringRope) : StringRope = 
+    let inline String_left (skippedElementCount: int64) (string: StringRope) : StringRope = 
         StringRopeOne
             ((StringRope.toString string).Substring(0, int skippedElementCount))
     
     let String_dropRight (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
-        let string : string = StringRope.toString stringRope
+        let string: string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 0,
@@ -8833,7 +8833,7 @@ defaultDeclarations =
             ))
 
     let String_dropLeft (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
-        let string : string = StringRope.toString stringRope
+        let string: string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
                 int skippedElementCount,
@@ -8842,9 +8842,10 @@ defaultDeclarations =
 
     let inline String_append (early: StringRope) (late: StringRope) : StringRope =
         StringRopeAppend (early, late)
-    let String_fromChar (char: char) : StringRope = StringRopeOne (string char)
+    let inline String_fromChar (char: char) : StringRope =
+        StringRopeOne (string char)
 
-    let String_cons (newHeadChar: char) (late: StringRope) : StringRope =
+    let inline String_cons (newHeadChar: char) (late: StringRope) : StringRope =
         StringRopeAppend (StringRopeOne (string newHeadChar), late)
     
     let String_uncons (stringRope: StringRope) : option<struct( char * StringRope )> =
@@ -8855,12 +8856,14 @@ defaultDeclarations =
             Some (struct( string[0], StringRopeOne(string[1..]) ))
 
     let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
+        // can be optimized
         List.ofArray
             (Array.map (fun segment -> StringRopeOne segment)
                 ((StringRope.toString string).Split(StringRope.toString separator))
             )
 
     let String_lines (string: StringRope) : list<StringRope> =
+        // can be optimized
         List.ofArray (
             (Array.map (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
@@ -8874,7 +8877,7 @@ defaultDeclarations =
         StringRopeOne
             (new string (Array.rev ((StringRope.toString string).ToCharArray())))
 
-    let String_replace
+    let inline String_replace
         (toReplace: StringRope)
         (replacement: StringRope)
         (string: StringRope)
@@ -8885,22 +8888,24 @@ defaultDeclarations =
                 StringRope.toString replacement
             ))
 
-    let String_toUpper (string: StringRope) : StringRope =
+    let inline String_toUpper (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).ToUpperInvariant())
-    let String_toLower (string: StringRope) : StringRope =
+    let inline String_toLower (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).ToLowerInvariant())
 
     let String_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
+        // can be optimized
         StringRopeOne
             (String.concat
                 (StringRope.toString separator)
                 (List.map StringRope.toString strings)
             )
     let String_concat (strings: list<StringRope>) : StringRope =
+        // can be optimized
         StringRopeOne
             (String.concat "" (List.map StringRope.toString strings))
 
-    let String_padLeft
+    let inline String_padLeft
         (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
@@ -8908,7 +8913,7 @@ defaultDeclarations =
         StringRopeOne
             ((StringRope.toString string).PadLeft(int newMinimumLength, padding))
 
-    let String_padRight
+    let inline String_padRight
         (newMinimumLength: int64)
         (padding: char)
         (string: StringRope)
@@ -8916,9 +8921,9 @@ defaultDeclarations =
         StringRopeOne
             ((StringRope.toString string).PadRight(int newMinimumLength, padding))
     
-    let String_fromFloat (n: float) : StringRope =
+    let inline String_fromFloat (n: float) : StringRope =
         StringRopeOne (string n)
-    let String_fromInt (n: int64) : StringRope =
+    let inline String_fromInt (n: int64) : StringRope =
         StringRopeOne (string n)
 
     let String_toInt (string: StringRope) : option<int64> =
@@ -8932,10 +8937,10 @@ defaultDeclarations =
         if success then Some num else None
 
     let String_slice
-            (startInclusivePossiblyNegative: int64)
-            (endExclusivePossiblyNegative: int64)
-            (stringRope: StringRope)
-            : StringRope =
+        (startInclusivePossiblyNegative: int64)
+        (endExclusivePossiblyNegative: int64)
+        (stringRope: StringRope)
+        : StringRope =
         let string = StringRope.toString stringRope
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
@@ -8972,8 +8977,8 @@ defaultDeclarations =
         | head :: tail ->
             Some tail
 
-    let List_member (needle: 'a) (list: list<'a>) : bool =
-        List.exists (fun element -> element = needle) list
+    let inline List_member (needle: 'a) (list: list<'a>) : bool =
+        List.contains needle list
     
     let List_minimum (list: List<'a>): option<'a> =
         match list with
@@ -9001,10 +9006,10 @@ defaultDeclarations =
     
     let inline List_drop (skippedElementCountFromStart: int64) (list: List<'a>) : List<'a> =
         try List.skip (int skippedElementCountFromStart) list with
-        | :? System.ArgumentOutOfRangeException -> []
+        | _ -> []
 
-    let List_sortWith
-        (elementCompare: 'a -> 'a -> Basics_Order)
+    let inline List_sortWith
+        ([<InlineIfLambda>] elementCompare: 'a -> 'a -> Basics_Order)
         (list: List<'a>)
         : List<'a> =
         List.sortWith
@@ -9020,8 +9025,8 @@ defaultDeclarations =
                 listTail
                 [ listHead ]
 
-    let List_foldl
-        (reduce: 'a -> 'state -> 'state)
+    let inline List_foldl
+        ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
         (list: list<'a>)
         : 'state =
@@ -9030,8 +9035,8 @@ defaultDeclarations =
             initialState
             list
 
-    let List_foldr
-        (reduce: 'a -> 'state -> 'state)
+    let inline List_foldr
+        ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
         (list: list<'a>)
         : 'state =
@@ -9072,7 +9077,7 @@ defaultDeclarations =
                             dTail
     
     let inline List_map4
-        (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'combined)
         (aList: List<'a>)
         (bList: List<'b>)
         (cList: List<'c>)
@@ -9117,7 +9122,7 @@ defaultDeclarations =
                                 eTail
     
     let inline List_map5
-        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
         (aList: List<'a>)
         (bList: List<'b>)
         (cList: List<'c>)
@@ -9146,14 +9151,14 @@ defaultDeclarations =
             keyValuePairs
 
     let inline Dict_foldr
-        (reduce: 'key -> 'value -> 'state -> 'state)
+        ([<InlineIfLambda>] reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
         Map.foldBack reduce dict initialState
 
     let inline Dict_foldl
-        (reduce: 'key -> 'value -> 'state -> 'state)
+        ([<InlineIfLambda>] reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
         =
@@ -9218,14 +9223,14 @@ defaultDeclarations =
         Set.count set
 
     let inline Set_foldr
-        (reduce: 'key -> 'state -> 'state)
+        ([<InlineIfLambda>] reduce: 'key -> 'state -> 'state)
         (initialState: 'state)
         (set: Set<'key>)
         =
         Set.foldBack reduce set initialState
 
     let inline Set_foldl
-        (reduce: 'key -> 'state -> 'state)
+        ([<InlineIfLambda>] reduce: 'key -> 'state -> 'state)
         (initialState: 'state)
         (set: Set<'key>)
         =
@@ -9235,7 +9240,10 @@ defaultDeclarations =
         Array.length array
     let Array_get (index: int64) (array: array<'element>) : option<'element> =
         Array.tryItem (int index) array
-    let inline Array_initialize (count: int64) (indexToElement: int64 -> 'element) : array<'element> =
+    let inline Array_initialize
+        (count: int64)
+        ([<InlineIfLambda>] indexToElement: int64 -> 'element)
+        : array<'element> =
         Array.init (max 0 (int count)) (fun index -> indexToElement index)
     let inline Array_repeat (count: int64) (element: 'element) : array<'element> =
         Array.replicate (max 0 (int count)) element
@@ -9248,7 +9256,10 @@ defaultDeclarations =
             Array.updateAt (int index) replacementElement array
     let Array_push (newLastElement: 'element) (array: array<'element>) : array<'element> =
         Array.append array [| newLastElement |]
-    let inline Array_indexedMap (elementChange: int64 -> 'a -> 'b) (array: array<'a>) : array<'b> =
+    let inline Array_indexedMap
+        ([<InlineIfLambda>] elementChange: int64 -> 'a -> 'b)
+        (array: array<'a>)
+        : array<'b> =
         Array.mapi (fun index element -> elementChange index element) array
     let Array_toIndexedList (array: array<'a>) : List<struct( int64 * 'a )> =
         (Array.foldBack
@@ -9262,9 +9273,17 @@ defaultDeclarations =
             ;  List = []
             |}
         ).List
-    let inline Array_foldl (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+    let inline Array_foldl
+        ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
+        (initialState: 'state)
+        (array: array<'a>)
+        : 'state =
         Array.fold (fun state element -> reduce element state) initialState array
-    let inline Array_foldr (reduce: 'a -> 'state -> 'state) (initialState: 'state) (array: array<'a>) : 'state =
+    let inline Array_foldr
+        ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
+        (initialState: 'state)
+        (array: array<'a>)
+        : 'state =
         Array.foldBack reduce array initialState
     let Array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
         let realStartIndex: int =
@@ -9303,12 +9322,21 @@ defaultDeclarations =
         System.Text.Json.Nodes.JsonValue.Create(int)
     let inline JsonEncode_float (float: float) : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonValue.Create(float)
-    let inline JsonEncode_list (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: List<'element>) : System.Text.Json.Nodes.JsonNode =
+    let inline JsonEncode_list
+        ([<InlineIfLambda>] elementToValue: 'element -> System.Text.Json.Nodes.JsonNode)
+        (elements: List<'element>)
+        : System.Text.Json.Nodes.JsonNode =
         // can be optimized
         System.Text.Json.Nodes.JsonArray(Array.ofList (List.map elementToValue elements))
-    let inline JsonEncode_array (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: array<'element>) : System.Text.Json.Nodes.JsonNode =
+    let inline JsonEncode_array
+        ([<InlineIfLambda>] elementToValue: 'element -> System.Text.Json.Nodes.JsonNode)
+        (elements: array<'element>)
+        : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonArray(Array.map elementToValue elements)
-    let inline JsonEncode_set (elementToValue: 'element -> System.Text.Json.Nodes.JsonNode) (elements: Set<'element>) : System.Text.Json.Nodes.JsonNode =
+    let inline JsonEncode_set
+        ([<InlineIfLambda>] elementToValue: 'element -> System.Text.Json.Nodes.JsonNode)
+        (elements: Set<'element>)
+        : System.Text.Json.Nodes.JsonNode =
         // can be optimized
         System.Text.Json.Nodes.JsonArray(Array.map elementToValue (Set.toArray elements))
     let inline JsonEncode_object (fields: List<struct( StringRope * System.Text.Json.Nodes.JsonNode )>) : System.Text.Json.Nodes.JsonNode =
@@ -9323,8 +9351,8 @@ defaultDeclarations =
                 fields
         )
     let inline JsonEncode_dict
-        (keyToString: 'key -> string)
-        (valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
+        ([<InlineIfLambda>] keyToString: 'key -> string)
+        ([<InlineIfLambda>] valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
         (dict: Map<'key, 'value>)
         : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonObject
@@ -9371,21 +9399,29 @@ defaultDeclarations =
     let inline JsonDecode_fail (errorMessage: StringRope) : JsonDecode_Decoder<'value> =
         fun jsonDomNode ->
             Error(JsonDecode_Failure(errorMessage, jsonDomNode))
-    let inline JsonDecode_map (valueChange: 'a -> 'b) (decoder: JsonDecode_Decoder<'a>) : JsonDecode_Decoder<'b> =
+    let inline JsonDecode_map
+        ([<InlineIfLambda>] valueChange: 'a -> 'b)
+        (decoder: JsonDecode_Decoder<'a>)
+        : JsonDecode_Decoder<'b> =
         fun jsonDomNode ->
             match decoder jsonDomNode with
             | Error(error) -> Error(error)
             | Ok(value) -> Ok(valueChange value)
-    let JsonDecode_lazy (lazilyConstructDecoder: unit -> JsonDecode_Decoder<'value>) : JsonDecode_Decoder<'value> =
+    let JsonDecode_lazy
+        (lazilyConstructDecoder: unit -> JsonDecode_Decoder<'value>)
+        : JsonDecode_Decoder<'value> =
         fun json ->
             lazilyConstructDecoder () json
-    let inline JsonDecode_andThen (decoderBasedOnValue: 'a -> JsonDecode_Decoder<'b>) (decoder: JsonDecode_Decoder<'a>) : JsonDecode_Decoder<'b> =
+    let inline JsonDecode_andThen
+        ([<InlineIfLambda>] decoderBasedOnValue: 'a -> JsonDecode_Decoder<'b>)
+        (decoder: JsonDecode_Decoder<'a>)
+        : JsonDecode_Decoder<'b> =
         fun json ->
             match decoder json with
             | Error(error) -> Error(error)
             | Ok(value) -> decoderBasedOnValue value json
     let inline JsonDecode_map2
-        (combine: 'a -> 'b -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         : JsonDecode_Decoder<'combined> =
@@ -9397,7 +9433,7 @@ defaultDeclarations =
                 | Error error -> Error error
                 | Ok b -> Ok (combine a b)
     let inline JsonDecode_map3
-        (combine: 'a -> 'b -> 'c -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9413,7 +9449,7 @@ defaultDeclarations =
                     | Error error -> Error error
                     | Ok c -> Ok (combine a b c)
     let inline JsonDecode_map4
-        (combine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9433,7 +9469,7 @@ defaultDeclarations =
                         | Error error -> Error error
                         | Ok d -> Ok (combine a b c d)
     let inline JsonDecode_map5
-        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9457,7 +9493,7 @@ defaultDeclarations =
                             | Error error -> Error error
                             | Ok e -> Ok (combine a b c d e)
     let inline JsonDecode_map6
-        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9485,7 +9521,7 @@ defaultDeclarations =
                                 | Error error -> Error error
                                 | Ok f -> Ok (combine a b c d e f)
     let inline JsonDecode_map7
-        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9517,7 +9553,7 @@ defaultDeclarations =
                                     | Error error -> Error error
                                     | Ok g -> Ok (combine a b c d e f g)
     let inline JsonDecode_map8
-        (combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'combined)
+        ([<InlineIfLambda>] combine: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'combined)
         (aDecoder: JsonDecode_Decoder<'a>)
         (bDecoder: JsonDecode_Decoder<'b>)
         (cDecoder: JsonDecode_Decoder<'c>)
@@ -9730,8 +9766,8 @@ defaultDeclarations =
                 | Ok valueDecodeResult -> Ok (Some valueDecodeResult)
                 | Error valueError ->   
                     Error (JsonDecode_OneOf [nullError; valueError])
-    let JsonDecoder_oneOrMore
-        (combineHeadTail: 'element -> List<'element> -> 'combined)
+    let inline JsonDecoder_oneOrMore
+        ([<InlineIfLambda>] combineHeadTail: 'element -> List<'element> -> 'combined)
         (elementDecoder: JsonDecode_Decoder<'element>)
         : JsonDecode_Decoder<'combined> =
         JsonDecode_map2 combineHeadTail
@@ -9910,10 +9946,11 @@ defaultDeclarations =
             {| Index = 0L; Map = Map.empty |}
             (regex.Matches(string))
         ).Map
-    let inline Regex_replace
+    let Regex_replace
         (regex: System.Text.RegularExpressions.Regex)
         (replacementForMatch: Regex_Match -> StringRope)
-        (stringRope: StringRope) : StringRope =
+        (stringRope: StringRope)
+        : StringRope =
         let string = StringRope.toString stringRope
         let matchNumbers0Based: Map<string, int64> =
             createRegexMatchNumber0BasedMap regex string
@@ -9931,11 +9968,12 @@ defaultDeclarations =
                         )
                 )
             ))
-    let inline Regex_replaceAtMost
+    let Regex_replaceAtMost
         (maxMatchReplacementCount: int64)
         (regex: System.Text.RegularExpressions.Regex)
         (replacementForMatch: Regex_Match -> StringRope)
-        (stringRope: StringRope) : StringRope =
+        (stringRope: StringRope)
+        : StringRope =
         let string = StringRope.toString stringRope
         let matchNumbers0Based: Map<string, int64> =
             createRegexMatchNumber0BasedMap regex string
