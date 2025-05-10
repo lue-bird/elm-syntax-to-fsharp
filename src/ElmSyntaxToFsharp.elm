@@ -7627,7 +7627,9 @@ printFsharpExpressionTuple parts =
     in
     Print.exactly "(struct("
         |> Print.followedBy
-            (Print.spaceOrLinebreakIndented lineSpread)
+            (Print.withIndentIncreasedBy 2
+                (Print.spaceOrLinebreakIndented lineSpread)
+            )
         |> Print.followedBy
             ((part0Print :: part1Print :: part2UpPrints)
                 |> Print.listMapAndIntersperseAndFlatten
