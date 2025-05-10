@@ -75,7 +75,7 @@ Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issu
 ### how do I use the transpiled output?
 An example can be found in [`example/`](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main/example).
 
-Add a project config
+Add a project config `yourProjectName.fsproj`
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -110,7 +110,7 @@ Here's some special types you can expect:
   - elm `String.String`s will be of type `Elm.StringRope`.
     You can create them with `Elm.StringRopeOne yourFsharpString`
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
-  - elm records like `{ a : Float, b : Float }` will provided as
+  - elm records like `{ a : Float, b : Float }` will be provided as
     constructed type aliases for each field combination: `Elm.Generated_A_B<float, float>`.
     While the type might look weird, values can be created and used like any regular record with uppercase field names, e.g. `{ A = 1.1; B = 2.2 }`
   - elm tuples/triples like `( float, float )`
