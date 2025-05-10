@@ -1,7 +1,7 @@
 Transpile all elm modules in the current project
 (source-directories + dependencies)
 into a bundled `src/Elm.fs` file that exposes every value/function declaration
-(e.g. `main_runOnString` for `Main.runOnString`)
+(e.g. `Main_runOnString` for `Main.runOnString`)
 
 
 ```bash
