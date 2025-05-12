@@ -1380,8 +1380,43 @@ type_ inferredType =
                         (typeFunction.input |> type_)
                         (typeFunction.output |> type_)
 
-                ElmSyntaxTypeInfer.TypeRecordExtension _ ->
-                    Err "extensible record types are not supported"
+                ElmSyntaxTypeInfer.TypeRecordExtension typeRecordExtension ->
+                    -- Err
+                    --     ("extensible record types are not supported: "
+                    --         ++ (ElmSyntaxTypeInfer.TypeRecordExtension typeRecordExtension
+                    --                 |> typeNotVariableToInfoString
+                    --            )
+                    --     )
+                    Result.map
+                        (\fields ->
+                            let
+                                fieldAsFastDict : FastDict.Dict String FsharpType
+                                fieldAsFastDict =
+                                    FastDict.fromList fields
+                            in
+                            FsharpTypeConstruct
+                                { moduleOrigin = Nothing
+                                , name =
+                                    generatedFsharpRecordTypeAliasName
+                                        (fieldAsFastDict |> FastDict.keys)
+                                , arguments =
+                                    fieldAsFastDict
+                                        |> FastDict.values
+                                }
+                        )
+                        (typeRecordExtension.fields
+                            |> FastDict.toList
+                            |> listMapAndCombineOk
+                                (\( fieldName, fieldValueType ) ->
+                                    Result.map
+                                        (\value ->
+                                            ( fieldName |> stringFirstCharToUpper
+                                            , value
+                                            )
+                                        )
+                                        (fieldValueType |> type_)
+                                )
+                        )
 
 
 typeAnnotation :

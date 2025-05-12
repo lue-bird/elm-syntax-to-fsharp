@@ -336,6 +336,17 @@ bytesToElmSyntaxModule sourceBytes =
                     if source |> String.startsWith "module Unicode" then
                         unicodeReplacementSource
 
+                    else if source |> String.startsWith "module Parser.Advanced" then
+                        source
+                            -- TODO elm-syntax-type-infer does not yet support
+                            -- let values that depend on top-level type variables
+                            |> String.replace
+                            """parseEnd =
+      map (\\_ -> Done (List.reverse revItems)) ender"""
+                            """parseEnd : Parser c x (Step (List a) (List a))
+    parseEnd =
+      map (\\_ -> Done (List.reverse revItems)) ender"""
+                    
                     else
                         source
             in

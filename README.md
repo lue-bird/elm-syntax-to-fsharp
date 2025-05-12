@@ -60,6 +60,8 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
         userGetName =
             .name
         ```
+        In these cases we assume that you intended to use a regular record type with only the extension fields which can lead to F# compile errors if you actually pass in additional fields.
+
         Incidentally, avoiding extensible record types
         also tends to improve your elm code because it's simpler and makes the compiler errors more concrete
 -   dependencies cannot internally use the same module names as the transpiled project
