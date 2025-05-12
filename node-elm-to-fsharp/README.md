@@ -14,4 +14,4 @@ To instead run it once
 npm run start
 ```
 
-See also [how to use the transpiled output](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main#how-to-use-the-transpiled-output).
+See also [how to use the transpiled output](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main#how-do-i-use-the-transpiled-output).
