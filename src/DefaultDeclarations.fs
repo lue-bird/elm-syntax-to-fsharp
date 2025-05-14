@@ -3,8 +3,8 @@ namespace global
 module Elm =
     let inline Basics_always (result: 'result) (_: '_ignored) : 'result = result
 
-    let inline Basics_eq (a: 'a) (b: 'a) = a = b
-    let inline Basics_neq (a: 'a) (b: 'a) = a <> b
+    let inline Basics_eq (a: 'a) (b: 'a) : bool = a = b
+    let inline Basics_neq (a: 'a) (b: 'a) : bool = a <> b
     let inline Basics_flt (a: float) (b: float) : bool = a < b
     let inline Basics_ilt (a: int64) (b: int64) : bool = a < b
     let inline Basics_fle (a: float) (b: float) : bool = a <= b
@@ -166,10 +166,10 @@ module Elm =
     let inline String_repeat (repetitions: int64) (segment: StringRope) : StringRope =
         StringRopeOne (String.replicate (int repetitions) (StringRope.toString segment))
 
-    let String_toList (string: StringRope) : list<char> =
+    let String_toList (string: StringRope) : List<char> =
         List.ofArray ((StringRope.toString string).ToCharArray())
 
-    let inline String_fromList (chars: list<char>) : StringRope =
+    let inline String_fromList (chars: List<char>) : StringRope =
         StringRopeOne (new string (List.toArray chars))
 
     let inline String_contains (substringRope: StringRope) (string: StringRope) : bool =
@@ -233,7 +233,7 @@ module Elm =
     let inline String_trimRight (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).TrimEnd())
 
-    let String_right (takenElementCount: int64) (stringRope: StringRope): StringRope =
+    let String_right (takenElementCount: int64) (stringRope: StringRope) : StringRope =
         let string: string = StringRope.toString stringRope
         StringRopeOne
             (string.Substring(
@@ -276,14 +276,14 @@ module Elm =
         else
             Some (struct( string[0], StringRopeOne(string[1..]) ))
 
-    let String_split (separator: StringRope) (string: StringRope) : list<StringRope> =
+    let String_split (separator: StringRope) (string: StringRope) : List<StringRope> =
         // can be optimized
         List.ofArray
             (Array.map (fun segment -> StringRopeOne segment)
                 ((StringRope.toString string).Split(StringRope.toString separator))
             )
 
-    let String_lines (string: StringRope) : list<StringRope> =
+    let String_lines (string: StringRope) : List<StringRope> =
         // can be optimized
         List.ofArray (
             (Array.map (fun line -> StringRopeOne line)
@@ -314,14 +314,14 @@ module Elm =
     let inline String_toLower (string: StringRope) : StringRope =
         StringRopeOne ((StringRope.toString string).ToLowerInvariant())
 
-    let String_join (separator: StringRope) (strings: list<StringRope>) : StringRope =
+    let String_join (separator: StringRope) (strings: List<StringRope>) : StringRope =
         // can be optimized
         StringRopeOne
             (String.concat
                 (StringRope.toString separator)
                 (List.map StringRope.toString strings)
             )
-    let String_concat (strings: list<StringRope>) : StringRope =
+    let String_concat (strings: List<StringRope>) : StringRope =
         // can be optimized
         StringRopeOne
             (System.String.Concat(List.map StringRope.toString strings))
@@ -398,7 +398,7 @@ module Elm =
         | head :: tail ->
             Some tail
 
-    let inline List_member (needle: 'a) (list: list<'a>) : bool =
+    let inline List_member (needle: 'a) (list: List<'a>) : bool =
         List.contains needle list
     
     let List_minimum (list: List<'a>): option<'a> =
@@ -411,12 +411,12 @@ module Elm =
         | [] -> None
         | _ :: _ -> Some (List.max list)
 
-    let List_fproduct (list: list<float>) : float =
+    let List_fproduct (list: List<float>) : float =
         List.fold (*) 1.0 list
-    let List_iproduct (list: list<int64>) : int64 =
+    let List_iproduct (list: List<int64>) : int64 =
         List.fold (*) 1L list
 
-    let inline List_cons (newHead: 'a) (tail: list<'a>) : list<'a> =
+    let inline List_cons (newHead: 'a) (tail: List<'a>) : List<'a> =
         newHead :: tail
     
     let inline List_repeat (repetitions: int64) (element: 'a) : List<'a> =
@@ -437,7 +437,7 @@ module Elm =
             (fun a b -> int (elementCompare a b))
             list
 
-    let List_intersperse (sep: 'a) (list: list<'a>) =
+    let List_intersperse (sep: 'a) (list: List<'a>) =
         match list with
         | [] -> []
         | listHead :: listTail ->
@@ -449,7 +449,7 @@ module Elm =
     let inline List_foldl
         ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
-        (list: list<'a>)
+        (list: List<'a>)
         : 'state =
         List.fold
             (fun soFar element -> reduce element soFar)
@@ -459,11 +459,11 @@ module Elm =
     let inline List_foldr
         ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
         (initialState: 'state)
-        (list: list<'a>)
+        (list: List<'a>)
         : 'state =
         List.foldBack reduce list initialState
 
-    let inline List_range (startFloat: int64) (endFloat: int64) : list<int64> =
+    let inline List_range (startFloat: int64) (endFloat: int64) : List<int64> =
         [ startFloat..endFloat ]
     
     let rec List_map4_into_reverse
@@ -575,14 +575,14 @@ module Elm =
         ([<InlineIfLambda>] reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
-        =
+        : 'state =
         Map.foldBack reduce dict initialState
 
     let inline Dict_foldl
         ([<InlineIfLambda>] reduce: 'key -> 'value -> 'state -> 'state)
         (initialState: 'state)
         (dict: Map<'key, 'value>)
-        =
+        : 'state =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
 
     let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
@@ -616,8 +616,8 @@ module Elm =
         (leftDict: Map<'comparable, 'aValue>)
         (rightDict: Map<'comparable, 'bValue>)
         (initialResult: 'result)
-        : 'result
-        =
+        : 'result =
+        // can be optimized using ValueTuple
         let rec stepState ( list: List<( 'comparable * 'aValue )>, result: 'result ) (rKey: 'comparable) (rValue: 'bValue) =
             match list with
             | [] ->
@@ -647,14 +647,14 @@ module Elm =
         ([<InlineIfLambda>] reduce: 'key -> 'state -> 'state)
         (initialState: 'state)
         (set: Set<'key>)
-        =
+        : 'state =
         Set.foldBack reduce set initialState
 
     let inline Set_foldl
         ([<InlineIfLambda>] reduce: 'key -> 'state -> 'state)
         (initialState: 'state)
         (set: Set<'key>)
-        =
+        : 'state =
         Set.fold (fun soFar k -> reduce k soFar) initialState set
     
     let inline Array_length (array: array<'a>) : int64 =
@@ -706,7 +706,11 @@ module Elm =
         (array: array<'a>)
         : 'state =
         Array.foldBack reduce array initialState
-    let Array_slice (startInclusivePossiblyNegative: int64) (endExclusivePossiblyNegative: int64) (array: array<'a>) : array<'a> =
+    let Array_slice
+        (startInclusivePossiblyNegative: int64)
+        (endExclusivePossiblyNegative: int64)
+        (array: array<'a>)
+        : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
                 max
@@ -760,7 +764,9 @@ module Elm =
         : System.Text.Json.Nodes.JsonNode =
         // can be optimized
         System.Text.Json.Nodes.JsonArray(Array.map elementToValue (Set.toArray elements))
-    let inline JsonEncode_object (fields: List<struct( StringRope * System.Text.Json.Nodes.JsonNode )>) : System.Text.Json.Nodes.JsonNode =
+    let inline JsonEncode_object
+        (fields: List<struct( StringRope * System.Text.Json.Nodes.JsonNode )>)
+        : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonObject(
             List.fold
                 (fun soFar (struct( fieldName, fieldValue )) ->
@@ -786,14 +792,14 @@ module Elm =
             )
             
     
-    let JsonEncode_encode (indentDepth: int64) (json: System.Text.Json.Nodes.JsonNode) =
+    let JsonEncode_encode (indentDepth: int64) (json: System.Text.Json.Nodes.JsonNode) : StringRope =
         let printOptions =
             System.Text.Json.JsonSerializerOptions()
         if (indentDepth <> 0) then
             printOptions.WriteIndented <- true
             printOptions.IndentSize <- int indentDepth
         
-        json.ToJsonString(printOptions)
+        StringRopeOne (json.ToJsonString(printOptions))
     
     type JsonDecode_Error =
         | JsonDecode_Field of (struct( StringRope * JsonDecode_Error ))
@@ -1197,10 +1203,8 @@ module Elm =
 
     let inline indent (str: string) : string =
         String.concat "\n    " (Array.toList (str.Split("\n")))
-    let rec errorOneOf (i: int) (error: JsonDecode_Error) : string =
-        "\n\n(" + string (i + 1) + ") " + indent (errorToString error)
     
-    and errorToStringHelp (error: JsonDecode_Error) (context: List<string>) : string =
+    let rec JsonDecode_errorToStringHelp (error: JsonDecode_Error) (context: List<string>) : string =
         match error with
         | JsonDecode_Field(f, err) ->
             let isSimple =
@@ -1217,13 +1221,13 @@ module Elm =
                 else
                     "['" + StringRope.toString f + "']"
             
-            errorToStringHelp err (fieldName :: context)
+            JsonDecode_errorToStringHelp err (fieldName :: context)
 
         | JsonDecode_Index(i, err) ->
             let indexName =
                 "[" + string i + "]"
             
-            errorToStringHelp err (indexName :: context)
+            JsonDecode_errorToStringHelp err (indexName :: context)
 
         | JsonDecode_OneOf(errors) ->
             match errors with
@@ -1237,7 +1241,7 @@ module Elm =
                     )
 
             | [ err ] ->
-                errorToStringHelp err context
+                JsonDecode_errorToStringHelp err context
 
             | _ :: _ :: _ ->
                 let starter =
@@ -1250,7 +1254,14 @@ module Elm =
                 let introduction =
                     starter + " failed in the following " + string (List.length errors) + " ways:"
                 
-                String.concat "\n\n" (introduction :: List.mapi errorOneOf errors)
+                String.concat "\n\n"
+                    (introduction
+                        :: List.mapi
+                            (fun (i: int32) (error: JsonDecode_Error) ->
+                                "\n\n(" + string (i + 1) + ") " + indent (JsonDecode_errorToStringHelp error [])
+                            )
+                            errors
+                    )
 
         | JsonDecode_Failure(msg, json) ->
             let introduction =
@@ -1260,10 +1271,10 @@ module Elm =
                 | _ :: _ ->
                     "Problem with the value at json" + String.concat "" (List.rev context) + ":\n\n    "
             
-            introduction + indent (JsonEncode_encode 4 json) + "\n\n" + StringRope.toString msg
+            introduction + indent (StringRope.toString (JsonEncode_encode 4 json)) + "\n\n" + StringRope.toString msg
 
-    and errorToString (error: JsonDecode_Error) : string =
-        errorToStringHelp error []
+    let JsonDecode_errorToString (error: JsonDecode_Error) : string =
+        JsonDecode_errorToStringHelp error []
     
     
     type Regex_Options =
@@ -2017,7 +2028,7 @@ module Elm =
             , string
             )
     
-    let BytesEncode_byteCount (encoder: BytesEncode_Encoder) : int =
+    let BytesEncode_EncoderByteCount (encoder: BytesEncode_Encoder) : int32 =
         match encoder with
         | BytesEncode_I8(_) -> 1
         | BytesEncode_I16(_) -> 2
@@ -2033,7 +2044,7 @@ module Elm =
 
     let BytesEncode_sequence (encoders: List<BytesEncode_Encoder>) : BytesEncode_Encoder =
         BytesEncode_Seq
-            ( Seq.sum (Seq.map BytesEncode_byteCount encoders)
+            ( Seq.sum (Seq.map BytesEncode_EncoderByteCount encoders)
             , encoders
             )
     
@@ -2046,7 +2057,7 @@ module Elm =
         asLeBytes
 
     let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
-        let mutableBuffer = new System.IO.MemoryStream(int (BytesEncode_byteCount encoder))
+        let mutableBuffer = new System.IO.MemoryStream(BytesEncode_EncoderByteCount encoder)
         let mutable toEncodeNext = encoder
         let mutable mutableRemainingRightEncoders = System.Collections.Generic.Stack<BytesEncode_Encoder>()
         let mutable shouldKeepGoing = true
