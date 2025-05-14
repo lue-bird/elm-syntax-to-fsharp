@@ -1273,8 +1273,8 @@ module Elm =
             
             introduction + indent (StringRope.toString (JsonEncode_encode 4 json)) + "\n\n" + StringRope.toString msg
 
-    let JsonDecode_errorToString (error: JsonDecode_Error) : string =
-        JsonDecode_errorToStringHelp error []
+    let JsonDecode_errorToString (error: JsonDecode_Error) : StringRope =
+        StringRopeOne (JsonDecode_errorToStringHelp error [])
     
     
     type Regex_Options =
