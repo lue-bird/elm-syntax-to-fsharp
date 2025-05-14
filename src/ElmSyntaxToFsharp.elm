@@ -2609,6 +2609,36 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Bytes" ] ->
+            case reference.name of
+                "Endianness" ->
+                    Just { moduleOrigin = Nothing, name = "Bytes_Endianness" }
+
+                "Bytes" ->
+                    Just { moduleOrigin = Nothing, name = "Bytes_Bytes" }
+
+                _ ->
+                    Nothing
+
+        [ "Bytes", "Decode" ] ->
+            case reference.name of
+                "Decoder" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_Decoder" }
+
+                "Step" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_Step" }
+
+                _ ->
+                    Nothing
+
+        [ "Bytes", "Encode" ] ->
+            case reference.name of
+                "Encoder" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_Encoder" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -3634,6 +3664,135 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Bytes" ] ->
+            case reference.name of
+                "LE" ->
+                    Just { moduleOrigin = Nothing, name = "Bytes_LE" }
+
+                "BE" ->
+                    Just { moduleOrigin = Nothing, name = "Bytes_BE" }
+
+                "width" ->
+                    Just { moduleOrigin = Nothing, name = "Bytes_width" }
+
+                _ ->
+                    Nothing
+
+        [ "Bytes", "Decode" ] ->
+            case reference.name of
+                "Loop" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_Loop" }
+
+                "Done" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_Done" }
+
+                "decode" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_decode" }
+
+                "signedInt8" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_signedInt8" }
+
+                "signedInt16" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_signedInt16" }
+
+                "signedInt32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_signedInt32" }
+
+                "unsignedInt8" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_unsignedInt8" }
+
+                "unsignedInt16" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_unsignedInt16" }
+
+                "unsignedInt32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_unsignedInt32" }
+
+                "float32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_float32" }
+
+                "float64" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_float64" }
+
+                "string" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_string" }
+
+                "bytes" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_bytes" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_map5" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_andThen" }
+
+                "succeed" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_succeed" }
+
+                "fail" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_fail" }
+
+                "loop" ->
+                    Just { moduleOrigin = Nothing, name = "BytesDecode_loop" }
+
+                _ ->
+                    Nothing
+
+        [ "Bytes", "Encode" ] ->
+            case reference.name of
+                "encode" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_encode" }
+
+                "signedInt8" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_signedInt8" }
+
+                "signedInt16" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_signedInt16" }
+
+                "signedInt32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_signedInt32" }
+
+                "unsignedInt8" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_unsignedInt8" }
+
+                "unsignedInt16" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_unsignedInt16" }
+
+                "unsignedInt32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_unsignedInt32" }
+
+                "float32" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_float32" }
+
+                "float64" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_float64" }
+
+                "bytes" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_bytes" }
+
+                "string" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_string" }
+
+                "getStringWidth" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_getStringWidth" }
+
+                "sequence" ->
+                    Just { moduleOrigin = Nothing, name = "BytesEncode_sequence" }
+
+                _ ->
+                    Nothing
+
         [ "Debug" ] ->
             case reference.name of
                 "log" ->
@@ -4397,6 +4556,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                     , types =
                         ElmSyntaxTypeInfer.elmCoreTypes
                             |> FastDict.union elmJsonTypes
+                            |> FastDict.union elmBytesTypes
                             |> FastDict.union elmRegexTypes
                             |> FastDict.union elmKernelParserTypes
                             |> FastDict.union elmKernelUrlTypes
@@ -10566,6 +10726,419 @@ defaultDeclarations =
         Basics_modBy 60 (flooredDiv (Time_posixToMillis time) 1000)
     let inline Time_toMillis (_: Time_Zone) (time: Time_Posix) : int64 =
         Basics_modBy 1000 (Time_posixToMillis time)
+    
+
+    type Bytes_Bytes =
+        array<byte>
+    
+    [<Struct>]
+    type Bytes_Endianness =
+        | Bytes_LE
+        | Bytes_BE
+
+    type BytesEncode_Encoder =
+        | BytesEncode_I8 of int64
+        | BytesEncode_I16 of (struct( Bytes_Endianness * int64 ))
+        | BytesEncode_I32 of (struct( Bytes_Endianness * int64 ))
+        | BytesEncode_U8 of int64
+        | BytesEncode_U16 of (struct( Bytes_Endianness * int64 ))
+        | BytesEncode_U32 of (struct( Bytes_Endianness * int64 ))
+        | BytesEncode_F32 of (struct( Bytes_Endianness * float ))
+        | BytesEncode_F64 of (struct( Bytes_Endianness * float ))
+        | BytesEncode_Seq of (struct( int * List<BytesEncode_Encoder> ))
+        | BytesEncode_Utf8 of (struct( int * StringRope ))
+        | BytesEncode_Bytes of Bytes_Bytes
+    
+    let Bytes_width (bytes: Bytes_Bytes) : int64 =
+        Array.length bytes
+    
+
+    let BytesEncode_getStringWidth (string: StringRope): int64 =
+        System.Text.Encoding.UTF8.GetByteCount(StringRope.toString string)
+
+    let BytesEncode_signedInt8 (i8: int64) : BytesEncode_Encoder =
+        BytesEncode_I8 i8
+
+    let BytesEncode_signedInt16 (endianness : Bytes_Endianness) (i16: int64) : BytesEncode_Encoder =
+        BytesEncode_I16 ( endianness, i16 )
+
+    let BytesEncode_signedInt32 (endianness : Bytes_Endianness) (i32: int64) : BytesEncode_Encoder =
+        BytesEncode_I32 ( endianness, i32 )
+
+    let BytesEncode_unsignedInt8 (u8: int64) : BytesEncode_Encoder =
+        BytesEncode_U8 u8
+
+    let BytesEncode_unsignedInt16 (endianness : Bytes_Endianness) (u16: int64) : BytesEncode_Encoder =
+        BytesEncode_U16 ( endianness, u16 )
+
+    let BytesEncode_unsignedInt32 (endianness : Bytes_Endianness) (u32: int64) : BytesEncode_Encoder =
+        BytesEncode_U32 ( endianness, u32 )
+
+    let BytesEncode_float32 (endianness : Bytes_Endianness) (f32: float) : BytesEncode_Encoder =
+        BytesEncode_F32 ( endianness, f32 )
+
+    let BytesEncode_float64 (endianness : Bytes_Endianness) (f64: float) : BytesEncode_Encoder =
+        BytesEncode_F64 ( endianness, f64 )
+
+    let BytesEncode_bytes (bytes: Bytes_Bytes) : BytesEncode_Encoder =
+        BytesEncode_Bytes bytes
+
+    let BytesEncode_string (string: StringRope) : BytesEncode_Encoder =
+        BytesEncode_Utf8
+            ( System.Text.Encoding.UTF8.GetByteCount(StringRope.toString string)
+            , string
+            )
+    
+    let BytesEncode_byteCount (encoder: BytesEncode_Encoder) : int =
+        match encoder with
+        | BytesEncode_I8(_) -> 1
+        | BytesEncode_I16(_) -> 2
+        | BytesEncode_I32(_) -> 4
+        | BytesEncode_U8(_) -> 1
+        | BytesEncode_U16(_) -> 2
+        | BytesEncode_U32(_) -> 4
+        | BytesEncode_F32(_) -> 4
+        | BytesEncode_F64(_) -> 8
+        | BytesEncode_Seq( w, _ ) -> w
+        | BytesEncode_Utf8( w, _ ) -> w
+        | BytesEncode_Bytes bytes -> Array.length bytes
+
+    let BytesEncode_sequence (encoders: List<BytesEncode_Encoder>) : BytesEncode_Encoder =
+        BytesEncode_Seq
+            ( Seq.sum (Seq.map BytesEncode_byteCount encoders)
+            , encoders
+            )
+    
+    let convertedBytesAdaptEndianness (endianness: Bytes_Endianness) (asLeBytes: Bytes_Bytes) : array<byte> =
+        // can be optimized to use specialized endian operations
+        // https://learn.microsoft.com/en-us/dotnet/api/system.buffers.binary.binaryprimitives?view=net-9.0
+        if (endianness = Bytes_LE) <> System.BitConverter.IsLittleEndian then
+            System.Array.Reverse(asLeBytes)
+    
+        asLeBytes
+
+    let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
+        let mutableBuffer = new System.IO.MemoryStream(int (BytesEncode_byteCount encoder))
+        let mutable toEncodeNext = encoder
+        let mutable mutableRemainingRightEncoders = System.Collections.Generic.Stack<BytesEncode_Encoder>()
+        let mutable shouldKeepGoing = true
+
+        while shouldKeepGoing do
+            match toEncodeNext with
+            | BytesEncode_I8(i8) ->
+                mutableBuffer.WriteByte(byte (sbyte i8))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_I16( endianness, i16 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(int16 i16)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_I32( endianness, i32 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(int32 i32)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_U8(u8) ->
+                mutableBuffer.WriteByte(byte u8)
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_U16( endianness, u16 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(uint16 u16)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_U32( endianness, u32 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(uint32 u32)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_F32( endianness, f32 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(float32 f32)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_F64( endianness, f64 ) ->
+                mutableBuffer.Write(convertedBytesAdaptEndianness endianness (System.BitConverter.GetBytes(f64)))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_Utf8( byteLength, stringRope ) ->
+                mutableBuffer.Write(
+                    new System.ReadOnlySpan<byte>(
+                        System.Text.Encoding.Unicode.GetBytes(StringRope.toString stringRope)
+                    )
+                )
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_Bytes(byteArray) ->
+                mutableBuffer.Write(new System.ReadOnlySpan<byte>(byteArray))
+                if mutableRemainingRightEncoders.Count = 0 then
+                    shouldKeepGoing <- false
+                else
+                    toEncodeNext <- mutableRemainingRightEncoders.Pop()
+            | BytesEncode_Seq( byteLength, encoders ) ->
+                match encoders with
+                | [] ->
+                    if mutableRemainingRightEncoders.Count = 0 then
+                        shouldKeepGoing <- false
+                    else
+                        toEncodeNext <- mutableRemainingRightEncoders.Pop()
+                | nextSubEncoder :: subEncodersAfterNextSubEncoder ->
+                    toEncodeNext <- nextSubEncoder
+                    // can probably be optimized
+                    Seq.iter
+                        (fun subEncoderAfterNextSubEncoder ->
+                            mutableRemainingRightEncoders.Push(subEncoderAfterNextSubEncoder)
+                        )
+                        (Seq.rev subEncodersAfterNextSubEncoder)
+        done
+
+        mutableBuffer.ToArray()
+    
+
+    type BytesDecode_Decoder<'value> =
+        Bytes_Bytes -> int32 -> ValueOption<struct( int32 * 'value )>
+    
+    type BytesDecode_Step<'state, 'a> =
+        | BytesDecode_Loop of 'state
+        | BytesDecode_Done of 'a
+    
+    let BytesDecode_decode (decoder: BytesDecode_Decoder<'value>) (bytes: Bytes_Bytes) : option<'value> =
+        match decoder bytes 0 with
+        | ValueNone -> None
+        | ValueSome(_, value) -> Some value
+    
+    let BytesDecode_succeed (value: 'value) : BytesDecode_Decoder<'value> =
+        fun bytes index ->
+            ValueSome( index, value )
+    let BytesDecode_fail : BytesDecode_Decoder<'value> =
+        fun bytes index ->
+            ValueNone
+    let BytesDecode_andThen (valueToFollowingDecoder: 'value -> BytesDecode_Decoder<'mappedValue>) (decoder: BytesDecode_Decoder<'value>) : BytesDecode_Decoder<'mappedValue> =
+        fun bytes index ->
+            match decoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfter, value ) ->
+                valueToFollowingDecoder value bytes indexAfter
+    let BytesDecode_map (valueChange: 'value -> 'mappedValue) (decoder: BytesDecode_Decoder<'value>) : BytesDecode_Decoder<'mappedValue> =
+        fun bytes index ->
+            match decoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfter, value ) ->
+                ValueSome( indexAfter, valueChange value )
+    
+    let rec BytesDecode_loop
+        (initialState: 'state)
+        (step: 'state -> BytesDecode_Decoder<BytesDecode_Step<'state, 'a>>)
+        : BytesDecode_Decoder<'a> =
+        fun bytes index ->
+            match step initialState bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome(indexAfterStep, stepValue) ->            
+                match stepValue with
+                | BytesDecode_Loop(newState) ->
+                    BytesDecode_loop newState step bytes indexAfterStep
+
+                | BytesDecode_Done(result) ->
+                    ValueSome( indexAfterStep, result )
+
+    let BytesDecode_map2 (valuesCombine: 'a -> 'b -> 'combined) (aDecoder: BytesDecode_Decoder<'a>) (bDecoder: BytesDecode_Decoder<'b>) : BytesDecode_Decoder<'combined> =
+        fun bytes index ->
+            match aDecoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfterA, a ) ->
+                match bDecoder bytes indexAfterA with
+                | ValueNone -> ValueNone
+                | ValueSome( indexAfterB, b ) ->
+                    ValueSome( indexAfterB, valuesCombine a b )
+    let BytesDecode_map3 (valuesCombine: 'a -> 'b -> 'c -> 'combined) (aDecoder: BytesDecode_Decoder<'a>) (bDecoder: BytesDecode_Decoder<'b>) (cDecoder: BytesDecode_Decoder<'c>) : BytesDecode_Decoder<'combined> =
+        fun bytes index ->
+            match aDecoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfterA, a ) ->
+                match bDecoder bytes indexAfterA with
+                | ValueNone -> ValueNone
+                | ValueSome( indexAfterB, b ) ->
+                    match cDecoder bytes indexAfterA with
+                    | ValueNone -> ValueNone
+                    | ValueSome( indexAfterC, c ) ->
+                        ValueSome( indexAfterC, valuesCombine a b c )
+    let BytesDecode_map4 (valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined) (aDecoder: BytesDecode_Decoder<'a>) (bDecoder: BytesDecode_Decoder<'b>) (cDecoder: BytesDecode_Decoder<'c>) (dDecoder: BytesDecode_Decoder<'d>) : BytesDecode_Decoder<'combined> =
+        fun bytes index ->
+            match aDecoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfterA, a ) ->
+                match bDecoder bytes indexAfterA with
+                | ValueNone -> ValueNone
+                | ValueSome( indexAfterB, b ) ->
+                    match cDecoder bytes indexAfterA with
+                    | ValueNone -> ValueNone
+                    | ValueSome( indexAfterC, c ) ->
+                        match dDecoder bytes indexAfterA with
+                        | ValueNone -> ValueNone
+                        | ValueSome( indexAfterD, d ) ->
+                            ValueSome( indexAfterD, valuesCombine a b c d )
+    let BytesDecode_map5 (valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined) (aDecoder: BytesDecode_Decoder<'a>) (bDecoder: BytesDecode_Decoder<'b>) (cDecoder: BytesDecode_Decoder<'c>) (dDecoder: BytesDecode_Decoder<'d>) (eDecoder: BytesDecode_Decoder<'e>) : BytesDecode_Decoder<'combined> =
+        fun bytes index ->
+            match aDecoder bytes index with
+            | ValueNone -> ValueNone
+            | ValueSome( indexAfterA, a ) ->
+                match bDecoder bytes indexAfterA with
+                | ValueNone -> ValueNone
+                | ValueSome( indexAfterB, b ) ->
+                    match cDecoder bytes indexAfterA with
+                    | ValueNone -> ValueNone
+                    | ValueSome( indexAfterC, c ) ->
+                        match dDecoder bytes indexAfterA with
+                        | ValueNone -> ValueNone
+                        | ValueSome( indexAfterD, d ) ->
+                            match eDecoder bytes indexAfterA with
+                            | ValueNone -> ValueNone
+                            | ValueSome( indexAfterE, e ) ->
+                                ValueSome( indexAfterE, valuesCombine a b c d e )
+
+    let BytesDecode_signedInt8 : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 1
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome ( indexAfter, int64 (sbyte (bytes[index])) )
+    let BytesDecode_signedInt16 (endianness: Bytes_Endianness) : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 2
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , int64
+                        (match endianness with
+                         | Bytes_LE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadInt16LittleEndian(bytes[index..indexAfter])
+                         | Bytes_BE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadInt16BigEndian(bytes[index..indexAfter])
+                        )
+                    )
+    let BytesDecode_signedInt32 (endianness: Bytes_Endianness) : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 4
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , int64
+                        (match endianness with
+                         | Bytes_LE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes[index..indexAfter])
+                         | Bytes_BE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes[index..indexAfter])
+                        )
+                    )
+    let BytesDecode_unsignedInt8 : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 1
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome ( indexAfter, int64 (bytes[index]) )
+    let BytesDecode_unsignedInt16 (endianness: Bytes_Endianness) : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 2
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , int64
+                        (match endianness with
+                         | Bytes_LE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(bytes[index..indexAfter])
+                         | Bytes_BE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(bytes[index..indexAfter])
+                        )
+                    )
+    let BytesDecode_unsignedInt32 (endianness: Bytes_Endianness) : BytesDecode_Decoder<int64> =
+        fun bytes index ->
+            let indexAfter = index + 4
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , int64
+                        (match endianness with
+                         | Bytes_LE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes[index..indexAfter])
+                         | Bytes_BE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes[index..indexAfter])
+                        )
+                    )
+    let BytesDecode_float32 (endianness: Bytes_Endianness) : BytesDecode_Decoder<float> =
+        fun bytes index ->
+            let indexAfter = index + 4
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , float
+                        (match endianness with
+                         | Bytes_LE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(bytes[index..indexAfter])
+                         | Bytes_BE ->
+                            System.Buffers.Binary.BinaryPrimitives.ReadSingleBigEndian(bytes[index..indexAfter])
+                        )
+                    )
+    let BytesDecode_float64 (endianness: Bytes_Endianness) : BytesDecode_Decoder<float> =
+        fun bytes index ->
+            let indexAfter = index + 8
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , match endianness with
+                      | Bytes_LE ->
+                        System.Buffers.Binary.BinaryPrimitives.ReadDoubleLittleEndian(bytes[index..indexAfter])
+                      | Bytes_BE ->
+                        System.Buffers.Binary.BinaryPrimitives.ReadDoubleBigEndian(bytes[index..indexAfter])
+                    )
+    let BytesDecode_bytes (byteCountToRead: int64) : BytesDecode_Decoder<Bytes_Bytes> =
+        fun bytes index ->
+            let indexAfter = index + int byteCountToRead
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , bytes[index..indexAfter]
+                    )
+    let BytesDecode_string (byteCountToRead: int64) : BytesDecode_Decoder<StringRope> =
+        fun bytes index ->
+            let indexAfter = index + 8
+            if indexAfter >= Array.length bytes then
+                ValueNone
+            else
+                ValueSome
+                    ( indexAfter
+                    , StringRopeOne
+                        (System.Text.Encoding.UTF8.GetString(bytes, index, int byteCountToRead))
+                    )
 """
 
 
@@ -10790,6 +11363,1539 @@ typeChar =
             , arguments = []
             }
         )
+
+
+elmBytesTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmBytesTypes =
+    FastDict.fromList
+        [ ( [ "Bytes" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "getHostEndianness"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Task" ]
+                                , name = "Task"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeVariable "x"
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "width"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Bytes"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Bytes"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    , ( "Endianness"
+                      , { parameters = []
+                        , variants =
+                            FastDict.fromList [ ( "LE", [] ), ( "BE", [] ) ]
+                        }
+                      )
+                    ]
+            }
+          )
+        , ( [ "Bytes", "Decode" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "andThen"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "bytes"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes" ]
+                                                        , name = "Bytes"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "decode"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes" ]
+                                                        , name = "Bytes"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Maybe" ]
+                                                        , name = "Maybe"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fail"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeVariable "a" ]
+                                }
+                            )
+                      )
+                    , ( "float32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float64"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "loop"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable "state"
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "state"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Bytes"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Step"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "state"
+                                                                                    , ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "a"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "b"
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map2"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "result"
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "result"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "result"
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Bytes"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Bytes"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "result"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map4"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "result"
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Bytes"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Bytes"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Bytes"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "result"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map5"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                "b"
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            "c"
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "d"
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "e"
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "result"
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Decode"
+                                                            ]
+                                                        , name = "Decoder"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                "a"
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        [ "Bytes"
+                                                                        , "Decode"
+                                                                        ]
+                                                                    , name =
+                                                                        "Decoder"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            "b"
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    [ "Bytes"
+                                                                                    , "Decode"
+                                                                                    ]
+                                                                                , name =
+                                                                                    "Decoder"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        "c"
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                [ "Bytes"
+                                                                                                , "Decode"
+                                                                                                ]
+                                                                                            , name =
+                                                                                                "Decoder"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    "d"
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Bytes"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "e"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            [ "Bytes"
+                                                                                                            , "Decode"
+                                                                                                            ]
+                                                                                                        , name =
+                                                                                                            "Decoder"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                "result"
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt16"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt8"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "string"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "String" ]
+                                                        , name = "String"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "succeed"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    "a"
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt16"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Decode" ]
+                                            , name = "Decoder"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt8"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                , name = "Decoder"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Decoder"
+                      , { parameters = [ "a" ]
+                        , variants = FastDict.fromList []
+                        }
+                      )
+                    , ( "Step"
+                      , { parameters = [ "state", "a" ]
+                        , variants =
+                            FastDict.fromList
+                                [ ( "Loop"
+                                  , [ ElmSyntaxTypeInfer.TypeVariable "state" ]
+                                  )
+                                , ( "Done"
+                                  , [ ElmSyntaxTypeInfer.TypeVariable "a" ]
+                                  )
+                                ]
+                        }
+                      )
+                    ]
+            }
+          )
+        , ( [ "Bytes", "Encode" ]
+          , { signatures =
+                FastDict.fromList
+                    [ ( "bytes"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Bytes"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "encode"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Bytes"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float64"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getStringWidth"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "sequence"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "List" ]
+                                            , name = "List"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt16"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "signedInt8"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "string"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "String" ]
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt16"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt32"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Bytes" ]
+                                            , name = "Endianness"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Basics" ]
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            [ "Bytes"
+                                                            , "Encode"
+                                                            ]
+                                                        , name = "Encoder"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "unsignedInt8"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = [ "Basics" ]
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin =
+                                                [ "Bytes", "Encode" ]
+                                            , name = "Encoder"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Encoder"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        ]
 
 
 elmJsonTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
