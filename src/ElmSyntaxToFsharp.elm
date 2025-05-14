@@ -10876,7 +10876,7 @@ defaultDeclarations =
             | BytesEncode_Utf8( byteLength, stringRope ) ->
                 mutableBuffer.Write(
                     new System.ReadOnlySpan<byte>(
-                        System.Text.Encoding.Unicode.GetBytes(StringRope.toString stringRope)
+                        System.Text.Encoding.UTF8.GetBytes(StringRope.toString stringRope)
                     )
                 )
                 if mutableRemainingRightEncoders.Count = 0 then
