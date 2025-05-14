@@ -34,10 +34,10 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
 
 ### be aware
 
--   only a subset of elm is currently supported. not supported:
-    -   ports, glsl
+-   not supported are
+    -   ports that use non-json values like `port sendMessage : String -> Cmd msg`, glsl
     -   `elm/file`, `elm/http`, `elm/virtual-dom`, `elm/html`, `elm/svg`, `elm/browser`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
-    -   `Platform`, `Platform.Cmd`, `Platform.Sub`, `Task`, `Process`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`
+    -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`
     -   extensible record types. For example, these declarations won't work (at let or module level):
         ```elm
         -- in aliased type or variant value
@@ -123,6 +123,10 @@ Here's some special types you can expect:
     Encode and decode them like you would in elm, like `Elm.JsonEncode_float 2.2`
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
     Create them like you would in elm with `Elm.Regex_fromString`, `Elm.Regex_fromStringWith` or `Elm.Regex_never`
+  - a transpiled elm app does not run itself.
+    An elm main `Platform.worker` program type will literally just consist of fields `Init`, `Update` and `Subscriptions` where
+    subscriptions/commands are returned as a list of `Elm.PlatformSub_SubSingle`/`Elm.PlatformCmd_CmdSingle` with possible elm subscriptions/commands in a choice type.
+    It's then your responsibility as "the platform" to perform effects, create events and manage the state
 
 The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Float` → `Map<float, float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
 

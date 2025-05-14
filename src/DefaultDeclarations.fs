@@ -2378,3 +2378,94 @@ module Elm =
                     , StringRopeOne
                         (System.Text.Encoding.UTF8.GetString(bytes, index, int byteCountToRead))
                     )
+
+
+    [<Struct>]
+    type PlatformCmd_PortOutgoing =
+        { Name: string; Value: System.Text.Json.Nodes.JsonNode }
+    [<Struct>]
+    type PlatformCmd_CmdSingle<'event> =
+        | PlatformCmd_PortOutgoing of PlatformCmd_PortOutgoing:
+            PlatformCmd_PortOutgoing
+    type PlatformCmd_Cmd<'event> =
+        List<PlatformCmd_CmdSingle<'event>>
+    
+    let PlatformCmd_none: PlatformCmd_Cmd<'event> =
+        []
+    let PlatformCmd_batch (subCommands: List<PlatformCmd_Cmd<'event>>) : PlatformCmd_Cmd<'event> =
+        List.concat subCommands
+    let PlatformCmd_singleMap
+        (eventChange: 'event -> 'mappedEvent)
+        (commandSingle: PlatformCmd_CmdSingle<'event>)
+        : PlatformCmd_CmdSingle<'mappedEvent> =
+        match commandSingle with
+        | PlatformCmd_PortOutgoing(portOutgoing) ->
+            PlatformCmd_PortOutgoing portOutgoing
+    let PlatformCmd_map
+        (eventChange: 'event -> 'mappedEvent)
+        (command: PlatformCmd_Cmd<'event>)
+        : PlatformCmd_Cmd<'mappedEvent> =
+        List.map
+            (fun single -> PlatformCmd_singleMap eventChange single)
+            command
+    let PlatformCmd_portOutgoingWithName
+        (name: StringRope)
+        (value: System.Text.Json.Nodes.JsonNode)
+        : PlatformCmd_Cmd<'event> =
+        [ PlatformCmd_PortOutgoing
+            { Name = StringRope.toString name; Value = value }
+        ]
+    [<Struct>]
+    type PlatformSub_PortIncoming<'event> =
+        { Name: string
+        ; OnValue: System.Text.Json.Nodes.JsonNode -> 'event
+        }
+    [<Struct>]
+    type PlatformSub_SubSingle<'event> =
+        | PlatformSub_PortIncoming of PlatformSub_PortIncoming:
+            PlatformSub_PortIncoming<'event>
+    type PlatformSub_Sub<'event> =
+        List<PlatformSub_SubSingle<'event>>
+    
+    let PlatformSub_none: PlatformSub_Sub<'event> =
+        []
+    let PlatformSub_batch (subSubscriptions: List<PlatformSub_Sub<'event>>) : PlatformSub_Sub<'event> =
+        List.concat subSubscriptions
+    let PlatformSub_singleMap
+        (eventChange: 'event -> 'mappedEvent)
+        (subscriptionSingle: PlatformSub_SubSingle<'event>)
+        : PlatformSub_SubSingle<'mappedEvent> =
+        match subscriptionSingle with
+        | PlatformSub_PortIncoming(portIncoming) ->
+            PlatformSub_PortIncoming
+                { Name = portIncoming.Name
+                ; OnValue =
+                    fun value ->
+                        eventChange (portIncoming.OnValue value)
+                }
+    let PlatformSub_map
+        (eventChange: 'event -> 'mappedEvent)
+        (subscription: PlatformSub_Sub<'event>)
+        : PlatformSub_Sub<'mappedEvent> =
+        List.map
+            (fun single -> PlatformSub_singleMap eventChange single)
+            subscription
+    let PlatformSub_portIncomingWithName
+        (name: StringRope)
+        (onValue: System.Text.Json.Nodes.JsonNode -> 'event)
+        : PlatformSub_Sub<'event> =
+        [ PlatformSub_PortIncoming
+            { Name = StringRope.toString name; OnValue = onValue }
+        ]
+    
+    [<Struct>]
+    type Platform_Program<'flags, 'state, 'event> =
+        { Init : 'flags -> struct( 'state * PlatformCmd_Cmd<'event> )
+        ; Update : 'event -> 'state -> struct( 'state * PlatformCmd_Cmd<'event> )
+        ; Subscriptions : 'state -> PlatformSub_Sub<'event>
+        }
+    let Platform_worker
+        (config: Platform_Program<'flags, 'state, 'event>)
+        : Platform_Program<'flags, 'state, 'event> =
+        config
+    

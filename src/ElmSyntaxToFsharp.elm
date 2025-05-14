@@ -180,6 +180,8 @@ type alias ModuleContext =
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             (List String)
+    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
     }
 
 
@@ -198,6 +200,8 @@ importsToModuleContext :
             FastDict.Dict String (FastDict.Dict String { valueCount : Int })
         , recordTypeAliases :
             FastDict.Dict String (List String)
+        , portsIncoming : FastSet.Set String
+        , portsOutgoing : FastSet.Set String
         }
     -> List (Elm.Syntax.Node.Node Elm.Syntax.Import.Import)
     -> ModuleContext
@@ -213,6 +217,8 @@ importsToModuleContext moduleExposes imports =
                     FastDict.Dict String { valueCount : Int }
                 , exposedRecordTypeAliases :
                     FastDict.Dict String (List String)
+                , exposedPortsOutgoing : FastSet.Set String
+                , exposedPortsIncoming : FastSet.Set String
                 }
         importsNormal =
             implicitImports
@@ -231,6 +237,8 @@ importsToModuleContext moduleExposes imports =
                                             FastDict.Dict String { valueCount : Int }
                                         , recordTypeAliases :
                                             FastDict.Dict String (List String)
+                                        , portsOutgoing : FastSet.Set String
+                                        , portsIncoming : FastSet.Set String
                                         }
                                     exposes =
                                         case syntaxImport.exposingList of
@@ -239,6 +247,8 @@ importsToModuleContext moduleExposes imports =
                                                     FastSet.empty
                                                 , variants = FastDict.empty
                                                 , recordTypeAliases = FastDict.empty
+                                                , portsOutgoing = FastSet.empty
+                                                , portsIncoming = FastSet.empty
                                                 }
 
                                             Just (Elm.Syntax.Node.Node _ syntaxExposing) ->
@@ -248,6 +258,8 @@ importsToModuleContext moduleExposes imports =
                                                             FastSet.empty
                                                         , variants = FastDict.empty
                                                         , recordTypeAliases = FastDict.empty
+                                                        , portsOutgoing = FastSet.empty
+                                                        , portsIncoming = FastSet.empty
                                                         }
 
                                                     Just moduleExposedNames ->
@@ -267,6 +279,8 @@ importsToModuleContext moduleExposes imports =
                                                                             FastDict.empty
                                                                 , recordTypeAliases =
                                                                     moduleExposedNames.recordTypeAliases
+                                                                , portsOutgoing = moduleExposedNames.portsOutgoing
+                                                                , portsIncoming = moduleExposedNames.portsIncoming
                                                                 }
 
                                                             Elm.Syntax.Exposing.Explicit explicitEposes ->
@@ -290,15 +304,42 @@ importsToModuleContext moduleExposes imports =
                                                                                             Just fieldOrder ->
                                                                                                 soFar.recordTypeAliases
                                                                                                     |> FastDict.insert name fieldOrder
+                                                                                    , portsOutgoing = soFar.portsOutgoing
+                                                                                    , portsIncoming = soFar.portsIncoming
                                                                                     }
 
                                                                                 Elm.Syntax.Exposing.FunctionExpose name ->
-                                                                                    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
-                                                                                        soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
-                                                                                            |> FastSet.insert name
-                                                                                    , variants = soFar.variants
-                                                                                    , recordTypeAliases = soFar.recordTypeAliases
-                                                                                    }
+                                                                                    if moduleExposedNames.portsOutgoing |> FastSet.member name then
+                                                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                            soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                                                                        , variants = soFar.variants
+                                                                                        , recordTypeAliases = soFar.recordTypeAliases
+                                                                                        , portsOutgoing =
+                                                                                            soFar.portsOutgoing
+                                                                                                |> FastSet.insert name
+                                                                                        , portsIncoming = soFar.portsIncoming
+                                                                                        }
+
+                                                                                    else if moduleExposedNames.portsIncoming |> FastSet.member name then
+                                                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                            soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                                                                        , variants = soFar.variants
+                                                                                        , recordTypeAliases = soFar.recordTypeAliases
+                                                                                        , portsOutgoing = soFar.portsOutgoing
+                                                                                        , portsIncoming =
+                                                                                            soFar.portsIncoming
+                                                                                                |> FastSet.insert name
+                                                                                        }
+
+                                                                                    else
+                                                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+                                                                                            soFar.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                                                                                |> FastSet.insert name
+                                                                                        , variants = soFar.variants
+                                                                                        , recordTypeAliases = soFar.recordTypeAliases
+                                                                                        , portsOutgoing = soFar.portsOutgoing
+                                                                                        , portsIncoming = soFar.portsIncoming
+                                                                                        }
 
                                                                                 Elm.Syntax.Exposing.TypeExpose choiceTypeExpose ->
                                                                                     { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
@@ -322,12 +363,16 @@ importsToModuleContext moduleExposes imports =
                                                                                                             soFar.variants
                                                                                                             choiceTypeDeclared
                                                                                     , recordTypeAliases = soFar.recordTypeAliases
+                                                                                    , portsOutgoing = soFar.portsOutgoing
+                                                                                    , portsIncoming = soFar.portsIncoming
                                                                                     }
                                                                         )
                                                                         { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
                                                                             FastSet.empty
                                                                         , variants = FastDict.empty
                                                                         , recordTypeAliases = FastDict.empty
+                                                                        , portsOutgoing = FastSet.empty
+                                                                        , portsIncoming = FastSet.empty
                                                                         }
                                 in
                                 { moduleName = importModuleName
@@ -343,6 +388,8 @@ importsToModuleContext moduleExposes imports =
                                     exposes.variants
                                 , exposedRecordTypeAliases =
                                     exposes.recordTypeAliases
+                                , exposedPortsOutgoing = exposes.portsOutgoing
+                                , exposedPortsIncoming = exposes.portsIncoming
                                 }
                             )
                    )
@@ -358,6 +405,8 @@ importsToModuleContext moduleExposes imports =
                         , variants : FastDict.Dict String { valueCount : Int }
                         , recordTypeAliases :
                             FastDict.Dict String (List String)
+                        , portsIncoming : FastSet.Set String
+                        , portsOutgoing : FastSet.Set String
                         }
                     importedModuleMembers =
                         case moduleExposes |> FastDict.get syntaxImport.moduleName of
@@ -366,6 +415,8 @@ importsToModuleContext moduleExposes imports =
                                     FastSet.empty
                                 , variants = FastDict.empty
                                 , recordTypeAliases = FastDict.empty
+                                , portsIncoming = FastSet.empty
+                                , portsOutgoing = FastSet.empty
                                 }
 
                             Just moduleExposedNames ->
@@ -386,6 +437,8 @@ importsToModuleContext moduleExposes imports =
                                             FastDict.empty
                                 , recordTypeAliases =
                                     moduleExposedNames.recordTypeAliases
+                                , portsIncoming = moduleExposedNames.portsIncoming
+                                , portsOutgoing = moduleExposedNames.portsOutgoing
                                 }
                 in
                 moduleContextMerge
@@ -419,6 +472,12 @@ importsToModuleContext moduleExposes imports =
                                                 fieldOrder
                                     )
                                     FastDict.empty
+                        , portIncomingLookup =
+                            syntaxImport.exposedPortsIncoming
+                                |> FastSet.map (\portName -> ( [], portName ))
+                        , portOutgoingLookup =
+                            syntaxImport.exposedPortsOutgoing
+                                |> FastSet.map (\portName -> ( [], portName ))
                         }
                         (case syntaxImport.alias of
                             Nothing ->
@@ -453,6 +512,12 @@ importsToModuleContext moduleExposes imports =
                                                         fieldOrder
                                             )
                                             FastDict.empty
+                                , portIncomingLookup =
+                                    syntaxImport.exposedPortsIncoming
+                                        |> FastSet.map (\portName -> ( syntaxImport.moduleName, portName ))
+                                , portOutgoingLookup =
+                                    syntaxImport.exposedPortsOutgoing
+                                        |> FastSet.map (\portName -> ( syntaxImport.moduleName, portName ))
                                 }
 
                             Just importAlias ->
@@ -487,6 +552,12 @@ importsToModuleContext moduleExposes imports =
                                                         fieldOrder
                                             )
                                             FastDict.empty
+                                , portIncomingLookup =
+                                    syntaxImport.exposedPortsIncoming
+                                        |> FastSet.map (\portName -> ( [ importAlias ], portName ))
+                                , portOutgoingLookup =
+                                    syntaxImport.exposedPortsOutgoing
+                                        |> FastSet.map (\portName -> ( [ importAlias ], portName ))
                                 }
                         )
                     )
@@ -496,6 +567,8 @@ importsToModuleContext moduleExposes imports =
                 FastDict.empty
             , variantLookup = FastDict.empty
             , recordTypeAliasLookup = FastDict.empty
+            , portIncomingLookup = FastSet.empty
+            , portOutgoingLookup = FastSet.empty
             }
 
 
@@ -513,6 +586,10 @@ moduleContextMerge a b =
         FastDict.union
             a.recordTypeAliasLookup
             b.recordTypeAliasLookup
+    , portIncomingLookup =
+        FastSet.union a.portIncomingLookup b.portIncomingLookup
+    , portOutgoingLookup =
+        FastSet.union a.portOutgoingLookup b.portOutgoingLookup
     }
 
 
@@ -526,11 +603,15 @@ implicitImports :
             FastDict.Dict String { valueCount : Int }
         , exposedRecordTypeAliases :
             FastDict.Dict String (List String)
+        , exposedPortsOutgoing : FastSet.Set String
+        , exposedPortsIncoming : FastSet.Set String
         }
 implicitImports =
     [ { moduleName = [ "Basics" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "EQ", { valueCount = 0 } )
@@ -587,6 +668,8 @@ implicitImports =
     , { moduleName = [ "List" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "List" ]
@@ -594,6 +677,8 @@ implicitImports =
     , { moduleName = [ "Maybe" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "Just", { valueCount = 1 } )
@@ -605,6 +690,8 @@ implicitImports =
     , { moduleName = [ "Result" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants =
             FastDict.fromList
                 [ ( "Ok", { valueCount = 1 } )
@@ -616,6 +703,8 @@ implicitImports =
     , { moduleName = [ "String" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "String" ]
@@ -623,6 +712,8 @@ implicitImports =
     , { moduleName = [ "Char" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Char" ]
@@ -630,6 +721,8 @@ implicitImports =
     , { moduleName = [ "Tuple" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
@@ -637,6 +730,8 @@ implicitImports =
     , { moduleName = [ "Debug" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
@@ -644,6 +739,8 @@ implicitImports =
     , { moduleName = [ "Platform" ]
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Program" ]
@@ -651,6 +748,8 @@ implicitImports =
     , { moduleName = [ "Platform", "Cmd" ]
       , alias = Just "Cmd"
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Cmd" ]
@@ -658,6 +757,8 @@ implicitImports =
     , { moduleName = [ "Platform", "Sub" ]
       , alias = Just "Sub"
       , exposedRecordTypeAliases = FastDict.empty
+      , exposedPortsOutgoing = FastSet.empty
+      , exposedPortsIncoming = FastSet.empty
       , exposedVariants = FastDict.empty
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Sub" ]
@@ -675,6 +776,8 @@ importsCombine :
             FastDict.Dict String { valueCount : Int }
         , exposedRecordTypeAliases :
             FastDict.Dict String (List String)
+        , exposedPortsOutgoing : FastSet.Set String
+        , exposedPortsIncoming : FastSet.Set String
         }
     ->
         List
@@ -686,6 +789,8 @@ importsCombine :
                 FastDict.Dict String { valueCount : Int }
             , exposedRecordTypeAliases :
                 FastDict.Dict String (List String)
+            , exposedPortsOutgoing : FastSet.Set String
+            , exposedPortsIncoming : FastSet.Set String
             }
 importsCombine syntaxImports =
     importsCombineFrom [] syntaxImports
@@ -701,6 +806,8 @@ importsCombineFrom :
             FastDict.Dict String { valueCount : Int }
         , exposedRecordTypeAliases :
             FastDict.Dict String (List String)
+        , exposedPortsOutgoing : FastSet.Set String
+        , exposedPortsIncoming : FastSet.Set String
         }
     ->
         List
@@ -712,6 +819,8 @@ importsCombineFrom :
                 FastDict.Dict String { valueCount : Int }
             , exposedRecordTypeAliases :
                 FastDict.Dict String (List String)
+            , exposedPortsOutgoing : FastSet.Set String
+            , exposedPortsIncoming : FastSet.Set String
             }
     ->
         List
@@ -723,6 +832,8 @@ importsCombineFrom :
                 FastDict.Dict String { valueCount : Int }
             , exposedRecordTypeAliases :
                 FastDict.Dict String (List String)
+            , exposedPortsOutgoing : FastSet.Set String
+            , exposedPortsIncoming : FastSet.Set String
             }
 importsCombineFrom soFar syntaxImports =
     case syntaxImports of
@@ -754,6 +865,8 @@ importsMerge :
         FastDict.Dict String { valueCount : Int }
     , exposedRecordTypeAliases :
         FastDict.Dict String (List String)
+    , exposedPortsOutgoing : FastSet.Set String
+    , exposedPortsIncoming : FastSet.Set String
     }
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
@@ -764,6 +877,8 @@ importsMerge :
             FastDict.Dict String { valueCount : Int }
         , exposedRecordTypeAliases :
             FastDict.Dict String (List String)
+        , exposedPortsOutgoing : FastSet.Set String
+        , exposedPortsIncoming : FastSet.Set String
         }
     ->
         { moduleName : Elm.Syntax.ModuleName.ModuleName
@@ -774,6 +889,8 @@ importsMerge :
             FastDict.Dict String { valueCount : Int }
         , exposedRecordTypeAliases :
             FastDict.Dict String (List String)
+        , exposedPortsOutgoing : FastSet.Set String
+        , exposedPortsIncoming : FastSet.Set String
         }
 importsMerge earlier later =
     { moduleName = earlier.moduleName
@@ -796,6 +913,12 @@ importsMerge earlier later =
         FastDict.union
             earlier.exposedRecordTypeAliases
             later.exposedRecordTypeAliases
+    , exposedPortsOutgoing =
+        FastSet.union earlier.exposedPortsIncoming
+            later.exposedPortsIncoming
+    , exposedPortsIncoming =
+        FastSet.union earlier.exposedPortsOutgoing
+            later.exposedPortsOutgoing
     }
 
 
@@ -2639,6 +2762,30 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Platform" ] ->
+            case reference.name of
+                "Program" ->
+                    Just { moduleOrigin = Nothing, name = "Platform_Program" }
+
+                _ ->
+                    Nothing
+
+        [ "Platform", "Cmd" ] ->
+            case reference.name of
+                "Cmd" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformCmd_Cmd" }
+
+                _ ->
+                    Nothing
+
+        [ "Platform", "Sub" ] ->
+            case reference.name of
+                "Sub" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformSub_Sub" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -3807,6 +3954,42 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Platform" ] ->
+            case reference.name of
+                "worker" ->
+                    Just { moduleOrigin = Nothing, name = "Platform_worker" }
+
+                _ ->
+                    Nothing
+
+        [ "Platform", "Cmd" ] ->
+            case reference.name of
+                "none" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformCmd_none" }
+
+                "batch" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformCmd_batch" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformCmd_map" }
+
+                _ ->
+                    Nothing
+
+        [ "Platform", "Sub" ] ->
+            case reference.name of
+                "none" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformSub_none" }
+
+                "batch" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformSub_batch" }
+
+                "map" ->
+                    Just { moduleOrigin = Nothing, name = "PlatformSub_map" }
+
+                _ ->
+                    Nothing
+
         _ ->
             Nothing
 
@@ -4234,6 +4417,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                     FastDict.Dict String (FastDict.Dict String { valueCount : Int })
                 , recordTypeAliases :
                     FastDict.Dict String (List String)
+                , portsIncoming : FastSet.Set String
+                , portsOutgoing : FastSet.Set String
                 }
         moduleMembers =
             syntaxDeclarationsIncludingOverwrittenOnes
@@ -4429,6 +4614,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                         membersSoFar.choiceTypesExposingVariants
                                                     , recordTypeAliases =
                                                         membersSoFar.recordTypeAliases
+                                                    , portsOutgoing = membersSoFar.portsOutgoing
+                                                    , portsIncoming = membersSoFar.portsIncoming
                                                     }
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
@@ -4454,10 +4641,13 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                 )
                                                     , recordTypeAliases =
                                                         membersSoFar.recordTypeAliases
+                                                    , portsOutgoing = membersSoFar.portsOutgoing
+                                                    , portsIncoming = membersSoFar.portsIncoming
                                                     }
 
                                                 Elm.Syntax.Declaration.AliasDeclaration typeAlias ->
                                                     let
+                                                        typeAliasName : String
                                                         typeAliasName =
                                                             typeAlias.name
                                                                 |> Elm.Syntax.Node.value
@@ -4481,11 +4671,38 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                             _ ->
                                                                 membersSoFar.recordTypeAliases
+                                                    , portsOutgoing = membersSoFar.portsOutgoing
+                                                    , portsIncoming = membersSoFar.portsIncoming
                                                     }
 
-                                                Elm.Syntax.Declaration.PortDeclaration _ ->
-                                                    -- not supported
-                                                    membersSoFar
+                                                Elm.Syntax.Declaration.PortDeclaration portDeclaration ->
+                                                    if portDeclaration.typeAnnotation |> portTypeSignifiesOutgoing then
+                                                        { valueOrFunctionOrTypeAliasNames =
+                                                            membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                        , choiceTypesExposingVariants =
+                                                            membersSoFar.choiceTypesExposingVariants
+                                                        , recordTypeAliases =
+                                                            membersSoFar.recordTypeAliases
+                                                        , portsOutgoing =
+                                                            membersSoFar.portsOutgoing
+                                                                |> FastSet.insert
+                                                                    (portDeclaration.name |> Elm.Syntax.Node.value)
+                                                        , portsIncoming = membersSoFar.portsIncoming
+                                                        }
+
+                                                    else
+                                                        { valueOrFunctionOrTypeAliasNames =
+                                                            membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                        , choiceTypesExposingVariants =
+                                                            membersSoFar.choiceTypesExposingVariants
+                                                        , recordTypeAliases =
+                                                            membersSoFar.recordTypeAliases
+                                                        , portsOutgoing = membersSoFar.portsOutgoing
+                                                        , portsIncoming =
+                                                            membersSoFar.portsIncoming
+                                                                |> FastSet.insert
+                                                                    (portDeclaration.name |> Elm.Syntax.Node.value)
+                                                        }
 
                                                 Elm.Syntax.Declaration.InfixDeclaration _ ->
                                                     membersSoFar
@@ -4497,6 +4714,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         { valueOrFunctionOrTypeAliasNames = FastSet.empty
                                         , choiceTypesExposingVariants = FastDict.empty
                                         , recordTypeAliases = FastDict.empty
+                                        , portsOutgoing = FastSet.empty
+                                        , portsIncoming = FastSet.empty
                                         }
                                 )
                     )
@@ -4711,6 +4930,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                         FastDict.empty
                                                     , variantLookup = FastDict.empty
                                                     , recordTypeAliasLookup = FastDict.empty
+                                                    , portIncomingLookup = FastSet.empty
+                                                    , portOutgoingLookup = FastSet.empty
                                                     }
 
                                                 Just moduleLocalNames ->
@@ -4756,6 +4977,12 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                             fieldOrder
                                                                 )
                                                                 FastDict.empty
+                                                    , portIncomingLookup =
+                                                        moduleLocalNames.portsIncoming
+                                                            |> FastSet.map (\portName -> ( [], portName ))
+                                                    , portOutgoingLookup =
+                                                        moduleLocalNames.portsOutgoing
+                                                            |> FastSet.map (\portName -> ( [], portName ))
                                                     }
                                             )
                                 in
@@ -4970,6 +5197,26 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                 syntaxModuleTypes.errors
                     ++ fsharpDeclarationsWithoutExtraRecordTypeAliases.errors
             }
+
+
+portTypeSignifiesOutgoing :
+    Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
+    -> Bool
+portTypeSignifiesOutgoing (Elm.Syntax.Node.Node _ syntaxType) =
+    case syntaxType of
+        Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation _ (Elm.Syntax.Node.Node _ output) ->
+            case output of
+                Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ ( _, name )) _ ->
+                    name |> String.toLower |> String.contains "cmd"
+
+                _ ->
+                    False
+
+        Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ ( _, name )) _ ->
+            name |> String.toLower |> String.contains "cmd"
+
+        _ ->
+            False
 
 
 valueOrFunctionDeclarationSetLocalToOrigin :
@@ -5863,6 +6110,8 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
                             moduleContext.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
                         , variantLookup = moduleContext.variantLookup
                         , recordTypeAliasLookup = moduleContext.recordTypeAliasLookup
+                        , portIncomingLookup = moduleContext.portIncomingLookup
+                        , portOutgoingLookup = moduleContext.portOutgoingLookup
                         , variablesFromWithinDeclarationInScope =
                             parameters
                                 |> listMapToFastSetsAndUnify .introducedVariables
@@ -5989,6 +6238,8 @@ expressionContextAddVariablesInScope :
             FastDict.Dict
                 ( Elm.Syntax.ModuleName.ModuleName, String )
                 (List String)
+        , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+        , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
     ->
@@ -6006,6 +6257,8 @@ expressionContextAddVariablesInScope :
             FastDict.Dict
                 ( Elm.Syntax.ModuleName.ModuleName, String )
                 (List String)
+        , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+        , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
 expressionContextAddVariablesInScope additionalVariablesInScope context =
@@ -6013,6 +6266,8 @@ expressionContextAddVariablesInScope additionalVariablesInScope context =
         context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
     , variantLookup = context.variantLookup
     , recordTypeAliasLookup = context.recordTypeAliasLookup
+    , portIncomingLookup = context.portIncomingLookup
+    , portOutgoingLookup = context.portOutgoingLookup
     , variablesFromWithinDeclarationInScope =
         FastSet.union
             additionalVariablesInScope
@@ -6035,6 +6290,8 @@ expression :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             (List String)
+    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -6255,7 +6512,6 @@ expression context expressionTypedNode =
                         )
 
                 Nothing ->
-                    -- TODO record type alias constructor
                     case context.variantLookup |> FastDict.get ( reference.qualification, reference.name ) of
                         Just _ ->
                             let
@@ -6389,28 +6645,55 @@ expression context expressionTypedNode =
                                                 (expressionTypedNode.type_ |> type_)
 
                                 Nothing ->
-                                    Ok
-                                        (FsharpExpressionReference
-                                            (case
-                                                { moduleOrigin = reference.moduleOrigin
-                                                , name = reference.name
-                                                , type_ = expressionTypedNode.type_
+                                    if context.portOutgoingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                                        Ok
+                                            (FsharpExpressionCall
+                                                { called =
+                                                    FsharpExpressionReference
+                                                        { moduleOrigin = Nothing
+                                                        , name = "PlatformCmd_portOutgoingWithName"
+                                                        }
+                                                , arguments =
+                                                    [ FsharpExpressionString reference.name ]
                                                 }
-                                                    |> referenceToCoreFsharp
-                                             of
-                                                Just fsharpReference ->
-                                                    fsharpReference
-
-                                                Nothing ->
-                                                    { moduleOrigin = Nothing
-                                                    , name =
-                                                        referenceToFsharpName
-                                                            { moduleOrigin = reference.moduleOrigin
-                                                            , name = reference.name
-                                                            }
-                                                    }
                                             )
-                                        )
+
+                                    else if context.portIncomingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                                        Ok
+                                            (FsharpExpressionCall
+                                                { called =
+                                                    FsharpExpressionReference
+                                                        { moduleOrigin = Nothing
+                                                        , name = "PlatformSub_portIncomingWithName"
+                                                        }
+                                                , arguments =
+                                                    [ FsharpExpressionString reference.name ]
+                                                }
+                                            )
+
+                                    else
+                                        Ok
+                                            (FsharpExpressionReference
+                                                (case
+                                                    { moduleOrigin = reference.moduleOrigin
+                                                    , name = reference.name
+                                                    , type_ = expressionTypedNode.type_
+                                                    }
+                                                        |> referenceToCoreFsharp
+                                                 of
+                                                    Just fsharpReference ->
+                                                        fsharpReference
+
+                                                    Nothing ->
+                                                        { moduleOrigin = Nothing
+                                                        , name =
+                                                            referenceToFsharpName
+                                                                { moduleOrigin = reference.moduleOrigin
+                                                                , name = reference.name
+                                                                }
+                                                        }
+                                                )
+                                            )
 
         ElmSyntaxTypeInfer.ExpressionIfThenElse ifThenElse ->
             Result.map3
@@ -6898,6 +7181,8 @@ case_ :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             (List String)
+    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -6953,6 +7238,8 @@ letDeclaration :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             (List String)
+    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     -> ElmSyntaxTypeInfer.LetDeclaration (ElmSyntaxTypeInfer.Type String)
@@ -6994,6 +7281,8 @@ letValueOrFunctionDeclaration :
         FastDict.Dict
             ( Elm.Syntax.ModuleName.ModuleName, String )
             (List String)
+    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -7051,17 +7340,12 @@ letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
                 )
                 (syntaxLetDeclarationValueOrFunction.result
                     |> expression
-                        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                            context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                        , variantLookup = context.variantLookup
-                        , recordTypeAliasLookup = context.recordTypeAliasLookup
-                        , variablesFromWithinDeclarationInScope =
-                            FastSet.union
+                        (context
+                            |> expressionContextAddVariablesInScope
                                 (parameters
                                     |> listMapToFastSetsAndUnify .introducedVariables
                                 )
-                                context.variablesFromWithinDeclarationInScope
-                        }
+                        )
                 )
         )
         (syntaxLetDeclarationValueOrFunction.parameters
@@ -11150,6 +11434,96 @@ defaultDeclarations =
                     , StringRopeOne
                         (System.Text.Encoding.UTF8.GetString(bytes, index, int byteCountToRead))
                     )
+
+
+    [<Struct>]
+    type PlatformCmd_PortOutgoing =
+        { Name: string; Value: System.Text.Json.Nodes.JsonNode }
+    [<Struct>]
+    type PlatformCmd_CmdSingle<'event> =
+        | PlatformCmd_PortOutgoing of PlatformCmd_PortOutgoing:
+            PlatformCmd_PortOutgoing
+    type PlatformCmd_Cmd<'event> =
+        List<PlatformCmd_CmdSingle<'event>>
+    
+    let PlatformCmd_none: PlatformCmd_Cmd<'event> =
+        []
+    let PlatformCmd_batch (subCommands: List<PlatformCmd_Cmd<'event>>) : PlatformCmd_Cmd<'event> =
+        List.concat subCommands
+    let PlatformCmd_singleMap
+        (eventChange: 'event -> 'mappedEvent)
+        (commandSingle: PlatformCmd_CmdSingle<'event>)
+        : PlatformCmd_CmdSingle<'mappedEvent> =
+        match commandSingle with
+        | PlatformCmd_PortOutgoing(portOutgoing) ->
+            PlatformCmd_PortOutgoing portOutgoing
+    let PlatformCmd_map
+        (eventChange: 'event -> 'mappedEvent)
+        (command: PlatformCmd_Cmd<'event>)
+        : PlatformCmd_Cmd<'mappedEvent> =
+        List.map
+            (fun single -> PlatformCmd_singleMap eventChange single)
+            command
+    let PlatformCmd_portOutgoingWithName
+        (name: StringRope)
+        (value: System.Text.Json.Nodes.JsonNode)
+        : PlatformCmd_Cmd<'event> =
+        [ PlatformCmd_PortOutgoing
+            { Name = StringRope.toString name; Value = value }
+        ]
+    [<Struct>]
+    type PlatformSub_PortIncoming<'event> =
+        { Name: string
+        ; OnValue: System.Text.Json.Nodes.JsonNode -> 'event
+        }
+    [<Struct>]
+    type PlatformSub_SubSingle<'event> =
+        | PlatformSub_PortIncoming of PlatformSub_PortIncoming:
+            PlatformSub_PortIncoming<'event>
+    type PlatformSub_Sub<'event> =
+        List<PlatformSub_SubSingle<'event>>
+    
+    let PlatformSub_none: PlatformSub_Sub<'event> =
+        []
+    let PlatformSub_batch (subSubscriptions: List<PlatformSub_Sub<'event>>) : PlatformSub_Sub<'event> =
+        List.concat subSubscriptions
+    let PlatformSub_singleMap
+        (eventChange: 'event -> 'mappedEvent)
+        (subscriptionSingle: PlatformSub_SubSingle<'event>)
+        : PlatformSub_SubSingle<'mappedEvent> =
+        match subscriptionSingle with
+        | PlatformSub_PortIncoming(portIncoming) ->
+            PlatformSub_PortIncoming
+                { Name = portIncoming.Name
+                ; OnValue =
+                    fun value ->
+                        eventChange (portIncoming.OnValue value)
+                }
+    let PlatformSub_map
+        (eventChange: 'event -> 'mappedEvent)
+        (subscription: PlatformSub_Sub<'event>)
+        : PlatformSub_Sub<'mappedEvent> =
+        List.map
+            (fun single -> PlatformSub_singleMap eventChange single)
+            subscription
+    let PlatformSub_portIncomingWithName
+        (name: StringRope)
+        (onValue: System.Text.Json.Nodes.JsonNode -> 'event)
+        : PlatformSub_Sub<'event> =
+        [ PlatformSub_PortIncoming
+            { Name = StringRope.toString name; OnValue = onValue }
+        ]
+    
+    [<Struct>]
+    type Platform_Program<'flags, 'state, 'event> =
+        { Init : 'flags -> struct( 'state * PlatformCmd_Cmd<'event> )
+        ; Update : 'event -> 'state -> struct( 'state * PlatformCmd_Cmd<'event> )
+        ; Subscriptions : 'state -> PlatformSub_Sub<'event>
+        }
+    let Platform_worker
+        (config: Platform_Program<'flags, 'state, 'event>)
+        : Platform_Program<'flags, 'state, 'event> =
+        config
 """
 
 
