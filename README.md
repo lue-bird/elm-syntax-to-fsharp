@@ -120,7 +120,7 @@ Here's some special types you can expect:
     You can create them with `struct( 1.1, 2.2 )` und destructure them with `struct( a, b )`
   - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
-    Encode and decode them like you would in elm, like `Elm.JsonDecode_float 2.2`
+    Encode and decode them like you would in elm, like `Elm.JsonEncode_float 2.2`
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
     Create them like you would in elm with `Elm.Regex_fromString`, `Elm.Regex_fromStringWith` or `Elm.Regex_never`
 
