@@ -60,19 +60,60 @@ let performElmCmd (commands: Elm.PlatformCmd_Cmd<'event>) : unit =
         (fun commandSingle -> performElmCommandSingle commandSingle)
         commands
 
+
+let startElmSubscriptionSingle
+    (subscriptionSince: Elm.PlatformSub_SubSingle<'event>)
+    (onEvent: 'event -> unit)
+    : Async<unit> =
+    match subscriptionSince with
+    | Elm.PlatformSub_PortIncoming { Name = portIncomingName; OnValue = onValue } ->
+        match portIncomingName with
+        | "portStdInReadLine" ->
+            async {
+                let inputReader =
+                    new System.IO.StreamReader(
+                        System.Console.OpenStandardInput(),
+                        System.Console.InputEncoding
+                    )
+                let! readLine = Async.AwaitTask (inputReader.ReadLineAsync())
+                onEvent(onValue(Elm.JsonEncode_string (Elm.StringRopeOne readLine)))
+                inputReader.Close()
+            }
+        | unknownPortName ->
+            async {
+                stdout.Write("Error: unknown port name " + unknownPortName + "\n")
+            }
+let performElmSub
+    (subscriptions: Elm.PlatformSub_Sub<'event>)
+    (onEvent: 'event -> unit)
+    : Async<unit> =
+    Async.Ignore
+        (Async.Parallel
+            (Seq.map
+                (fun subscriptionSingle ->
+                    startElmSubscriptionSingle subscriptionSingle onEvent
+                )
+                subscriptions
+            )
+        )
+
 [<EntryPoint>]
 let main args =
     let (struct( initialElmState, initialElmCommands )) =
         Elm.Main_main.Init (Seq.toList (Seq.map Elm.StringRopeOne args))
-    let mutable elmState = initialElmState
+    let mutable currentElmState = initialElmState
+
+    let rec onEvent event =
+        let (struct( nextElmState, elmCommands )) =
+            Elm.Main_main.Update event currentElmState
+        currentElmState <- nextElmState
+        performElmCmd elmCommands
+        let sub = Elm.Main_main.Subscriptions currentElmState
+        // TODO cancel those not present in the new sub
+        Async.Start (performElmSub sub onEvent)
 
     performElmCmd initialElmCommands
-
-    // while true do
-    //     let (struct( nextElmState, elmCommands )) =
-    //         Elm.Main_main.Update event elmState
-    //     elmState <- nextElmState
-    //     performElmCmd elmCommands
-    // done
+    let sub = Elm.Main_main.Subscriptions currentElmState
+    Async.RunSynchronously (performElmSub sub onEvent)
 
     0
