@@ -84,7 +84,6 @@ Add a project config `yourProjectName.fsproj`
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>yourProjectName</RootNamespace>
     <PublishAot>true</PublishAot>
-    <OptimizationPreference>Speed</OptimizationPreference>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/Elm.fs" />
