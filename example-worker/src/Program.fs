@@ -1,5 +1,11 @@
 ﻿module Program
 
+let MapDiff
+    (baseMap: Map<'key, 'a>)
+    (mapWithKeysToRemove: Map<'key, 'b>)
+    : Map<'key, 'a> =
+    Map.fold (fun soFar k _ -> Map.remove k soFar) baseMap mapWithKeysToRemove
+
 [<Struct>]
 type PortConfig<'decodedValue> =
     { Name: string
@@ -63,11 +69,28 @@ let performElmCmd (commands: Elm.PlatformCmd_Cmd<'event>) : unit =
         commands
 
 
+[<Struct>]
+type ElmSubscriptionSingleId =
+    | ElmSubscriptionSingleIdPortIncoming of string
+let elmSubscriptionSingleToId
+    (subscriptionSingle: Elm.PlatformSub_SubSingle<'event>)
+    : ElmSubscriptionSingleId =
+    match subscriptionSingle with
+    | Elm.PlatformSub_PortIncoming(portIncoming) ->
+        ElmSubscriptionSingleIdPortIncoming portIncoming.Name
+let elmSubscriptionSingleToOnValue
+    (subscriptionSingle: Elm.PlatformSub_SubSingle<'event>)
+    : System.Text.Json.Nodes.JsonNode -> 'event =
+    match subscriptionSingle with
+    | Elm.PlatformSub_PortIncoming(portIncoming) ->
+        portIncoming.OnValue
+
+
 let startElmSubscriptionSingle
-    (subscriptionSince: Elm.PlatformSub_SubSingle<'event>)
-    (onEvent: 'event -> unit)
+    (subscriptionSingle: Elm.PlatformSub_SubSingle<'event>)
+    (onEvent: System.Text.Json.Nodes.JsonNode -> unit)
     : Async<unit> =
-    match subscriptionSince with
+    match subscriptionSingle with
     | Elm.PlatformSub_PortIncoming { Name = portIncomingName; OnValue = onValue } ->
         match portIncomingName with
         | "portStdInReadLine" ->
@@ -78,7 +101,7 @@ let startElmSubscriptionSingle
                         System.Console.InputEncoding
                     )
                 let! readLine = Async.AwaitTask (inputReader.ReadLineAsync())
-                onEvent(onValue(Elm.JsonEncode_string (Elm.StringRopeOne readLine)))
+                onEvent (Elm.JsonEncode_string (Elm.StringRopeOne readLine))
                 inputReader.Close()
             }
         | unknownPortName ->
@@ -86,17 +109,39 @@ let startElmSubscriptionSingle
                 stdout.Write("Error: unknown port name " + unknownPortName + "\n")
             }
 let performElmSub
-    (subscriptions: Elm.PlatformSub_Sub<'event>)
-    (onEvent: 'event -> unit)
+    (sub: Elm.PlatformSub_Sub<'event>)
+    (onEvent: ElmSubscriptionSingleId -> System.Text.Json.Nodes.JsonNode -> unit)
     : Async<unit> =
     Async.Ignore
         (Async.Parallel
             (Seq.map
                 (fun subscriptionSingle ->
-                    startElmSubscriptionSingle subscriptionSingle onEvent
+                    let id = elmSubscriptionSingleToId subscriptionSingle
+                    startElmSubscriptionSingle subscriptionSingle
+                        (fun value -> onEvent id value)
                 )
-                subscriptions
+                sub
             )
+        )
+
+[<Struct>]
+type ElmSubscriptionSingleRunningInfo<'event> =
+    { AbortController: System.Threading.CancellationTokenSource
+    ; OnValue: System.Text.Json.Nodes.JsonNode -> 'event
+    }
+let elmSubToAbortableSingles
+    (sub: Elm.PlatformSub_Sub<'event>)
+    : Map<ElmSubscriptionSingleId, ElmSubscriptionSingleRunningInfo<'event>> =
+    Map.ofSeq
+        (Seq.map
+            (fun subscriptionSingle ->
+                ( elmSubscriptionSingleToId subscriptionSingle
+                , { AbortController = new System.Threading.CancellationTokenSource()
+                  ; OnValue = elmSubscriptionSingleToOnValue subscriptionSingle
+                  }
+                )
+            )
+            sub
         )
 
 [<EntryPoint>]
@@ -104,18 +149,44 @@ let main args =
     let (struct( initialElmState, initialElmCommands )) =
         Elm.Main_main.Init (Seq.toList (Seq.map Elm.StringRopeOne args))
     let mutable currentElmState = initialElmState
+    let initialElmSub = Elm.Main_main.Subscriptions currentElmState
+    let mutable currentElmRunningSubs = elmSubToAbortableSingles initialElmSub
 
-    let rec onEvent event =
-        let (struct( nextElmState, elmCommands )) =
-            Elm.Main_main.Update event currentElmState
-        currentElmState <- nextElmState
-        performElmCmd elmCommands
-        let sub = Elm.Main_main.Subscriptions currentElmState
-        // TODO cancel those not present in the new sub
-        Async.Start (performElmSub sub onEvent)
+    let rec onEvent (id: ElmSubscriptionSingleId) (value: System.Text.Json.Nodes.JsonNode): unit =
+        match Map.tryFind id currentElmRunningSubs with
+        | // updated sub does not listen to this event
+          None ->
+            ()
+        | Some(associatedRunningElmSubscriptionSingle) ->
+            let event = associatedRunningElmSubscriptionSingle.OnValue value
+            let (struct( nextElmState, elmCommands )) =
+                Elm.Main_main.Update event currentElmState
+            currentElmState <- nextElmState
+            performElmCmd elmCommands
+            let updatedElmSub = Elm.Main_main.Subscriptions currentElmState
+            let updatedElmRunningSubs = elmSubToAbortableSingles updatedElmSub
 
+            let elmSubSinglesToAdd =
+                List.filter
+                    (fun updatedSubSingle ->
+                        not
+                            (Map.containsKey
+                                (elmSubscriptionSingleToId updatedSubSingle)
+                                currentElmRunningSubs
+                            )
+                    )
+                    updatedElmSub
+            let elmRunningSubsToRemove =
+                MapDiff currentElmRunningSubs updatedElmRunningSubs
+            
+            Map.iter
+                (fun _ toAbort -> toAbort.AbortController.Cancel())
+                elmRunningSubsToRemove
+            
+            Async.Start (performElmSub elmSubSinglesToAdd onEvent)
+            currentElmRunningSubs <- updatedElmRunningSubs
+    
     performElmCmd initialElmCommands
-    let sub = Elm.Main_main.Subscriptions currentElmState
-    Async.RunSynchronously (performElmSub sub onEvent)
+    Async.RunSynchronously(performElmSub initialElmSub onEvent)
 
     0
