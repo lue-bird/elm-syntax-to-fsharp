@@ -155,20 +155,20 @@ module Elm =
 
                 mutableBuilder.ToString()
 
-        override x.GetHashCode() = hash (StringRope.toString (x))
+        override x.GetHashCode() = hash (StringRope.toString x)
 
         override x.Equals(other) =
             match other with
             | :? StringRope as otherStringRope ->
-                StringRope.toString (x) = StringRope.toString (otherStringRope)
+                StringRope.toString x = StringRope.toString otherStringRope
             | _ -> false
 
         interface System.IComparable with
             member x.CompareTo(other) =
                 match other with
                 | :? StringRope as otherStringRope ->
-                    (StringRope.toString (x))
-                        .CompareTo(StringRope.toString (otherStringRope))
+                    (StringRope.toString x)
+                        .CompareTo(StringRope.toString otherStringRope)
                 | _ -> -1
 
     let stringRopeEmpty: StringRope = StringRopeOne ""
