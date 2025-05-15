@@ -6811,19 +6811,18 @@ expression context expressionTypedNode =
                     in
                     FsharpExpressionRecordUpdate
                         { originalRecordVariable =
-                            referenceToFsharpName
-                                { moduleOrigin =
-                                    case
-                                        context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                                            |> FastDict.get ( [], fsharpRecordVariable )
-                                    of
-                                        Nothing ->
-                                            []
+                            case
+                                context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
+                                    |> FastDict.get ( [], fsharpRecordVariable )
+                            of
+                                Nothing ->
+                                    fsharpRecordVariable
 
-                                        Just moduleOrigin ->
-                                            moduleOrigin
-                                , name = fsharpRecordVariable
-                                }
+                                Just moduleOrigin ->
+                                    referenceToFsharpName
+                                        { moduleOrigin = moduleOrigin
+                                        , name = fsharpRecordVariable
+                                        }
                         , fields = fields
                         }
                 )
@@ -6832,7 +6831,9 @@ expression context expressionTypedNode =
                         (\field ->
                             Result.map
                                 (\fieldValue ->
-                                    ( field.name, fieldValue )
+                                    ( field.name |> stringFirstCharToUpper
+                                    , fieldValue
+                                    )
                                 )
                                 (field.value |> expression context)
                         )
@@ -8211,26 +8212,30 @@ printFsharpExpressionRecordUpdate syntaxRecordUpdate =
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
-                    |> Print.followedBy (Print.exactly " with ")
+                    |> Print.followedBy (Print.exactly " with")
                     |> Print.followedBy
-                        (syntaxRecordUpdate.fields
-                            |> FastDict.toList
-                            |> Print.listMapAndIntersperseAndFlatten
-                                (\( fieldName, fieldValue ) ->
-                                    Print.withIndentIncreasedBy 2
-                                        (Print.exactly (fieldName ++ " ="))
-                                        |> Print.followedBy
-                                            (Print.withIndentAtNextMultipleOf4
-                                                (Print.linebreakIndented
+                        (Print.withIndentAtNextMultipleOf4
+                            (Print.linebreakIndented
+                                |> Print.followedBy
+                                    (syntaxRecordUpdate.fields
+                                        |> FastDict.toList
+                                        |> Print.listMapAndIntersperseAndFlatten
+                                            (\( fieldName, fieldValue ) ->
+                                                Print.exactly (fieldName ++ " =")
                                                     |> Print.followedBy
-                                                        (printFsharpExpressionNotParenthesized fieldValue)
-                                                )
+                                                        (Print.withIndentAtNextMultipleOf4
+                                                            (Print.linebreakIndented
+                                                                |> Print.followedBy
+                                                                    (printFsharpExpressionNotParenthesized fieldValue)
+                                                            )
+                                                        )
                                             )
-                                )
-                                (Print.linebreakIndented
-                                    |> Print.followedBy
-                                        (Print.exactly "; ")
-                                )
+                                            (Print.linebreakIndented
+                                                |> Print.followedBy
+                                                    (Print.exactly "; ")
+                                            )
+                                    )
+                            )
                         )
                 )
             )
