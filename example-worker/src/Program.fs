@@ -1,10 +1,12 @@
 ﻿module Program
 
+[<Struct>]
 type PortConfig<'decodedValue> =
     { Name: string
     ; ValueDecoder: Elm.JsonDecode_Decoder<'decodedValue>
     ; Act: 'decodedValue -> unit
     }
+[<Struct>]
 type PortRunner =
     { Name: string
     ; Run: System.Text.Json.Nodes.JsonNode -> unit
