@@ -4,7 +4,7 @@ import * as Node from "@lue-bird/elm-state-interface-experimental/node"
 import { Elm } from "./elmMain.js"
 
 const elmApp = Elm.Main.init()
-// ↓ workers not yet implemented, yet
+// ↓ workers not implemented, yet
 // ↓ https://github.com/nodejs/node/issues/44014
 // v8.startupSnapshot.setDeserializeMainFunction(() => {
 Node.programStart({ ports: elmApp.ports })

@@ -38,7 +38,7 @@ run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/mai
     -   ports that use non-json values like `port sendMessage : String -> Cmd msg`, glsl
     -   `elm/file`, `elm/http`, `elm/virtual-dom`, `elm/html`, `elm/svg`, `elm/browser`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`, `elm-explorations/linear-algebra`
     -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`
-    -   extensible record types. For example, these declarations won't work (at let or module level):
+    -   extensible record types. For example, these declarations might not work (at let or module level):
         ```elm
         -- in aliased type or variant value
         type alias Named otherFields =
