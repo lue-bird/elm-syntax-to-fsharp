@@ -1,4 +1,6 @@
 Print pure [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/) declarations as [F#](https://fsharp.org/) code.
+To try it out, you can
+run [this script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main/node-elm-to-fsharp).
 
 ```elm
 import Elm.Parser
@@ -28,9 +30,6 @@ module Elm =
     ..and some default declarations..
 """
 ```
-
-To try it out, you can
-run [this node script](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main/node-elm-to-fsharp).
 
 ### be aware
 
