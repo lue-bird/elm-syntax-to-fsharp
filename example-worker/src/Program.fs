@@ -63,7 +63,7 @@ let performElmCmd (commands: Elm.PlatformCmd_Cmd<'event>) : unit =
 [<EntryPoint>]
 let main args =
     let (struct( initialElmState, initialElmCommands )) =
-        Elm.Main_main.Init ()
+        Elm.Main_main.Init (Seq.toList (Seq.map Elm.StringRopeOne args))
     let mutable elmState = initialElmState
 
     performElmCmd initialElmCommands

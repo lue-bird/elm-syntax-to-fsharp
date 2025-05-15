@@ -19,16 +19,24 @@ type alias State =
 type Event
     = StdInRead String
 
-main : Program () State Event
+type alias Flags =
+    List String
+
+main : Program Flags State Event
 main =
     Platform.worker
         { init =
-            \() ->
+            \commandLineArguments ->
                 ( { userInput = "" }
-                , Cmd.batch
-                    [ stdoutWrite "Good night, world.\n"
-                    , processExit 1
-                    ]
+                , case commandLineArguments of
+                    [ name ] ->
+                        stdoutWrite ("Hi, " ++ name ++ "!\n")
+
+                    _ ->
+                        Cmd.batch
+                            [ stdoutWrite "Good night, world.\n"
+                            , processExit 1
+                            ]
                 )
         , update = \event state -> ( state, Cmd.none )
         , subscriptions = \state -> Sub.none
