@@ -5,6 +5,8 @@ let MapDiff
     (mapWithKeysToRemove: Map<'key, 'b>)
     : Map<'key, 'a> =
     Map.fold (fun soFar k _ -> Map.remove k soFar) baseMap mapWithKeysToRemove
+let MapUnion (aMap: Map<'key, 'a>) (bMap: Map<'key, 'a>) : Map<'key, 'a> =
+    Map.fold (fun soFar k v -> Map.add k v soFar) bMap aMap
 
 [<Struct>]
 type PortConfig<'decodedValue> =
@@ -78,19 +80,18 @@ let elmSubscriptionSingleToId
     match subscriptionSingle with
     | Elm.PlatformSub_PortIncoming(portIncoming) ->
         ElmSubscriptionSingleIdPortIncoming portIncoming.Name
-let elmSubscriptionSingleToOnValue
-    (subscriptionSingle: Elm.PlatformSub_SubSingle<'event>)
-    : System.Text.Json.Nodes.JsonNode -> 'event =
-    match subscriptionSingle with
-    | Elm.PlatformSub_PortIncoming(portIncoming) ->
-        portIncoming.OnValue
 
+[<Struct>]
+type ElmSubscriptionSingleRunningInfo<'event> =
+    { AbortController: System.Threading.CancellationTokenSource
+    ; Sub: Elm.PlatformSub_SubSingle<'event>
+    }
 
 let startElmSubscriptionSingle
-    (subscriptionSingle: Elm.PlatformSub_SubSingle<'event>)
-    (onEvent: System.Text.Json.Nodes.JsonNode -> unit)
+    (subscriptionSingle: ElmSubscriptionSingleRunningInfo<'event>)
+    (onEvent: System.Text.Json.Nodes.JsonNode -> Async<unit>)
     : Async<unit> =
-    match subscriptionSingle with
+    match subscriptionSingle.Sub with
     | Elm.PlatformSub_PortIncoming { Name = portIncomingName; OnValue = onValue } ->
         match portIncomingName with
         | "portStdInReadLine" ->
@@ -100,35 +101,41 @@ let startElmSubscriptionSingle
                         System.Console.OpenStandardInput(),
                         System.Console.InputEncoding
                     )
-                let! readLine = Async.AwaitTask (inputReader.ReadLineAsync())
-                onEvent (Elm.JsonEncode_string (Elm.StringRopeOne readLine))
-                inputReader.Close()
+                let abortSignal = subscriptionSingle.AbortController.Token
+                while not abortSignal.IsCancellationRequested do
+                    try
+                        let! readLine =
+                            Async.AwaitTask(
+                                inputReader.ReadLineAsync(abortSignal).AsTask()
+                            )
+                        if readLine <> null then
+                            let! () = onEvent (Elm.JsonEncode_string (Elm.StringRopeOne readLine))
+                            ()
+                    with
+                    | :? System.Threading.Tasks.TaskCanceledException ->
+                        ()
+                done
             }
         | unknownPortName ->
             async {
                 stdout.Write("Error: unknown port name " + unknownPortName + "\n")
             }
+
 let performElmSub
-    (sub: Elm.PlatformSub_Sub<'event>)
-    (onEvent: ElmSubscriptionSingleId -> System.Text.Json.Nodes.JsonNode -> unit)
+    (subSinglesAbortable: Map<ElmSubscriptionSingleId, ElmSubscriptionSingleRunningInfo<'event>>)
+    (onEvent: ElmSubscriptionSingleId -> System.Text.Json.Nodes.JsonNode -> Async<unit>)
     : Async<unit> =
     Async.Ignore
         (Async.Parallel
             (Seq.map
-                (fun subscriptionSingle ->
-                    let id = elmSubscriptionSingleToId subscriptionSingle
-                    startElmSubscriptionSingle subscriptionSingle
-                        (fun value -> onEvent id value)
+                (fun (subSingleAbortable: System.Collections.Generic.KeyValuePair<ElmSubscriptionSingleId, ElmSubscriptionSingleRunningInfo<'event>>) ->
+                    startElmSubscriptionSingle subSingleAbortable.Value
+                        (fun value -> onEvent subSingleAbortable.Key value)
                 )
-                sub
+                subSinglesAbortable
             )
         )
 
-[<Struct>]
-type ElmSubscriptionSingleRunningInfo<'event> =
-    { AbortController: System.Threading.CancellationTokenSource
-    ; OnValue: System.Text.Json.Nodes.JsonNode -> 'event
-    }
 let elmSubToAbortableSingles
     (sub: Elm.PlatformSub_Sub<'event>)
     : Map<ElmSubscriptionSingleId, ElmSubscriptionSingleRunningInfo<'event>> =
@@ -137,7 +144,7 @@ let elmSubToAbortableSingles
             (fun subscriptionSingle ->
                 ( elmSubscriptionSingleToId subscriptionSingle
                 , { AbortController = new System.Threading.CancellationTokenSource()
-                  ; OnValue = elmSubscriptionSingleToOnValue subscriptionSingle
+                  ; Sub = subscriptionSingle
                   }
                 )
             )
@@ -152,41 +159,53 @@ let main args =
     let initialElmSub = Elm.Main_main.Subscriptions currentElmState
     let mutable currentElmRunningSubs = elmSubToAbortableSingles initialElmSub
 
-    let rec onEvent (id: ElmSubscriptionSingleId) (value: System.Text.Json.Nodes.JsonNode): unit =
+    let rec onEvent (id: ElmSubscriptionSingleId) (value: System.Text.Json.Nodes.JsonNode): Async<unit> =
         match Map.tryFind id currentElmRunningSubs with
         | // updated sub does not listen to this event
           None ->
-            ()
+            async { () }
         | Some(associatedRunningElmSubscriptionSingle) ->
-            let event = associatedRunningElmSubscriptionSingle.OnValue value
+            let event =
+                match associatedRunningElmSubscriptionSingle.Sub with
+                | Elm.PlatformSub_PortIncoming(portIncoming) ->
+                    portIncoming.OnValue value
             let (struct( nextElmState, elmCommands )) =
                 Elm.Main_main.Update event currentElmState
             currentElmState <- nextElmState
             performElmCmd elmCommands
             let updatedElmSub = Elm.Main_main.Subscriptions currentElmState
-            let updatedElmRunningSubs = elmSubToAbortableSingles updatedElmSub
+            let updatedElmRunningSubs =
+                // TODO: only create abort controllers for added subscriptions
+                elmSubToAbortableSingles updatedElmSub
 
             let elmSubSinglesToAdd =
-                List.filter
-                    (fun updatedSubSingle ->
-                        not
-                            (Map.containsKey
-                                (elmSubscriptionSingleToId updatedSubSingle)
-                                currentElmRunningSubs
-                            )
-                    )
-                    updatedElmSub
+                MapDiff updatedElmRunningSubs currentElmRunningSubs
             let elmRunningSubsToRemove =
                 MapDiff currentElmRunningSubs updatedElmRunningSubs
             
             Map.iter
-                (fun _ toAbort -> toAbort.AbortController.Cancel())
+                (fun id toAbort ->
+                    toAbort.AbortController.Cancel()
+                    toAbort.AbortController.Dispose()
+                )
                 elmRunningSubsToRemove
-            
-            Async.Start (performElmSub elmSubSinglesToAdd onEvent)
-            currentElmRunningSubs <- updatedElmRunningSubs
+            currentElmRunningSubs <-
+                Map.map
+                    (fun updatedSubId updatedSubRunningInfo ->
+                        // preserve old abort controllers
+                        // but still keep the new listeners
+                        match Map.tryFind updatedSubId currentElmRunningSubs with
+                        | None ->
+                            updatedSubRunningInfo
+                        | Some(currentSubWithUpdatedIdRunningInfo) ->
+                            { AbortController = currentSubWithUpdatedIdRunningInfo.AbortController
+                            ; Sub = updatedSubRunningInfo.Sub
+                            }
+                    )
+                    updatedElmRunningSubs
+            performElmSub elmSubSinglesToAdd onEvent
     
     performElmCmd initialElmCommands
-    Async.RunSynchronously(performElmSub initialElmSub onEvent)
+    Async.RunSynchronously(performElmSub currentElmRunningSubs onEvent)
 
     0

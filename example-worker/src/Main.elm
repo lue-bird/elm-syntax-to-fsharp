@@ -16,13 +16,13 @@ processExit : Int -> Cmd event_
 processExit code =
     portProcessExit (Json.Encode.int code)
 
-stdInReadLine : Sub Event
-stdInReadLine =
+stdInReadLine : (String -> Event) -> Sub Event
+stdInReadLine onReadLine =
     portStdInReadLine
         (\value ->
             case value |> Json.Decode.decodeValue Json.Decode.string of
                 Ok readLine ->
-                    StdInLineRead readLine
+                    onReadLine readLine
 
                 Err error ->
                     PortEventFailedToDecode
@@ -33,10 +33,13 @@ stdInReadLine =
 
 
 type alias State =
-    { name : Maybe String }
+    { name : Maybe String
+    , title : Maybe String
+    }
 
 type Event
-    = StdInLineRead String
+    = StdInLineReadName String
+    | StdInLineReadTitle String
     | PortEventFailedToDecode { name : String, error : Json.Decode.Error }
 
 type alias Flags =
@@ -48,21 +51,31 @@ main =
         { init =
             \commandLineArguments ->
                 case commandLineArguments of
+                    [ name, title ] ->
+                        ( { name = Just name, title = Just title }
+                        , stdOutWrite ("Welcome, " ++ name ++ ", the " ++ title ++ ". Nice to meet ya!")
+                        )
+                    
                     [ name ] ->
-                        ( { name = Just name }
-                        , stdOutWrite ("Hi, " ++ name ++ "!\n")
+                        ( { name = Just name, title = Nothing }
+                        , stdOutWrite ("Hi, " ++ name ++ ". Which title should I assign to you?  > ")
                         )
 
                     _ ->
-                        ( { name = Nothing }
+                        ( { name = Nothing, title = Nothing }
                         , stdOutWrite ("What's your name?  > ")
                         )
         , update =
             \event state ->
                 case event of
-                    StdInLineRead readLine ->
-                        ( { name = Just readLine }
-                        , stdOutWrite ("Hi, " ++ readLine ++ "!\n")
+                    StdInLineReadName name ->
+                        ( { state | name = Just name }
+                        , stdOutWrite ("Hi, " ++ name ++ ". Which title should I assign to you?  > ")
+                        )
+                    
+                    StdInLineReadTitle title ->
+                        ( { state | title = Just title }
+                        , stdOutWrite ("Got it. " ++ (Maybe.withDefault "unnamed" state.name) ++ ", the " ++ title ++ ". Nice to meet ya!\n")
                         )
 
                     PortEventFailedToDecode portError ->
@@ -80,10 +93,13 @@ main =
                         )
         , subscriptions =
             \state ->
-                case state.name of
-                    Nothing ->
-                        stdInReadLine
-                    
-                    Just _ ->
+                case ( state.name, state.title ) of
+                    ( Just _, Just _ ) ->
                         Sub.none
+                    
+                    ( Nothing, _ ) ->
+                        stdInReadLine StdInLineReadName
+                    
+                    ( Just _, Nothing ) ->
+                        stdInReadLine StdInLineReadTitle
         }
