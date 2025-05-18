@@ -987,7 +987,49 @@ fsharpExpressionContainedConstructedRecords syntaxExpression =
             FsharpExpressionRecord fields ->
                 FastSet.singleton (fields |> FastDict.keys)
 
-            _ ->
+            FsharpExpressionUnit ->
+                FastSet.empty
+
+            FsharpExpressionFloat _ ->
+                FastSet.empty
+
+            FsharpExpressionInt _ ->
+                FastSet.empty
+
+            FsharpExpressionChar _ ->
+                FastSet.empty
+
+            FsharpExpressionString _ ->
+                FastSet.empty
+
+            FsharpExpressionReference _ ->
+                FastSet.empty
+
+            FsharpExpressionRecordAccess _ ->
+                FastSet.empty
+
+            FsharpExpressionTuple _ ->
+                FastSet.empty
+
+            FsharpExpressionIfElse _ ->
+                FastSet.empty
+
+            FsharpExpressionList _ ->
+                FastSet.empty
+
+            FsharpExpressionRecordUpdate _ ->
+                FastSet.empty
+
+            FsharpExpressionCall _ ->
+                FastSet.empty
+
+            FsharpExpressionLambda _ ->
+                FastSet.empty
+
+            FsharpExpressionMatchWith _ ->
+                FastSet.empty
+
+            FsharpExpressionWithLetDeclarations _ ->
                 FastSet.empty
         )
         (syntaxExpression
@@ -1953,16 +1995,6 @@ qualifiedToString reference =
                 ++ reference.name
 
 
-stringFirstCharToLower : String -> String
-stringFirstCharToLower string =
-    case string |> String.uncons of
-        Nothing ->
-            ""
-
-        Just ( headChar, tailString ) ->
-            String.cons (Char.toLower headChar) tailString
-
-
 stringFirstCharToUpper : String -> String
 stringFirstCharToUpper string =
     case string |> String.uncons of
@@ -1971,16 +2003,6 @@ stringFirstCharToUpper string =
 
         Just ( headChar, tailString ) ->
             String.cons (Char.toUpper headChar) tailString
-
-
-stringFirstCharIsUpper : String -> Bool
-stringFirstCharIsUpper string =
-    case string |> String.uncons of
-        Nothing ->
-            False
-
-        Just ( headChar, _ ) ->
-            headChar |> Char.isUpper
 
 
 printFsharpString : String -> Print
@@ -2026,18 +2048,6 @@ singleDoubleQuotedStringCharToEscaped character =
 
             else
                 String.fromChar otherCharacter
-
-
-intToHexString : Int -> String
-intToHexString int =
-    -- IGNORE TCO
-    if int < 16 then
-        unsafeHexDigitIntToString int
-
-    else
-        intToHexString (int // 16)
-            ++ unsafeHexDigitIntToString (int |> Basics.remainderBy 16)
-            ++ ""
 
 
 unsafeHexDigitIntToString : Int -> String
@@ -4728,318 +4738,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 True
                     )
 
-        moduleMembers :
-            FastDict.Dict
-                Elm.Syntax.ModuleName.ModuleName
-                { valueOrFunctionOrTypeAliasNames : FastSet.Set String
-                , choiceTypesExposingVariants :
-                    FastDict.Dict String (FastDict.Dict String { valueCount : Int })
-                , recordTypeAliases :
-                    FastDict.Dict String (List String)
-                , portsIncoming : FastSet.Set String
-                , portsOutgoing : FastSet.Set String
-                }
-        moduleMembers =
-            syntaxDeclarationsIncludingOverwrittenOnes
-                |> List.filter
-                    (\syntaxModule ->
-                        -- remove those modules we don't have a replacement for, yet
-                        case
-                            syntaxModule.moduleDefinition
-                                |> Elm.Syntax.Node.value
-                                |> moduleHeaderName
-                        of
-                            [ "Array" ] ->
-                                False
-
-                            -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
-                            [ "Elm", "JsArray" ] ->
-                                False
-
-                            [ "Bitwise" ] ->
-                                False
-
-                            [ "Debug" ] ->
-                                False
-
-                            [ "Set" ] ->
-                                False
-
-                            [ "Platform" ] ->
-                                False
-
-                            [ "Platform", "Cmd" ] ->
-                                False
-
-                            [ "Platform", "Sub" ] ->
-                                False
-
-                            [ "Process" ] ->
-                                False
-
-                            [ "Task" ] ->
-                                False
-
-                            [ "File" ] ->
-                                False
-
-                            [ "Bytes" ] ->
-                                False
-
-                            [ "Bytes", "Encode" ] ->
-                                False
-
-                            [ "Bytes", "Decode" ] ->
-                                False
-
-                            [ "Http" ] ->
-                                False
-
-                            [ "VirtualDom" ] ->
-                                False
-
-                            [ "Browser" ] ->
-                                False
-
-                            [ "Browser", "Events" ] ->
-                                False
-
-                            [ "Browser", "Navigation" ] ->
-                                False
-
-                            [ "Browser", "Dom" ] ->
-                                False
-
-                            -- https://github.com/elm/browser/blob/master/src/Browser/AnimationManager.elm
-                            [ "Browser", "AnimationManager" ] ->
-                                False
-
-                            -- https://github.com/elm/browser/tree/master/src/Debugger
-                            [ "Debugger", "Expando" ] ->
-                                False
-
-                            [ "Debugger", "History" ] ->
-                                False
-
-                            [ "Debugger", "Main" ] ->
-                                False
-
-                            [ "Debugger", "Metadata" ] ->
-                                False
-
-                            [ "Debugger", "Overlay" ] ->
-                                False
-
-                            [ "Debugger", "Report" ] ->
-                                False
-
-                            [ "Html" ] ->
-                                False
-
-                            [ "Html", "Attributes" ] ->
-                                False
-
-                            [ "Html", "Events" ] ->
-                                False
-
-                            [ "Html", "Keyed" ] ->
-                                False
-
-                            [ "Html", "Lazy" ] ->
-                                False
-
-                            [ "Svg" ] ->
-                                False
-
-                            [ "Svg", "Attributes" ] ->
-                                False
-
-                            [ "Svg", "Events" ] ->
-                                False
-
-                            [ "Svg", "Keyed" ] ->
-                                False
-
-                            [ "Svg", "Lazy" ] ->
-                                False
-
-                            [ "Time" ] ->
-                                False
-
-                            [ "Random" ] ->
-                                False
-
-                            [ "Markdown" ] ->
-                                False
-
-                            [ "Benchmark" ] ->
-                                False
-
-                            [ "WebGL" ] ->
-                                False
-
-                            [ "WebGL", "Settings" ] ->
-                                False
-
-                            [ "WebGL", "Settings", "Blend" ] ->
-                                False
-
-                            [ "WebGL", "Settings", "DepthTest" ] ->
-                                False
-
-                            [ "WebGL", "Settings", "StencilTest" ] ->
-                                False
-
-                            [ "WebGL", "Texture" ] ->
-                                False
-
-                            [ "Math", "Matrix4" ] ->
-                                False
-
-                            [ "Math", "Vector2" ] ->
-                                False
-
-                            [ "Math", "Vector3" ] ->
-                                False
-
-                            [ "Math", "Vector4" ] ->
-                                False
-
-                            _ ->
-                                True
-                    )
-                |> List.foldl
-                    (\syntaxModule acrossModulesSoFar ->
-                        acrossModulesSoFar
-                            |> FastDict.insert
-                                (syntaxModule.moduleDefinition
-                                    |> Elm.Syntax.Node.value
-                                    |> moduleHeaderName
-                                )
-                                (syntaxModule.declarations
-                                    |> List.foldl
-                                        (\(Elm.Syntax.Node.Node _ declaration) membersSoFar ->
-                                            case declaration of
-                                                Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                                    { valueOrFunctionOrTypeAliasNames =
-                                                        membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                            |> FastSet.insert
-                                                                (syntaxValueOrFunctionDeclaration.declaration
-                                                                    |> Elm.Syntax.Node.value
-                                                                    |> .name
-                                                                    |> Elm.Syntax.Node.value
-                                                                )
-                                                    , choiceTypesExposingVariants =
-                                                        membersSoFar.choiceTypesExposingVariants
-                                                    , recordTypeAliases =
-                                                        membersSoFar.recordTypeAliases
-                                                    , portsOutgoing = membersSoFar.portsOutgoing
-                                                    , portsIncoming = membersSoFar.portsIncoming
-                                                    }
-
-                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
-                                                    { valueOrFunctionOrTypeAliasNames =
-                                                        membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                    , choiceTypesExposingVariants =
-                                                        membersSoFar.choiceTypesExposingVariants
-                                                            |> FastDict.insert
-                                                                (syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value)
-                                                                (syntaxChoiceTypeDeclaration.constructors
-                                                                    |> List.foldl
-                                                                        (\(Elm.Syntax.Node.Node _ variant) variantNamesSoFar ->
-                                                                            variantNamesSoFar
-                                                                                |> FastDict.insert
-                                                                                    (variant.name
-                                                                                        |> Elm.Syntax.Node.value
-                                                                                    )
-                                                                                    { valueCount =
-                                                                                        variant.arguments |> List.length
-                                                                                    }
-                                                                        )
-                                                                        FastDict.empty
-                                                                )
-                                                    , recordTypeAliases =
-                                                        membersSoFar.recordTypeAliases
-                                                    , portsOutgoing = membersSoFar.portsOutgoing
-                                                    , portsIncoming = membersSoFar.portsIncoming
-                                                    }
-
-                                                Elm.Syntax.Declaration.AliasDeclaration typeAlias ->
-                                                    let
-                                                        typeAliasName : String
-                                                        typeAliasName =
-                                                            typeAlias.name
-                                                                |> Elm.Syntax.Node.value
-                                                    in
-                                                    { valueOrFunctionOrTypeAliasNames =
-                                                        membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                            |> FastSet.insert typeAliasName
-                                                    , choiceTypesExposingVariants =
-                                                        membersSoFar.choiceTypesExposingVariants
-                                                    , recordTypeAliases =
-                                                        case typeAlias.typeAnnotation |> Elm.Syntax.Node.value of
-                                                            Elm.Syntax.TypeAnnotation.Record fields ->
-                                                                membersSoFar.recordTypeAliases
-                                                                    |> FastDict.insert typeAliasName
-                                                                        (fields
-                                                                            |> List.map
-                                                                                (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ fieldName, _ )) ->
-                                                                                    fieldName |> stringFirstCharToUpper
-                                                                                )
-                                                                        )
-
-                                                            _ ->
-                                                                membersSoFar.recordTypeAliases
-                                                    , portsOutgoing = membersSoFar.portsOutgoing
-                                                    , portsIncoming = membersSoFar.portsIncoming
-                                                    }
-
-                                                Elm.Syntax.Declaration.PortDeclaration portDeclaration ->
-                                                    if portDeclaration.typeAnnotation |> portTypeSignifiesOutgoing then
-                                                        { valueOrFunctionOrTypeAliasNames =
-                                                            membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                        , choiceTypesExposingVariants =
-                                                            membersSoFar.choiceTypesExposingVariants
-                                                        , recordTypeAliases =
-                                                            membersSoFar.recordTypeAliases
-                                                        , portsOutgoing =
-                                                            membersSoFar.portsOutgoing
-                                                                |> FastSet.insert
-                                                                    (portDeclaration.name |> Elm.Syntax.Node.value)
-                                                        , portsIncoming = membersSoFar.portsIncoming
-                                                        }
-
-                                                    else
-                                                        { valueOrFunctionOrTypeAliasNames =
-                                                            membersSoFar.valueOrFunctionOrTypeAliasNames
-                                                        , choiceTypesExposingVariants =
-                                                            membersSoFar.choiceTypesExposingVariants
-                                                        , recordTypeAliases =
-                                                            membersSoFar.recordTypeAliases
-                                                        , portsOutgoing = membersSoFar.portsOutgoing
-                                                        , portsIncoming =
-                                                            membersSoFar.portsIncoming
-                                                                |> FastSet.insert
-                                                                    (portDeclaration.name |> Elm.Syntax.Node.value)
-                                                        }
-
-                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
-                                                    membersSoFar
-
-                                                Elm.Syntax.Declaration.Destructuring _ _ ->
-                                                    -- invalid syntax
-                                                    membersSoFar
-                                        )
-                                        { valueOrFunctionOrTypeAliasNames = FastSet.empty
-                                        , choiceTypesExposingVariants = FastDict.empty
-                                        , recordTypeAliases = FastDict.empty
-                                        , portsOutgoing = FastSet.empty
-                                        , portsIncoming = FastSet.empty
-                                        }
-                                )
-                    )
-                    FastDict.empty
-
         syntaxModulesFromMostToLeastImported : List Elm.Syntax.File.File
         syntaxModulesFromMostToLeastImported =
             syntaxModules
@@ -5207,6 +4905,333 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
         Ok modulesInferred ->
             let
+                moduleMembers :
+                    FastDict.Dict
+                        Elm.Syntax.ModuleName.ModuleName
+                        { valueOrFunctionOrTypeAliasNames : FastSet.Set String
+                        , choiceTypesExposingVariants :
+                            FastDict.Dict String (FastDict.Dict String { valueCount : Int })
+                        , recordTypeAliases :
+                            FastDict.Dict String (List String)
+                        , portsIncoming : FastSet.Set String
+                        , portsOutgoing : FastSet.Set String
+                        }
+                moduleMembers =
+                    syntaxDeclarationsIncludingOverwrittenOnes
+                        |> List.filter
+                            (\syntaxModule ->
+                                -- remove those modules we don't have a replacement for, yet
+                                case
+                                    syntaxModule.moduleDefinition
+                                        |> Elm.Syntax.Node.value
+                                        |> moduleHeaderName
+                                of
+                                    [ "Array" ] ->
+                                        False
+
+                                    -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
+                                    [ "Elm", "JsArray" ] ->
+                                        False
+
+                                    [ "Bitwise" ] ->
+                                        False
+
+                                    [ "Debug" ] ->
+                                        False
+
+                                    [ "Set" ] ->
+                                        False
+
+                                    [ "Platform" ] ->
+                                        False
+
+                                    [ "Platform", "Cmd" ] ->
+                                        False
+
+                                    [ "Platform", "Sub" ] ->
+                                        False
+
+                                    [ "Process" ] ->
+                                        False
+
+                                    [ "Task" ] ->
+                                        False
+
+                                    [ "File" ] ->
+                                        False
+
+                                    [ "Bytes" ] ->
+                                        False
+
+                                    [ "Bytes", "Encode" ] ->
+                                        False
+
+                                    [ "Bytes", "Decode" ] ->
+                                        False
+
+                                    [ "Http" ] ->
+                                        False
+
+                                    [ "VirtualDom" ] ->
+                                        False
+
+                                    [ "Browser" ] ->
+                                        False
+
+                                    [ "Browser", "Events" ] ->
+                                        False
+
+                                    [ "Browser", "Navigation" ] ->
+                                        False
+
+                                    [ "Browser", "Dom" ] ->
+                                        False
+
+                                    -- https://github.com/elm/browser/blob/master/src/Browser/AnimationManager.elm
+                                    [ "Browser", "AnimationManager" ] ->
+                                        False
+
+                                    -- https://github.com/elm/browser/tree/master/src/Debugger
+                                    [ "Debugger", "Expando" ] ->
+                                        False
+
+                                    [ "Debugger", "History" ] ->
+                                        False
+
+                                    [ "Debugger", "Main" ] ->
+                                        False
+
+                                    [ "Debugger", "Metadata" ] ->
+                                        False
+
+                                    [ "Debugger", "Overlay" ] ->
+                                        False
+
+                                    [ "Debugger", "Report" ] ->
+                                        False
+
+                                    [ "Html" ] ->
+                                        False
+
+                                    [ "Html", "Attributes" ] ->
+                                        False
+
+                                    [ "Html", "Events" ] ->
+                                        False
+
+                                    [ "Html", "Keyed" ] ->
+                                        False
+
+                                    [ "Html", "Lazy" ] ->
+                                        False
+
+                                    [ "Svg" ] ->
+                                        False
+
+                                    [ "Svg", "Attributes" ] ->
+                                        False
+
+                                    [ "Svg", "Events" ] ->
+                                        False
+
+                                    [ "Svg", "Keyed" ] ->
+                                        False
+
+                                    [ "Svg", "Lazy" ] ->
+                                        False
+
+                                    [ "Time" ] ->
+                                        False
+
+                                    [ "Random" ] ->
+                                        False
+
+                                    [ "Markdown" ] ->
+                                        False
+
+                                    [ "Benchmark" ] ->
+                                        False
+
+                                    [ "WebGL" ] ->
+                                        False
+
+                                    [ "WebGL", "Settings" ] ->
+                                        False
+
+                                    [ "WebGL", "Settings", "Blend" ] ->
+                                        False
+
+                                    [ "WebGL", "Settings", "DepthTest" ] ->
+                                        False
+
+                                    [ "WebGL", "Settings", "StencilTest" ] ->
+                                        False
+
+                                    [ "WebGL", "Texture" ] ->
+                                        False
+
+                                    [ "Math", "Matrix4" ] ->
+                                        False
+
+                                    [ "Math", "Vector2" ] ->
+                                        False
+
+                                    [ "Math", "Vector3" ] ->
+                                        False
+
+                                    [ "Math", "Vector4" ] ->
+                                        False
+
+                                    _ ->
+                                        True
+                            )
+                        |> List.foldl
+                            (\syntaxModule acrossModulesSoFar ->
+                                acrossModulesSoFar
+                                    |> FastDict.insert
+                                        (syntaxModule.moduleDefinition
+                                            |> Elm.Syntax.Node.value
+                                            |> moduleHeaderName
+                                        )
+                                        (syntaxModule.declarations
+                                            |> List.foldl
+                                                (\(Elm.Syntax.Node.Node _ declaration) membersSoFar ->
+                                                    case declaration of
+                                                        Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
+                                                            { valueOrFunctionOrTypeAliasNames =
+                                                                membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                                    |> FastSet.insert
+                                                                        (syntaxValueOrFunctionDeclaration.declaration
+                                                                            |> Elm.Syntax.Node.value
+                                                                            |> .name
+                                                                            |> Elm.Syntax.Node.value
+                                                                        )
+                                                            , choiceTypesExposingVariants =
+                                                                membersSoFar.choiceTypesExposingVariants
+                                                            , recordTypeAliases =
+                                                                membersSoFar.recordTypeAliases
+                                                            , portsOutgoing = membersSoFar.portsOutgoing
+                                                            , portsIncoming = membersSoFar.portsIncoming
+                                                            }
+
+                                                        Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
+                                                            { valueOrFunctionOrTypeAliasNames =
+                                                                membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                            , choiceTypesExposingVariants =
+                                                                membersSoFar.choiceTypesExposingVariants
+                                                                    |> FastDict.insert
+                                                                        (syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value)
+                                                                        (syntaxChoiceTypeDeclaration.constructors
+                                                                            |> List.foldl
+                                                                                (\(Elm.Syntax.Node.Node _ variant) variantNamesSoFar ->
+                                                                                    variantNamesSoFar
+                                                                                        |> FastDict.insert
+                                                                                            (variant.name
+                                                                                                |> Elm.Syntax.Node.value
+                                                                                            )
+                                                                                            { valueCount =
+                                                                                                variant.arguments |> List.length
+                                                                                            }
+                                                                                )
+                                                                                FastDict.empty
+                                                                        )
+                                                            , recordTypeAliases =
+                                                                membersSoFar.recordTypeAliases
+                                                            , portsOutgoing = membersSoFar.portsOutgoing
+                                                            , portsIncoming = membersSoFar.portsIncoming
+                                                            }
+
+                                                        Elm.Syntax.Declaration.AliasDeclaration typeAlias ->
+                                                            let
+                                                                typeAliasName : String
+                                                                typeAliasName =
+                                                                    typeAlias.name
+                                                                        |> Elm.Syntax.Node.value
+                                                            in
+                                                            { valueOrFunctionOrTypeAliasNames =
+                                                                membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                                    |> FastSet.insert typeAliasName
+                                                            , choiceTypesExposingVariants =
+                                                                membersSoFar.choiceTypesExposingVariants
+                                                            , recordTypeAliases =
+                                                                case typeAlias.typeAnnotation |> Elm.Syntax.Node.value of
+                                                                    Elm.Syntax.TypeAnnotation.Record fields ->
+                                                                        membersSoFar.recordTypeAliases
+                                                                            |> FastDict.insert typeAliasName
+                                                                                (fields
+                                                                                    |> List.map
+                                                                                        (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ fieldName, _ )) ->
+                                                                                            fieldName |> stringFirstCharToUpper
+                                                                                        )
+                                                                                )
+
+                                                                    Elm.Syntax.TypeAnnotation.GenericType _ ->
+                                                                        membersSoFar.recordTypeAliases
+
+                                                                    Elm.Syntax.TypeAnnotation.Typed _ _ ->
+                                                                        membersSoFar.recordTypeAliases
+
+                                                                    Elm.Syntax.TypeAnnotation.Unit ->
+                                                                        membersSoFar.recordTypeAliases
+
+                                                                    Elm.Syntax.TypeAnnotation.Tupled _ ->
+                                                                        membersSoFar.recordTypeAliases
+
+                                                                    Elm.Syntax.TypeAnnotation.GenericRecord _ _ ->
+                                                                        membersSoFar.recordTypeAliases
+
+                                                                    Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation _ _ ->
+                                                                        membersSoFar.recordTypeAliases
+                                                            , portsOutgoing = membersSoFar.portsOutgoing
+                                                            , portsIncoming = membersSoFar.portsIncoming
+                                                            }
+
+                                                        Elm.Syntax.Declaration.PortDeclaration portDeclaration ->
+                                                            if portDeclaration.typeAnnotation |> portTypeSignifiesOutgoing then
+                                                                { valueOrFunctionOrTypeAliasNames =
+                                                                    membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                                , choiceTypesExposingVariants =
+                                                                    membersSoFar.choiceTypesExposingVariants
+                                                                , recordTypeAliases =
+                                                                    membersSoFar.recordTypeAliases
+                                                                , portsOutgoing =
+                                                                    membersSoFar.portsOutgoing
+                                                                        |> FastSet.insert
+                                                                            (portDeclaration.name |> Elm.Syntax.Node.value)
+                                                                , portsIncoming = membersSoFar.portsIncoming
+                                                                }
+
+                                                            else
+                                                                { valueOrFunctionOrTypeAliasNames =
+                                                                    membersSoFar.valueOrFunctionOrTypeAliasNames
+                                                                , choiceTypesExposingVariants =
+                                                                    membersSoFar.choiceTypesExposingVariants
+                                                                , recordTypeAliases =
+                                                                    membersSoFar.recordTypeAliases
+                                                                , portsOutgoing = membersSoFar.portsOutgoing
+                                                                , portsIncoming =
+                                                                    membersSoFar.portsIncoming
+                                                                        |> FastSet.insert
+                                                                            (portDeclaration.name |> Elm.Syntax.Node.value)
+                                                                }
+
+                                                        Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                            membersSoFar
+
+                                                        Elm.Syntax.Declaration.Destructuring _ _ ->
+                                                            -- invalid syntax
+                                                            membersSoFar
+                                                )
+                                                { valueOrFunctionOrTypeAliasNames = FastSet.empty
+                                                , choiceTypesExposingVariants = FastDict.empty
+                                                , recordTypeAliases = FastDict.empty
+                                                , portsOutgoing = FastSet.empty
+                                                , portsIncoming = FastSet.empty
+                                                }
+                                        )
+                            )
+                            FastDict.empty
+
                 fsharpDeclarationsWithoutExtraRecordTypeAliases :
                     { errors : List String
                     , declarations :
@@ -5530,13 +5555,40 @@ portTypeSignifiesOutgoing (Elm.Syntax.Node.Node _ syntaxType) =
                 Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ ( _, name )) _ ->
                     name |> String.toLower |> String.contains "cmd"
 
-                _ ->
+                Elm.Syntax.TypeAnnotation.GenericType _ ->
+                    False
+
+                Elm.Syntax.TypeAnnotation.Unit ->
+                    False
+
+                Elm.Syntax.TypeAnnotation.Tupled _ ->
+                    False
+
+                Elm.Syntax.TypeAnnotation.Record _ ->
+                    False
+
+                Elm.Syntax.TypeAnnotation.GenericRecord _ _ ->
+                    False
+
+                Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation _ _ ->
                     False
 
         Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ ( _, name )) _ ->
             name |> String.toLower |> String.contains "cmd"
 
-        _ ->
+        Elm.Syntax.TypeAnnotation.GenericType _ ->
+            False
+
+        Elm.Syntax.TypeAnnotation.Unit ->
+            False
+
+        Elm.Syntax.TypeAnnotation.Tupled _ ->
+            False
+
+        Elm.Syntax.TypeAnnotation.Record _ ->
+            False
+
+        Elm.Syntax.TypeAnnotation.GenericRecord _ _ ->
             False
 
 
@@ -8165,34 +8217,6 @@ fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
                             FsharpValueOrFunctionDependencySingle single
                 )
     }
-
-
-fsharpTypeContainedVariables : FsharpType -> FastSet.Set String
-fsharpTypeContainedVariables fsharpType =
-    -- IGNORE TCO
-    case fsharpType of
-        FsharpTypeVariable variable ->
-            FastSet.singleton variable
-
-        FsharpTypeTuple parts ->
-            FastSet.union
-                (parts.part0 |> fsharpTypeContainedVariables)
-                (FastSet.union
-                    (parts.part1 |> fsharpTypeContainedVariables)
-                    (parts.part2Up
-                        |> listMapToFastSetsAndUnify
-                            fsharpTypeContainedVariables
-                    )
-                )
-
-        FsharpTypeConstruct typeConstruct ->
-            typeConstruct.arguments
-                |> listMapToFastSetsAndUnify fsharpTypeContainedVariables
-
-        FsharpTypeFunction typeFunction ->
-            FastSet.union
-                (typeFunction.input |> fsharpTypeContainedVariables)
-                (typeFunction.output |> fsharpTypeContainedVariables)
 
 
 fsharpTypeContainedLocalReferences : FsharpType -> FastSet.Set String
