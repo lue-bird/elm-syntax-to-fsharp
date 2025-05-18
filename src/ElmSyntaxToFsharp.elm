@@ -2762,6 +2762,38 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        [ "Math", "Vector2" ] ->
+            case reference.name of
+                "Vec2" ->
+                    Just { moduleOrigin = Just "System.Numerics", name = "Vector2" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Vector3" ] ->
+            case reference.name of
+                "Vec3" ->
+                    Just { moduleOrigin = Just "System.Numerics", name = "Vector3" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Vector4" ] ->
+            case reference.name of
+                "Vec4" ->
+                    Just { moduleOrigin = Just "System.Numerics", name = "Vector4" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Matrix4" ] ->
+            case reference.name of
+                "Mat4" ->
+                    Just { moduleOrigin = Just "System.Numerics", name = "Matrix4x4" }
+
+                _ ->
+                    Nothing
+
         [ "Platform" ] ->
             case reference.name of
                 "Program" ->
@@ -3950,6 +3982,293 @@ referenceToCoreFsharp reference =
 
                 "todo" ->
                     Just { moduleOrigin = Nothing, name = "Debug_todo" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Vector2" ] ->
+            case reference.name of
+                "add" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_add" }
+
+                "direction" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_direction" }
+
+                "distance" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_distance" }
+
+                "distanceSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_distanceSquared" }
+
+                "dot" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_dot" }
+
+                "fromRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_fromRecord" }
+
+                "getX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_getX" }
+
+                "getY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_getY" }
+
+                "length" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_length" }
+
+                "lengthSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_lengthSquared" }
+
+                "negate" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_negate" }
+
+                "normalize" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_normalize" }
+
+                "scale" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_scale" }
+
+                "setX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_setX" }
+
+                "setY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_setY" }
+
+                "sub" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_sub" }
+
+                "toRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_toRecord" }
+
+                "vec2" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector2_vec2" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Vector3" ] ->
+            case reference.name of
+                "add" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_add" }
+
+                "cross" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_cross" }
+
+                "direction" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_direction" }
+
+                "distance" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_distance" }
+
+                "distanceSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_distanceSquared" }
+
+                "dot" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_dot" }
+
+                "fromRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_fromRecord" }
+
+                "getX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_getX" }
+
+                "getY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_getY" }
+
+                "getZ" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_getZ" }
+
+                "i" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_i" }
+
+                "j" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_j" }
+
+                "k" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_k" }
+
+                "length" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_length" }
+
+                "lengthSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_lengthSquared" }
+
+                "negate" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_negate" }
+
+                "normalize" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_normalize" }
+
+                "scale" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_scale" }
+
+                "setX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_setX" }
+
+                "setY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_setY" }
+
+                "setZ" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_setZ" }
+
+                "sub" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_sub" }
+
+                "toRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_toRecord" }
+
+                "vec3" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector3_vec3" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Vector4" ] ->
+            case reference.name of
+                "add" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_add" }
+
+                "direction" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_direction" }
+
+                "distance" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_distance" }
+
+                "distanceSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_distanceSquared" }
+
+                "dot" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_dot" }
+
+                "fromRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_fromRecord" }
+
+                "getW" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_getW" }
+
+                "getX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_getX" }
+
+                "getY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_getY" }
+
+                "getZ" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_getZ" }
+
+                "length" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_length" }
+
+                "lengthSquared" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_lengthSquared" }
+
+                "negate" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_negate" }
+
+                "normalize" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_normalize" }
+
+                "scale" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_scale" }
+
+                "setW" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_setW" }
+
+                "setX" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_setX" }
+
+                "setY" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_setY" }
+
+                "setZ" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_setZ" }
+
+                "sub" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_sub" }
+
+                "toRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_toRecord" }
+
+                "vec4" ->
+                    Just { moduleOrigin = Nothing, name = "MathVector4_vec4" }
+
+                _ ->
+                    Nothing
+
+        [ "Math", "Matrix4" ] ->
+            case reference.name of
+                "fromRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_fromRecord" }
+
+                "identity" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_identity" }
+
+                "inverse" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_inverse" }
+
+                -- not supported
+                -- "inverseOrthonormal" ->
+                --     Just { moduleOrigin = Nothing, name = "MathMatrix4_inverseOrthonormal" }
+                "makeBasis" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeBasis" }
+
+                "makeFrustum" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeFrustum" }
+
+                "makeLookAt" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeLookAt" }
+
+                "makeOrtho" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeOrtho" }
+
+                "makeOrtho2D" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeOrtho2D" }
+
+                "makePerspective" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makePerspective" }
+
+                "makeRotate" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeRotate" }
+
+                "makeScale" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeScale" }
+
+                "makeScale3" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeScale3" }
+
+                "makeTranslate" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeTranslate" }
+
+                "makeTranslate3" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeTranslate3" }
+
+                "mul" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_mul" }
+
+                -- not supported
+                -- "mulAffine" ->
+                --     Just { moduleOrigin = Nothing, name = "MathMatrix4_mulAffine" }
+                "rotate" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_rotate" }
+
+                "scale" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_scale" }
+
+                "scale3" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_scale3" }
+
+                "toRecord" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_toRecord" }
+
+                "transform" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_transform" }
+
+                "translate" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_translate" }
+
+                "translate3" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_translate3" }
+
+                "transpose" ->
+                    Just { moduleOrigin = Nothing, name = "MathMatrix4_transpose" }
 
                 _ ->
                     Nothing
@@ -11922,6 +12241,680 @@ defaultDeclarations =
                 )
 
 
+    let inline MathVector2_vec2 (x: float) (y: float) : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Create(float32 x, float32 y)
+
+    let inline MathVector2_getX (vector2: System.Numerics.Vector2) : float =
+        float vector2.X
+
+    let inline MathVector2_getY (vector2: System.Numerics.Vector2) : float =
+        float vector2.Y
+
+    let inline MathVector2_setX
+        (newX: float)
+        (vector2: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Create(float32 newX, vector2.Y)
+
+    let inline MathVector2_setY
+        (newY: float)
+        (vector2: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Create(vector2.X, float32 newY)
+
+    let inline MathVector2_add
+        (a: System.Numerics.Vector2)
+        (b: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Add(a, b)
+
+    let inline MathVector2_sub
+        (baseVector2: System.Numerics.Vector2)
+        (toSubtract: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Subtract(baseVector2, toSubtract)
+
+    let inline MathVector2_negate
+        (vector2: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Negate(vector2)
+
+    let inline MathVector2_scale
+        (factor: float)
+        (vector2: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Multiply(vector2, float32 factor)
+
+    let inline MathVector2_dot
+        (a: System.Numerics.Vector2)
+        (b: System.Numerics.Vector2)
+        : float =
+        float (System.Numerics.Vector2.Dot(a, b))
+
+    let inline MathVector2_normalize
+        (vector2: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Normalize(vector2)
+
+    let inline MathVector2_direction
+        (a: System.Numerics.Vector2)
+        (b: System.Numerics.Vector2)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2.Normalize(System.Numerics.Vector2.Subtract(a, b))
+
+    let inline MathVector2_length (vector2: System.Numerics.Vector2) : float =
+        float (vector2.Length())
+
+    let inline MathVector2_lengthSquared
+        (vector2: System.Numerics.Vector2)
+        : float =
+        float (vector2.LengthSquared())
+
+    let inline MathVector2_distance
+        (a: System.Numerics.Vector2)
+        (b: System.Numerics.Vector2)
+        : float =
+        float (System.Numerics.Vector2.Distance(a, b))
+
+    let inline MathVector2_distanceSquared
+        (a: System.Numerics.Vector2)
+        (b: System.Numerics.Vector2)
+        : float =
+        float (System.Numerics.Vector2.DistanceSquared(a, b))
+
+    [<Struct>]
+    type MathVector2_AsRecord = { X: float; Y: float }
+
+    let inline MathVector2_toRecord
+        (vector2: System.Numerics.Vector2)
+        : MathVector2_AsRecord =
+        { X = float vector2.X
+          Y = float vector2.Y }
+
+    let inline MathVector2_fromRecord
+        (asRecord: MathVector2_AsRecord)
+        : System.Numerics.Vector2 =
+        System.Numerics.Vector2(float32 asRecord.X, float32 asRecord.Y)
+
+
+
+    let MathVector3_vec3
+        (x: float)
+        (y: float)
+        (z: float)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(float32 x, float32 y, float32 z)
+
+    let MathVector3_i: System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(1f, 0f, 0f)
+
+    let MathVector3_j: System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(0f, 1f, 0f)
+
+    let MathVector3_k: System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(0f, 0f, 1f)
+
+    let MathVector3_getX (vector3: System.Numerics.Vector3) : float =
+        float vector3.X
+
+    let MathVector3_getY (vector3: System.Numerics.Vector3) : float =
+        float vector3.Y
+
+    let MathVector3_getZ (vector3: System.Numerics.Vector3) : float =
+        float vector3.Z
+
+    let MathVector3_setX
+        (newX: float)
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(float32 newX, vector3.Y, vector3.Z)
+
+    let MathVector3_setY
+        (newY: float)
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(vector3.X, float32 newY, vector3.Z)
+
+    let MathVector3_setZ
+        (newZ: float)
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Create(vector3.X, vector3.Y, float32 newZ)
+
+    let MathVector3_add
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Add(a, b)
+
+    let MathVector3_sub
+        (baseVector3: System.Numerics.Vector3)
+        (toSubtract: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Subtract(baseVector3, toSubtract)
+
+    let MathVector3_negate
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Negate(vector3)
+
+    let MathVector3_scale
+        (factor: float)
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Multiply(vector3, float32 factor)
+
+    let MathVector3_dot
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : float =
+        float (System.Numerics.Vector3.Dot(a, b))
+
+    let MathVector3_cross
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Cross(a, b)
+
+    let MathVector3_normalize
+        (vector3: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Normalize(vector3)
+
+    let MathVector3_direction
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Subtract(a, b))
+
+    let MathVector3_length (vector3: System.Numerics.Vector3) : float =
+        float (vector3.Length())
+
+    let MathVector3_lengthSquared (vector3: System.Numerics.Vector3) : float =
+        float (vector3.LengthSquared())
+
+    let MathVector3_distance
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : float =
+        float (System.Numerics.Vector3.Distance(a, b))
+
+    let MathVector3_distanceSquared
+        (a: System.Numerics.Vector3)
+        (b: System.Numerics.Vector3)
+        : float =
+        float (System.Numerics.Vector3.DistanceSquared(a, b))
+
+    [<Struct>]
+    type MathVector3_AsRecord = { X: float; Y: float; Z: float }
+
+    let inline MathVector3_toRecord
+        (vector3: System.Numerics.Vector3)
+        : MathVector3_AsRecord =
+        { X = float vector3.X
+          Y = float vector3.Y
+          Z = float vector3.Z }
+
+    let inline MathVector3_fromRecord
+        (asRecord: MathVector3_AsRecord)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3(
+            float32 asRecord.X,
+            float32 asRecord.Y,
+            float32 asRecord.Z
+        )
+
+
+
+    let inline MathVector4_vec4
+        (x: float)
+        (y: float)
+        (z: float)
+        (w: float)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Create(float32 x, float32 y, float32 z, float32 w)
+
+    let inline MathVector4_getX (vector4: System.Numerics.Vector4) : float =
+        float vector4.X
+
+    let inline MathVector4_getY (vector4: System.Numerics.Vector4) : float =
+        float vector4.Y
+
+    let inline MathVector4_getZ (vector4: System.Numerics.Vector4) : float =
+        float vector4.Z
+
+    let inline MathVector4_getW (vector4: System.Numerics.Vector4) : float =
+        float vector4.W
+
+    let inline MathVector4_setX
+        (newX: float)
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Create(
+            float32 newX,
+            vector4.Y,
+            vector4.Z,
+            vector4.W
+        )
+
+    let inline MathVector4_setY
+        (newY: float)
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Create(
+            vector4.X,
+            float32 newY,
+            vector4.Z,
+            vector4.W
+        )
+
+    let inline MathVector4_setZ
+        (newZ: float)
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Create(
+            vector4.X,
+            vector4.Y,
+            float32 newZ,
+            vector4.W
+        )
+
+    let inline MathVector4_setW
+        (newW: float)
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Create(
+            vector4.X,
+            vector4.Y,
+            vector4.Z,
+            float32 newW
+        )
+
+    let inline MathVector4_add
+        (a: System.Numerics.Vector4)
+        (b: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Add(a, b)
+
+    let inline MathVector4_sub
+        (baseVector4: System.Numerics.Vector4)
+        (toSubtract: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Subtract(baseVector4, toSubtract)
+
+    let inline MathVector4_negate
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Negate(vector4)
+
+    let inline MathVector4_scale
+        (factor: float)
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Multiply(vector4, float32 factor)
+
+    let inline MathVector4_dot
+        (a: System.Numerics.Vector4)
+        (b: System.Numerics.Vector4)
+        : float =
+        float (System.Numerics.Vector4.Dot(a, b))
+
+    let inline MathVector4_normalize
+        (vector4: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Normalize(vector4)
+
+    let inline MathVector4_direction
+        (a: System.Numerics.Vector4)
+        (b: System.Numerics.Vector4)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4.Normalize(System.Numerics.Vector4.Subtract(a, b))
+
+    let inline MathVector4_length (vector4: System.Numerics.Vector4) : float =
+        float (vector4.Length())
+
+    let inline MathVector4_lengthSquared
+        (vector4: System.Numerics.Vector4)
+        : float =
+        float (vector4.LengthSquared())
+
+    let inline MathVector4_distance
+        (a: System.Numerics.Vector4)
+        (b: System.Numerics.Vector4)
+        : float =
+        float (System.Numerics.Vector4.Distance(a, b))
+
+    let inline MathVector4_distanceSquared
+        (a: System.Numerics.Vector4)
+        (b: System.Numerics.Vector4)
+        : float =
+        float (System.Numerics.Vector4.DistanceSquared(a, b))
+
+    [<Struct>]
+    type MathVector4_AsRecord =
+        { X: float
+          Y: float
+          Z: float
+          W: float }
+
+    let inline MathVector4_toRecord
+        (vector4: System.Numerics.Vector4)
+        : MathVector4_AsRecord =
+        { X = float vector4.X
+          Y = float vector4.Y
+          Z = float vector4.Z
+          W = float vector4.W }
+
+    let inline MathVector4_fromRecord
+        (asRecord: MathVector4_AsRecord)
+        : System.Numerics.Vector4 =
+        System.Numerics.Vector4(
+            float32 asRecord.X,
+            float32 asRecord.Y,
+            float32 asRecord.Z,
+            float32 asRecord.W
+        )
+
+
+
+    let MathMatrix4_identity: System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Identity
+
+    let MathMatrix4_inverse
+        (matrix4: System.Numerics.Matrix4x4)
+        : option<System.Numerics.Matrix4x4> =
+        let (wasSuccessful, result) = System.Numerics.Matrix4x4.Invert(matrix4)
+        if wasSuccessful then Some(result) else None
+
+    let inline MathMatrix4_mul
+        (a: System.Numerics.Matrix4x4)
+        (b: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(a, b)
+
+    let inline MathMatrix4_transpose
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Transpose(matrix4)
+
+    let inline MathMatrix4_makeBasis
+        (vx: System.Numerics.Vector3)
+        (vy: System.Numerics.Vector3)
+        (vz: System.Numerics.Vector3)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4(
+            vx.X,
+            vx.Y,
+            vx.Z,
+            0f,
+            vy.X,
+            vy.Y,
+            vy.Z,
+            0f,
+            vz.X,
+            vz.Y,
+            vz.Z,
+            0f,
+            0f,
+            0f,
+            0f,
+            1f
+        )
+
+    let inline MathMatrix4_transform
+        (matrix4: System.Numerics.Matrix4x4)
+        (position: System.Numerics.Vector3)
+        : System.Numerics.Vector3 =
+        System.Numerics.Vector3.Transform(position, matrix4)
+
+    let MathMatrix4_makeFrustum
+        (left: float)
+        (right: float)
+        (bottom: float)
+        (top: float)
+        (zNearPlane: float)
+        (zFarPlane: float)
+        : System.Numerics.Matrix4x4 =
+        let left32 = float32 left
+        let right32 = float32 right
+        let bottom32 = float32 bottom
+        let top32 = float32 top
+        let zNearPlane32 = float32 zNearPlane
+        let zFarPlane32 = float32 zFarPlane
+
+        System.Numerics.Matrix4x4(
+            2f * zNearPlane32 / (right32 - left32),
+            0f,
+            0f,
+            0f,
+            0f,
+            2f * zNearPlane32 / (top32 - bottom32),
+            0f,
+            0f,
+            (right32 + left32) / (right32 - left32),
+            (top32 + bottom32) / (top32 - bottom32),
+            -(zFarPlane32 + zNearPlane32) / (zFarPlane32 - zNearPlane32),
+            -1f,
+            0f,
+            0f,
+            -2f * zFarPlane32 * zNearPlane32 / (zFarPlane32 - zNearPlane32),
+            0f
+        )
+
+    let inline MathMatrix4_makePerspective
+        (fieldOfView: float)
+        (aspectRatio: float)
+        (nearPlaneDistance: float)
+        (farPlaneDistance: float)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreatePerspectiveFieldOfView(
+            float32 fieldOfView,
+            float32 aspectRatio,
+            float32 nearPlaneDistance,
+            float32 farPlaneDistance
+        )
+
+    let inline MathMatrix4_makeOrtho
+        (left: float)
+        (right: float)
+        (bottom: float)
+        (top: float)
+        (zNearPlane: float)
+        (zFarPlane: float)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateOrthographicOffCenter(
+            float32 left,
+            float32 right,
+            float32 bottom,
+            float32 top,
+            float32 zNearPlane,
+            float32 zFarPlane
+        )
+
+    let inline MathMatrix4_makeOrtho2D
+        (left: float)
+        (right: float)
+        (bottom: float)
+        (top: float)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateOrthographicOffCenter(
+            float32 left,
+            float32 right,
+            float32 bottom,
+            float32 top,
+            -1f,
+            1f
+        )
+
+    let inline MathMatrix4_makeLookAt
+        (cameraPosition: System.Numerics.Vector3)
+        (cameraTarget: System.Numerics.Vector3)
+        (cameraUpVector: System.Numerics.Vector3)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateLookAt(
+            cameraPosition,
+            cameraTarget,
+            cameraUpVector
+        )
+
+    let inline MathMatrix4_rotate
+        (angle: float)
+        (axis: System.Numerics.Vector3)
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(
+            matrix4,
+            System.Numerics.Matrix4x4.CreateFromAxisAngle(axis, float32 angle)
+        )
+
+    let inline MathMatrix4_scale
+        (scales: System.Numerics.Vector3)
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(
+            matrix4,
+            System.Numerics.Matrix4x4.CreateScale(scales)
+        )
+
+    let inline MathMatrix4_scale3
+        (xScale: float)
+        (yScale: float)
+        (zScale: float)
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(
+            matrix4,
+            System.Numerics.Matrix4x4.CreateScale(
+                float32 xScale,
+                float32 yScale,
+                float32 zScale
+            )
+        )
+
+    let inline MathMatrix4_translate
+        (position: System.Numerics.Vector3)
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(
+            matrix4,
+            System.Numerics.Matrix4x4.CreateTranslation(position)
+        )
+
+    let inline MathMatrix4_translate3
+        (xPosition: float)
+        (yPosition: float)
+        (zPosition: float)
+        (matrix4: System.Numerics.Matrix4x4)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.Multiply(
+            matrix4,
+            System.Numerics.Matrix4x4.CreateTranslation(
+                float32 xPosition,
+                float32 yPosition,
+                float32 zPosition
+            )
+        )
+
+    let inline MathMatrix4_makeRotate
+        (angle: float)
+        (axis: System.Numerics.Vector3)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateFromAxisAngle(axis, float32 angle)
+
+    let inline MathMatrix4_makeScale
+        (scales: System.Numerics.Vector3)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateScale(scales)
+
+    let inline MathMatrix4_makeScale3
+        (xScale: float)
+        (yScale: float)
+        (zScale: float)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateScale(
+            float32 xScale,
+            float32 yScale,
+            float32 zScale
+        )
+
+    let inline MathMatrix4_makeTranslate
+        (position: System.Numerics.Vector3)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateTranslation(position)
+
+    let inline MathMatrix4_makeTranslate3
+        (xPosition: float)
+        (yPosition: float)
+        (zPosition: float)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4.CreateTranslation(
+            float32 xPosition,
+            float32 yPosition,
+            float32 zPosition
+        )
+
+    [<Struct>]
+    type MathMatrix4_AsRecord =
+        { M11: float
+          M21: float
+          M31: float
+          M41: float
+          M12: float
+          M22: float
+          M32: float
+          M42: float
+          M13: float
+          M23: float
+          M33: float
+          M43: float
+          M14: float
+          M24: float
+          M34: float
+          M44: float }
+
+    let inline MathMatrix4_toRecord
+        (matrix4: System.Numerics.Matrix4x4)
+        : MathMatrix4_AsRecord =
+        { M11 = float matrix4.M11
+          M21 = float matrix4.M21
+          M31 = float matrix4.M31
+          M41 = float matrix4.M41
+          M12 = float matrix4.M12
+          M22 = float matrix4.M22
+          M32 = float matrix4.M32
+          M42 = float matrix4.M42
+          M13 = float matrix4.M13
+          M23 = float matrix4.M23
+          M33 = float matrix4.M33
+          M43 = float matrix4.M43
+          M14 = float matrix4.M14
+          M24 = float matrix4.M24
+          M34 = float matrix4.M34
+          M44 = float matrix4.M44 }
+
+    let inline MathMatrix4_fromRecord
+        (asRecord: MathMatrix4_AsRecord)
+        : System.Numerics.Matrix4x4 =
+        System.Numerics.Matrix4x4(
+            float32 asRecord.M11,
+            float32 asRecord.M12,
+            float32 asRecord.M13,
+            float32 asRecord.M14,
+            float32 asRecord.M21,
+            float32 asRecord.M22,
+            float32 asRecord.M23,
+            float32 asRecord.M24,
+            float32 asRecord.M31,
+            float32 asRecord.M32,
+            float32 asRecord.M33,
+            float32 asRecord.M34,
+            float32 asRecord.M41,
+            float32 asRecord.M42,
+            float32 asRecord.M43,
+            float32 asRecord.M44
+        )
+
+
     [<Struct>]
     type PlatformCmd_PortOutgoing =
         { Name: string
@@ -11936,7 +12929,7 @@ defaultDeclarations =
 
     let PlatformCmd_none: PlatformCmd_Cmd<'event> = []
 
-    let PlatformCmd_batch
+    let inline PlatformCmd_batch
         (subCommands: List<PlatformCmd_Cmd<'event>>)
         : PlatformCmd_Cmd<'event> =
         List.concat subCommands
@@ -11949,13 +12942,13 @@ defaultDeclarations =
         | PlatformCmd_PortOutgoing(portOutgoing) ->
             PlatformCmd_PortOutgoing portOutgoing
 
-    let PlatformCmd_map
+    let inline PlatformCmd_map
         (eventChange: 'event -> 'mappedEvent)
         (command: PlatformCmd_Cmd<'event>)
         : PlatformCmd_Cmd<'mappedEvent> =
         List.map (fun single -> PlatformCmd_singleMap eventChange single) command
 
-    let PlatformCmd_portOutgoingWithName
+    let inline PlatformCmd_portOutgoingWithName
         (name: StringRope)
         (value: System.Text.Json.Nodes.JsonNode)
         : PlatformCmd_Cmd<'event> =
@@ -11977,7 +12970,7 @@ defaultDeclarations =
 
     let PlatformSub_none: PlatformSub_Sub<'event> = []
 
-    let PlatformSub_batch
+    let inline PlatformSub_batch
         (subSubscriptions: List<PlatformSub_Sub<'event>>)
         : PlatformSub_Sub<'event> =
         List.concat subSubscriptions
@@ -11992,7 +12985,7 @@ defaultDeclarations =
                 { Name = portIncoming.Name
                   OnValue = fun value -> eventChange (portIncoming.OnValue value) }
 
-    let PlatformSub_map
+    let inline PlatformSub_map
         (eventChange: 'event -> 'mappedEvent)
         (subscription: PlatformSub_Sub<'event>)
         : PlatformSub_Sub<'mappedEvent> =
@@ -12000,7 +12993,7 @@ defaultDeclarations =
             (fun single -> PlatformSub_singleMap eventChange single)
             subscription
 
-    let PlatformSub_portIncomingWithName
+    let inline PlatformSub_portIncomingWithName
         (name: StringRope)
         (onValue: System.Text.Json.Nodes.JsonNode -> 'event)
         : PlatformSub_Sub<'event> =
@@ -12014,7 +13007,7 @@ defaultDeclarations =
           Update: 'event -> 'state -> struct ('state * PlatformCmd_Cmd<'event>)
           Subscriptions: 'state -> PlatformSub_Sub<'event> }
 
-    let Platform_worker
+    let inline Platform_worker
         (config: Platform_Program<'flags, 'state, 'event>)
         : Platform_Program<'flags, 'state, 'event> =
         config
