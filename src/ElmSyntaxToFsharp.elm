@@ -9617,7 +9617,7 @@ defaultDeclarations =
     [<CustomEquality; CustomComparison>]
     type StringRope =
         | StringRopeOne of string
-        | StringRopeAppend of StringRope * StringRope
+        | StringRopeAppend of struct(StringRope * StringRope)
 
         static member toString(this: StringRope) : string =
             match this with
@@ -9828,12 +9828,17 @@ defaultDeclarations =
                 ((StringRope.toString string).Split(StringRope.toString separator))
         )
 
+    let newLineOptions: array<string> =
+        [| "\\r\\n"; "\\n" |]
     let String_lines (string: StringRope) : List<StringRope> =
         // can be optimized
         List.ofArray (
             (Array.map
                 (fun line -> StringRopeOne line)
-                ((StringRope.toString string).Replace("\\r\\n", "\\n").Split("\\n")))
+                ((StringRope.toString string).Split(
+                    newLineOptions,
+                    System.StringSplitOptions.None
+                )))
         )
 
     let String_reverse (string: StringRope) : StringRope =
