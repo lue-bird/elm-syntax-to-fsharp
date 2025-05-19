@@ -228,9 +228,10 @@ runningInterface state =
                                                         -- TODO remove this filter for general use
                                                         if
                                                             (sourceDirectoryPath |> String.contains "stil4m/elm-syntax")
-                                                                && ((subPath |> String.contains "Elm/Parser")
-                                                                        || (subPath |> String.contains "Elm/Parser/Expression")
-                                                                        || (subPath |> String.contains "Elm/Parser/Declarations")
+                                                                && ((subPath == "Elm/Parser.elm")
+                                                                        || (subPath == "Elm/Parser/Expression.elm")
+                                                                        || (subPath == "Elm/Parser/Declarations.elm")
+                                                                        || (subPath == "Elm/Parser/File.elm")
                                                                    )
                                                         then
                                                             Nothing
