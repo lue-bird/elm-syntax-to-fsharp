@@ -430,8 +430,13 @@ expectTranspiledToFsharpStringAs expected source =
                         { valuesAndFunctions :
                             FastDict.Dict
                                 String
-                                { result : ElmSyntaxToFsharp.FsharpExpression
-                                , type_ : ElmSyntaxToFsharp.FsharpType
+                                { parameters :
+                                    List
+                                        { pattern : ElmSyntaxToFsharp.FsharpPattern
+                                        , type_ : ElmSyntaxToFsharp.FsharpType
+                                        }
+                                , result : ElmSyntaxToFsharp.FsharpExpression
+                                , resultType : ElmSyntaxToFsharp.FsharpType
                                 }
                         , typeAliases :
                             FastDict.Dict

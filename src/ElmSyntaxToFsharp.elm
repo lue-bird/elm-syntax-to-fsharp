@@ -155,8 +155,9 @@ type FsharpLetDeclaration
         }
     | FsharpLetDeclarationValueOrFunction
         { name : String
+        , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
         , result : FsharpExpression
-        , type_ : FsharpType
+        , resultType : FsharpType
         }
 
 
@@ -4524,8 +4525,9 @@ modules :
             { valuesAndFunctions :
                 FastDict.Dict
                     String
-                    { result : FsharpExpression
-                    , type_ : FsharpType
+                    { parameters : List { pattern : FsharpPattern, type_ : FsharpType }
+                    , result : FsharpExpression
+                    , resultType : FsharpType
                     }
             , typeAliases :
                 FastDict.Dict
@@ -4760,7 +4762,10 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
         syntaxModuleTypes :
             { errors : List String
-            , types : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+            , types :
+                FastDict.Dict
+                    Elm.Syntax.ModuleName.ModuleName
+                    ElmSyntaxTypeInfer.ModuleTypes
             }
         syntaxModuleTypes =
             syntaxModulesFromMostToLeastImported
@@ -5238,8 +5243,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         { valuesAndFunctions :
                             FastDict.Dict
                                 String
-                                { result : FsharpExpression
-                                , type_ : FsharpType
+                                { parameters : List { pattern : FsharpPattern, type_ : FsharpType }
+                                , result : FsharpExpression
+                                , resultType : FsharpType
                                 }
                         , typeAliases :
                             FastDict.Dict
@@ -5477,13 +5483,19 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.valuesAndFunctions
                             |> fastDictMapToFastSetAndUnify
                                 (\valueOrFunctionInfo ->
-                                    FastSet.union
-                                        (valueOrFunctionInfo.result
-                                            |> fsharpExpressionContainedConstructedRecords
-                                        )
-                                        (valueOrFunctionInfo.type_
-                                            |> fsharpTypeContainedRecords
-                                        )
+                                    valueOrFunctionInfo.parameters
+                                        |> listMapToFastSetsAndUnify
+                                            (\parameter ->
+                                                parameter.type_ |> fsharpTypeContainedRecords
+                                            )
+                                        |> FastSet.union
+                                            (valueOrFunctionInfo.result
+                                                |> fsharpExpressionContainedConstructedRecords
+                                            )
+                                        |> FastSet.union
+                                            (valueOrFunctionInfo.resultType
+                                                |> fsharpTypeContainedRecords
+                                            )
                                 )
                         )
                         (FastSet.union
@@ -5517,8 +5529,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                     fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.valuesAndFunctions
                         |> FastDict.map
                             (\_ valueOrFunctionInfo ->
-                                { type_ = valueOrFunctionInfo.type_
+                                { parameters = valueOrFunctionInfo.parameters
                                 , result = valueOrFunctionInfo.result
+                                , resultType = valueOrFunctionInfo.resultType
                                 }
                             )
                 , choiceTypes =
@@ -6456,25 +6469,23 @@ valueOrFunctionDeclaration :
     ->
         Result
             String
-            { result : FsharpExpression
-            , type_ : FsharpType
+            { parameters : List { pattern : FsharpPattern, type_ : FsharpType }
+            , result : FsharpExpression
+            , resultType : FsharpType
             }
 valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
     resultAndThen2
-        (\parameters maybeType ->
+        (\parameters resultType ->
             Result.map
                 (\result ->
-                    { type_ = maybeType
-                    , result =
-                        case parameters |> List.map (\param -> { type_ = param.type_, pattern = param.pattern }) of
-                            [] ->
-                                result
-
-                            parameter0 :: parameter1Up ->
-                                FsharpExpressionLambda
-                                    { parameters = parameter0 :: parameter1Up
-                                    , result = result
-                                    }
+                    { parameters =
+                        parameters
+                            |> List.map
+                                (\param ->
+                                    { type_ = param.type_, pattern = param.pattern }
+                                )
+                    , resultType = resultType
+                    , result = result
                     }
                 )
                 (syntaxDeclarationValueOrFunction.result
@@ -6495,8 +6506,12 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
             |> listMapAndCombineOk
                 (\parameter -> parameter |> typedPattern)
         )
-        (syntaxDeclarationValueOrFunction.type_
-            |> type_
+        (case syntaxDeclarationValueOrFunction.parameters of
+            [] ->
+                syntaxDeclarationValueOrFunction.type_ |> type_
+
+            _ :: _ ->
+                syntaxDeclarationValueOrFunction.result.type_ |> type_
         )
 
 
@@ -7677,39 +7692,28 @@ letValueOrFunctionDeclaration :
         Result
             String
             { name : String
+            , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
             , result : FsharpExpression
-            , type_ : FsharpType
+            , resultType : FsharpType
             }
 letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
     resultAndThen2
-        (\parameters maybeType ->
+        (\parameters resultType ->
             Result.map
                 (\result ->
                     { name =
                         syntaxLetDeclarationValueOrFunction.name
                             |> variableNameDisambiguateFromFsharpKeywords
-                    , type_ = maybeType
-                    , result =
-                        case parameters of
-                            [] ->
-                                result
-
-                            parameter0 :: parameter1Up ->
-                                FsharpExpressionLambda
-                                    { parameters =
-                                        { pattern = parameter0.pattern
-                                        , type_ = parameter0.type_
-                                        }
-                                            :: (parameter1Up
-                                                    |> List.map
-                                                        (\parameter ->
-                                                            { pattern = parameter.pattern
-                                                            , type_ = parameter.type_
-                                                            }
-                                                        )
-                                               )
-                                    , result = result
+                    , parameters =
+                        parameters
+                            |> List.map
+                                (\parameter ->
+                                    { pattern = parameter.pattern
+                                    , type_ = parameter.type_
                                     }
+                                )
+                    , result = result
+                    , resultType = resultType
                     }
                 )
                 (syntaxLetDeclarationValueOrFunction.result
@@ -7726,7 +7730,13 @@ letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
             |> listMapAndCombineOk
                 (\p -> p |> typedPattern)
         )
-        (syntaxLetDeclarationValueOrFunction.type_ |> type_)
+        (case syntaxLetDeclarationValueOrFunction.parameters of
+            [] ->
+                syntaxLetDeclarationValueOrFunction.type_ |> type_
+
+            _ :: _ ->
+                syntaxLetDeclarationValueOrFunction.result.type_ |> type_
+        )
 
 
 expressionOperatorToFsharpFunctionReference :
@@ -7855,17 +7865,24 @@ expressionOperatorToFsharpFunctionReference operator =
 -}
 printFsharpValueOrFunctionDeclaration :
     { name : String
+    , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
     , result : FsharpExpression
-    , type_ : FsharpType
+    , resultType : FsharpType
     }
     -> Print
 printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
-    case fsharpValueOrFunctionDeclaration.result of
-        FsharpExpressionLambda function ->
+    let
+        resultTypePrint : Print
+        resultTypePrint =
+            printFsharpTypeNotParenthesized
+                fsharpValueOrFunctionDeclaration.resultType
+    in
+    case fsharpValueOrFunctionDeclaration.parameters of
+        parameter0 :: parameter1Up ->
             let
                 parameterPrints : List Print
                 parameterPrints =
-                    function.parameters
+                    (parameter0 :: parameter1Up)
                         |> List.map
                             (\parameter ->
                                 let
@@ -7895,11 +7912,16 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                     }
                             )
 
-                parametersLineSpread : Print.LineSpread
-                parametersLineSpread =
-                    parameterPrints
-                        |> Print.lineSpreadListMapAndCombine
-                            Print.lineSpread
+                headerLineSpread : Print.LineSpread
+                headerLineSpread =
+                    resultTypePrint
+                        |> Print.lineSpread
+                        |> Print.lineSpreadMergeWith
+                            (\() ->
+                                parameterPrints
+                                    |> Print.lineSpreadListMapAndCombine
+                                        Print.lineSpread
+                            )
             in
             Print.exactly
                 fsharpValueOrFunctionDeclaration.name
@@ -7908,44 +7930,43 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                         (parameterPrints
                             |> Print.listMapAndIntersperseAndFlatten
                                 (\parameterPrint ->
-                                    Print.spaceOrLinebreakIndented parametersLineSpread
+                                    Print.spaceOrLinebreakIndented headerLineSpread
                                         |> Print.followedBy parameterPrint
                                 )
                                 Print.empty
-                        )
-                    )
-                |> Print.followedBy
-                    (Print.withIndentAtNextMultipleOf4
-                        (Print.exactly " ="
+                            |> Print.followedBy
+                                (Print.spaceOrLinebreakIndented headerLineSpread)
+                            |> Print.followedBy (Print.exactly ": ")
+                            |> Print.followedBy
+                                (Print.withIndentIncreasedBy 2
+                                    resultTypePrint
+                                )
+                            |> Print.followedBy (Print.exactly " =")
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
                                         (printFsharpExpressionNotParenthesized
-                                            function.result
+                                            fsharpValueOrFunctionDeclaration.result
                                         )
                                 )
                         )
                     )
 
-        resultNotFunction ->
+        [] ->
             Print.exactly
                 fsharpValueOrFunctionDeclaration.name
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
                         ((let
-                            typePrint : Print
-                            typePrint =
-                                printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
-
                             fullLineSpread : Print.LineSpread
                             fullLineSpread =
-                                typePrint |> Print.lineSpread
+                                resultTypePrint |> Print.lineSpread
                           in
                           Print.exactly ":"
                             |> Print.followedBy
                                 (Print.withIndentAtNextMultipleOf4
                                     (Print.spaceOrLinebreakIndented fullLineSpread
-                                        |> Print.followedBy typePrint
+                                        |> Print.followedBy resultTypePrint
                                     )
                                 )
                          )
@@ -7955,7 +7976,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 (Print.linebreakIndented
                                     |> Print.followedBy
                                         (printFsharpExpressionParenthesizedIfWithLetDeclarations
-                                            resultNotFunction
+                                            fsharpValueOrFunctionDeclaration.result
                                         )
                                 )
                         )
@@ -7964,110 +7985,13 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
 
 printFsharpLocalLetValueOrFunctionDeclaration :
     { name : String
+    , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
     , result : FsharpExpression
-    , type_ : FsharpType
+    , resultType : FsharpType
     }
     -> Print
 printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
-    case fsharpValueOrFunctionDeclaration.result of
-        FsharpExpressionLambda function ->
-            let
-                parameterPrints : List Print
-                parameterPrints =
-                    function.parameters
-                        |> List.map
-                            (\parameter ->
-                                let
-                                    parameterTypePrint : Print
-                                    parameterTypePrint =
-                                        printFsharpTypeNotParenthesized
-                                            parameter.type_
-                                in
-                                printParenthesized
-                                    { opening = "("
-                                    , closing = ")"
-                                    , inner =
-                                        parameter.pattern
-                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
-                                            |> Print.followedBy (Print.exactly ":")
-                                            |> Print.followedBy
-                                                (Print.withIndentIncreasedBy 1
-                                                    (Print.withIndentAtNextMultipleOf4
-                                                        (Print.spaceOrLinebreakIndented
-                                                            (parameterTypePrint |> Print.lineSpread)
-                                                            |> Print.followedBy
-                                                                parameterTypePrint
-                                                        )
-                                                    )
-                                                )
-                                    }
-                            )
-
-                parametersLineSpread : Print.LineSpread
-                parametersLineSpread =
-                    parameterPrints
-                        |> Print.lineSpreadListMapAndCombine
-                            Print.lineSpread
-            in
-            Print.exactly
-                fsharpValueOrFunctionDeclaration.name
-                |> Print.followedBy
-                    (Print.withIndentIncreasedBy 4
-                        (Print.spaceOrLinebreakIndented parametersLineSpread
-                            |> Print.followedBy
-                                (parameterPrints
-                                    |> Print.listMapAndIntersperseAndFlatten
-                                        (\parameterPrint -> parameterPrint)
-                                        (Print.spaceOrLinebreakIndented parametersLineSpread)
-                                )
-                        )
-                    )
-                |> Print.followedBy
-                    (Print.withIndentAtNextMultipleOf4
-                        (Print.exactly " ="
-                            |> Print.followedBy
-                                (Print.linebreakIndented
-                                    |> Print.followedBy
-                                        (printFsharpExpressionNotParenthesized
-                                            function.result
-                                        )
-                                )
-                        )
-                    )
-
-        resultNotFunction ->
-            Print.exactly
-                fsharpValueOrFunctionDeclaration.name
-                |> Print.followedBy
-                    (Print.withIndentAtNextMultipleOf4
-                        ((let
-                            typePrint : Print
-                            typePrint =
-                                printFsharpTypeNotParenthesized fsharpValueOrFunctionDeclaration.type_
-
-                            fullLineSpread : Print.LineSpread
-                            fullLineSpread =
-                                typePrint |> Print.lineSpread
-                          in
-                          Print.exactly ":"
-                            |> Print.followedBy
-                                (Print.withIndentAtNextMultipleOf4
-                                    (Print.spaceOrLinebreakIndented fullLineSpread
-                                        |> Print.followedBy typePrint
-                                    )
-                                )
-                         )
-                            |> Print.followedBy
-                                (Print.exactly " =")
-                            |> Print.followedBy
-                                (Print.linebreakIndented
-                                    |> Print.followedBy
-                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
-                                            resultNotFunction
-                                        )
-                                )
-                        )
-                    )
+    printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration
 
 
 type FsharpValueOrFunctionDependencyBucket element
@@ -8078,16 +8002,18 @@ type FsharpValueOrFunctionDependencyBucket element
 fsharpValueOrFunctionDeclarationsGroupByDependencies :
     List
         { name : String
+        , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
         , result : FsharpExpression
-        , type_ : FsharpType
+        , resultType : FsharpType
         }
     ->
         { mostToLeastDependedOn :
             List
                 (FsharpValueOrFunctionDependencyBucket
                     { name : String
+                    , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                     , result : FsharpExpression
-                    , type_ : FsharpType
+                    , resultType : FsharpType
                     }
                 )
         }
@@ -8097,8 +8023,9 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclar
             List
                 (Data.Graph.SCC
                     { name : String
+                    , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                     , result : FsharpExpression
-                    , type_ : FsharpType
+                    , resultType : FsharpType
                     }
                 )
         ordered =
@@ -8853,8 +8780,9 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
         letValueOrFunctions :
             List
                 { name : String
+                , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                 , result : FsharpExpression
-                , type_ : FsharpType
+                , resultType : FsharpType
                 }
         letValueOrFunctions =
             (syntaxLetIn.declaration0 :: syntaxLetIn.declaration1Up)
@@ -9188,8 +9116,9 @@ fsharpDeclarationsToModuleString :
     { valuesAndFunctions :
         FastDict.Dict
             String
-            { result : FsharpExpression
-            , type_ : FsharpType
+            { parameters : List { pattern : FsharpPattern, type_ : FsharpType }
+            , result : FsharpExpression
+            , resultType : FsharpType
             }
     , typeAliases :
         FastDict.Dict
@@ -9213,8 +9142,9 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
                 List
                     (FsharpValueOrFunctionDependencyBucket
                         { name : String
+                        , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                         , result : FsharpExpression
-                        , type_ : FsharpType
+                        , resultType : FsharpType
                         }
                     )
             }
@@ -9223,8 +9153,9 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
                 |> fastDictMapAndToList
                     (\name valueOrFunctionInfo ->
                         { name = name
-                        , type_ = valueOrFunctionInfo.type_
+                        , parameters = valueOrFunctionInfo.parameters
                         , result = valueOrFunctionInfo.result
+                        , resultType = valueOrFunctionInfo.resultType
                         }
                     )
                 |> fsharpValueOrFunctionDeclarationsGroupByDependencies
