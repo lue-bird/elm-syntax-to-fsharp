@@ -7953,8 +7953,28 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                     )
 
         [] ->
+            let
+                typeVariablesToDeclare : List String
+                typeVariablesToDeclare =
+                    fsharpValueOrFunctionDeclaration.resultType
+                        |> fsharpTypeContainedVariables
+                        |> FastSet.toList
+            in
             Print.exactly
-                fsharpValueOrFunctionDeclaration.name
+                (fsharpValueOrFunctionDeclaration.name
+                    ++ (case typeVariablesToDeclare of
+                            [] ->
+                                ""
+
+                            typeVariable0 :: typeVariable1Up ->
+                                "<"
+                                    ++ ((typeVariable0 :: typeVariable1Up)
+                                            |> List.map (\typeVariable -> "'" ++ typeVariable)
+                                            |> String.join ", "
+                                       )
+                                    ++ ">"
+                       )
+                )
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
                         ((let
@@ -7983,6 +8003,34 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                     )
 
 
+fsharpTypeContainedVariables : FsharpType -> FastSet.Set String
+fsharpTypeContainedVariables fsharpType =
+    -- IGNORE TCO
+    case fsharpType of
+        FsharpTypeVariable variable ->
+            FastSet.singleton variable
+
+        FsharpTypeTuple parts ->
+            FastSet.union
+                (parts.part0 |> fsharpTypeContainedVariables)
+                (FastSet.union
+                    (parts.part1 |> fsharpTypeContainedVariables)
+                    (parts.part2Up
+                        |> listMapToFastSetsAndUnify
+                            fsharpTypeContainedVariables
+                    )
+                )
+
+        FsharpTypeConstruct typeConstruct ->
+            typeConstruct.arguments
+                |> listMapToFastSetsAndUnify fsharpTypeContainedVariables
+
+        FsharpTypeFunction typeFunction ->
+            FastSet.union
+                (typeFunction.input |> fsharpTypeContainedVariables)
+                (typeFunction.output |> fsharpTypeContainedVariables)
+
+
 printFsharpLocalLetValueOrFunctionDeclaration :
     { name : String
     , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
@@ -7991,7 +8039,116 @@ printFsharpLocalLetValueOrFunctionDeclaration :
     }
     -> Print
 printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
-    printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration
+    let
+        resultTypePrint : Print
+        resultTypePrint =
+            printFsharpTypeNotParenthesized
+                fsharpValueOrFunctionDeclaration.resultType
+    in
+    case fsharpValueOrFunctionDeclaration.parameters of
+        parameter0 :: parameter1Up ->
+            let
+                parameterPrints : List Print
+                parameterPrints =
+                    (parameter0 :: parameter1Up)
+                        |> List.map
+                            (\parameter ->
+                                let
+                                    parameterTypePrint : Print
+                                    parameterTypePrint =
+                                        printFsharpTypeNotParenthesized
+                                            parameter.type_
+                                in
+                                printParenthesized
+                                    { opening = "("
+                                    , closing = ")"
+                                    , inner =
+                                        (parameter.pattern
+                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
+                                        )
+                                            |> Print.followedBy (Print.exactly ":")
+                                            |> Print.followedBy
+                                                (Print.withIndentIncreasedBy 1
+                                                    (Print.withIndentAtNextMultipleOf4
+                                                        (Print.spaceOrLinebreakIndented
+                                                            (parameterTypePrint |> Print.lineSpread)
+                                                            |> Print.followedBy
+                                                                parameterTypePrint
+                                                        )
+                                                    )
+                                                )
+                                    }
+                            )
+
+                headerLineSpread : Print.LineSpread
+                headerLineSpread =
+                    resultTypePrint
+                        |> Print.lineSpread
+                        |> Print.lineSpreadMergeWith
+                            (\() ->
+                                parameterPrints
+                                    |> Print.lineSpreadListMapAndCombine
+                                        Print.lineSpread
+                            )
+            in
+            Print.exactly
+                fsharpValueOrFunctionDeclaration.name
+                |> Print.followedBy
+                    (Print.withIndentIncreasedBy 4
+                        (parameterPrints
+                            |> Print.listMapAndIntersperseAndFlatten
+                                (\parameterPrint ->
+                                    Print.spaceOrLinebreakIndented headerLineSpread
+                                        |> Print.followedBy parameterPrint
+                                )
+                                Print.empty
+                            |> Print.followedBy
+                                (Print.spaceOrLinebreakIndented headerLineSpread)
+                            |> Print.followedBy (Print.exactly ": ")
+                            |> Print.followedBy
+                                (Print.withIndentIncreasedBy 2
+                                    resultTypePrint
+                                )
+                            |> Print.followedBy (Print.exactly " =")
+                            |> Print.followedBy
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionNotParenthesized
+                                            fsharpValueOrFunctionDeclaration.result
+                                        )
+                                )
+                        )
+                    )
+
+        [] ->
+            Print.exactly
+                fsharpValueOrFunctionDeclaration.name
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        ((let
+                            fullLineSpread : Print.LineSpread
+                            fullLineSpread =
+                                resultTypePrint |> Print.lineSpread
+                          in
+                          Print.exactly ":"
+                            |> Print.followedBy
+                                (Print.withIndentAtNextMultipleOf4
+                                    (Print.spaceOrLinebreakIndented fullLineSpread
+                                        |> Print.followedBy resultTypePrint
+                                    )
+                                )
+                         )
+                            |> Print.followedBy
+                                (Print.exactly " =")
+                            |> Print.followedBy
+                                (Print.linebreakIndented
+                                    |> Print.followedBy
+                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                            fsharpValueOrFunctionDeclaration.result
+                                        )
+                                )
+                        )
+                    )
 
 
 type FsharpValueOrFunctionDependencyBucket element
