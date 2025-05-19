@@ -225,8 +225,9 @@ runningInterface state =
                                                             Nothing
 
                                                         else
-                                                        -- TODO remove this filter for general use
                                                         if
+                                                            -- excluded because Elm.Parser.Expression
+                                                            -- uses annotated extensible record types
                                                             (sourceDirectoryPath |> String.contains "stil4m/elm-syntax")
                                                                 && ((subPath == "Elm/Parser.elm")
                                                                         || (subPath == "Elm/Parser/Expression.elm")
