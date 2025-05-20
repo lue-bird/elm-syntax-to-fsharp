@@ -1340,14 +1340,65 @@ printFsharpTypeAliasDeclaration fsharpTypeAliasDeclaration =
 
 
 printFsharpRecordTypeDeclaration : List String -> Print
-printFsharpRecordTypeDeclaration fsharpRecordFields =
+printFsharpRecordTypeDeclaration fsharpRecordFieldNames =
+    let
+        fsharpRecordFields : FastDict.Dict String FsharpType
+        fsharpRecordFields =
+            fsharpRecordFieldNames
+                |> List.foldl
+                    (\fieldName soFar ->
+                        soFar
+                            |> FastDict.insert fieldName
+                                (FsharpTypeVariable
+                                    (fieldName
+                                        |> stringFirstCharToLower
+                                        |> variableNameDisambiguateFromFsharpKeywords
+                                    )
+                                )
+                    )
+                    FastDict.empty
+
+        fieldsPrint : Print
+        fieldsPrint =
+            fsharpRecordFields
+                |> FastDict.toList
+                |> Print.listMapAndIntersperseAndFlatten
+                    (\( fieldName, fieldValue ) ->
+                        let
+                            valuePrint : Print
+                            valuePrint =
+                                printFsharpTypeNotParenthesized fieldValue
+                        in
+                        Print.withIndentIncreasedBy 2
+                            (Print.exactly (fieldName ++ ":")
+                                |> Print.followedBy
+                                    (Print.withIndentAtNextMultipleOf4
+                                        (Print.spaceOrLinebreakIndented
+                                            (valuePrint |> Print.lineSpread)
+                                            |> Print.followedBy valuePrint
+                                        )
+                                    )
+                            )
+                    )
+                    (Print.linebreakIndented
+                        |> Print.followedBy
+                            (Print.exactly "; ")
+                    )
+    in
     Print.exactly "[<Struct>]"
         |> Print.followedBy Print.linebreakIndented
         |> Print.followedBy
             (Print.exactly
                 ("type "
-                    ++ generatedFsharpRecordTypeAliasName fsharpRecordFields
-                    ++ (fsharpRecordFields
+                    ++ generatedFsharpRecordTypeAliasName
+                        fsharpRecordFieldNames
+                    ++ (fsharpRecordFieldNames
+                            |> List.map
+                                (\fieldName ->
+                                    fieldName
+                                        |> stringFirstCharToLower
+                                        |> variableNameDisambiguateFromFsharpKeywords
+                                )
                             |> fsharpTypeParametersToString
                        )
                     ++ " ="
@@ -1356,63 +1407,15 @@ printFsharpRecordTypeDeclaration fsharpRecordFields =
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
+                    |> Print.followedBy (Print.exactly "{ ")
+                    |> Print.followedBy fieldsPrint
                     |> Print.followedBy
-                        (printFsharpTypeRecord
-                            (fsharpRecordFields
-                                |> List.foldl
-                                    (\field soFar ->
-                                        soFar
-                                            |> FastDict.insert field
-                                                (FsharpTypeVariable field)
-                                    )
-                                    FastDict.empty
-                            )
+                        (Print.spaceOrLinebreakIndented
+                            (fieldsPrint |> Print.lineSpread)
                         )
+                    |> Print.followedBy (Print.exactly "}")
                 )
             )
-
-
-printFsharpTypeRecord : FastDict.Dict String FsharpType -> Print
-printFsharpTypeRecord syntaxRecordFields =
-    if syntaxRecordFields |> FastDict.isEmpty then
-        Print.exactly "{}"
-
-    else
-        let
-            fieldsPrint : Print
-            fieldsPrint =
-                syntaxRecordFields
-                    |> FastDict.toList
-                    |> Print.listMapAndIntersperseAndFlatten
-                        (\( fieldName, fieldValue ) ->
-                            let
-                                valuePrint : Print
-                                valuePrint =
-                                    printFsharpTypeNotParenthesized fieldValue
-                            in
-                            Print.withIndentIncreasedBy 2
-                                (Print.exactly (fieldName ++ ":")
-                                    |> Print.followedBy
-                                        (Print.withIndentAtNextMultipleOf4
-                                            (Print.spaceOrLinebreakIndented
-                                                (valuePrint |> Print.lineSpread)
-                                                |> Print.followedBy valuePrint
-                                            )
-                                        )
-                                )
-                        )
-                        (Print.linebreakIndented
-                            |> Print.followedBy
-                                (Print.exactly "; ")
-                        )
-        in
-        Print.exactly "{ "
-            |> Print.followedBy fieldsPrint
-            |> Print.followedBy
-                (Print.spaceOrLinebreakIndented
-                    (fieldsPrint |> Print.lineSpread)
-                )
-            |> Print.followedBy (Print.exactly "}")
 
 
 fsharpTypeInt64 : FsharpType
@@ -2004,6 +2007,16 @@ stringFirstCharToUpper string =
 
         Just ( headChar, tailString ) ->
             String.cons (Char.toUpper headChar) tailString
+
+
+stringFirstCharToLower : String -> String
+stringFirstCharToLower string =
+    case string |> String.uncons of
+        Nothing ->
+            ""
+
+        Just ( headChar, tailString ) ->
+            String.cons (Char.toLower headChar) tailString
 
 
 printFsharpString : String -> Print
