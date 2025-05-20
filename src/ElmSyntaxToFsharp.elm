@@ -3688,6 +3688,27 @@ referenceToCoreFsharp reference =
                 "Just" ->
                     Just { moduleOrigin = Nothing, name = "Some" }
 
+                "andThen" ->
+                    Just { moduleOrigin = Just "Option", name = "bind" }
+
+                "withDefault" ->
+                    Just { moduleOrigin = Just "Option", name = "defaultValue" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "Option", name = "map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Just "Option", name = "map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Just "Option", name = "map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "Maybe_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "Maybe_map5" }
+
                 _ ->
                     Nothing
 
@@ -4594,6 +4615,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             [ "List" ] ->
                                 False
 
+                            [ "Maybe" ] ->
+                                False
+
                             [ "Dict" ] ->
                                 False
 
@@ -5426,9 +5450,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
                                                     case syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value of
-                                                        "Maybe" ->
-                                                            soFar
-
                                                         "Result" ->
                                                             soFar
 
@@ -10107,6 +10128,30 @@ defaultDeclarations =
         (eList: List<'e>)
         : List<'combined> =
         List_map5_into_reverse [] combine aList bList cList dList eList
+
+    let inline Maybe_map4
+        ([<InlineIfLambda>] valuesCombine)
+        (aOption: option<'a>)
+        (bOption: option<'b>)
+        (cOption: option<'c>)
+        (dOption: option<'d>)
+        : option<'combined> =
+        match aOption, bOption, cOption, dOption with
+        | Some(a), Some(b), Some(c), Some(d) -> Some(valuesCombine a b c d)
+        | _ -> None
+
+    let inline Maybe_map5
+        ([<InlineIfLambda>] valuesCombine)
+        (aOption: option<'a>)
+        (bOption: option<'b>)
+        (cOption: option<'c>)
+        (dOption: option<'d>)
+        (eOption: option<'e>)
+        : option<'combined> =
+        match aOption, bOption, cOption, dOption, eOption with
+        | Some(a), Some(b), Some(c), Some(d), Some(e) ->
+            Some(valuesCombine a b c d e)
+        | _ -> None
 
     let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
 
