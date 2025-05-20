@@ -3688,9 +3688,6 @@ referenceToCoreFsharp reference =
                 "Just" ->
                     Just { moduleOrigin = Nothing, name = "Some" }
 
-                "andThen" ->
-                    Just { moduleOrigin = Just "Option", name = "bind" }
-
                 "withDefault" ->
                     Just { moduleOrigin = Just "Option", name = "defaultValue" }
 
@@ -3709,6 +3706,9 @@ referenceToCoreFsharp reference =
                 "map5" ->
                     Just { moduleOrigin = Nothing, name = "Maybe_map5" }
 
+                "andThen" ->
+                    Just { moduleOrigin = Just "Option", name = "bind" }
+
                 _ ->
                     Nothing
 
@@ -3719,6 +3719,36 @@ referenceToCoreFsharp reference =
 
                 "Ok" ->
                     Just { moduleOrigin = Nothing, name = "Ok" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "Result", name = "map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map5" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Just "Result", name = "bind" }
+
+                "withDefault" ->
+                    Just { moduleOrigin = Just "Result", name = "defaultValue" }
+
+                "toMaybe" ->
+                    Just { moduleOrigin = Just "Result", name = "toOption" }
+
+                "fromMaybe" ->
+                    Just { moduleOrigin = Nothing, name = "Result_fromMaybe" }
+
+                "mapError" ->
+                    Just { moduleOrigin = Just "Result", name = "mapError" }
 
                 _ ->
                     Nothing
@@ -4618,6 +4648,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             [ "Maybe" ] ->
                                 False
 
+                            [ "Result" ] ->
+                                False
+
                             [ "Dict" ] ->
                                 False
 
@@ -5449,48 +5482,43 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             }
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
-                                                    case syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value of
-                                                        "Result" ->
-                                                            soFar
+                                                    case syntaxChoiceTypeDeclaration |> choiceTypeDeclaration createdModuleContext of
+                                                        Ok fsharpTypeAliasDeclaration ->
+                                                            { errors = soFar.errors
+                                                            , declarations =
+                                                                { valuesAndFunctions = soFar.declarations.valuesAndFunctions
+                                                                , typeAliases = soFar.declarations.typeAliases
+                                                                , choiceTypes =
+                                                                    soFar.declarations.choiceTypes
+                                                                        |> FastDict.insert
+                                                                            ({ moduleOrigin = moduleName
+                                                                             , name = fsharpTypeAliasDeclaration.name
+                                                                             }
+                                                                                |> referenceToFsharpName
+                                                                            )
+                                                                            { parameters = fsharpTypeAliasDeclaration.parameters
+                                                                            , variants =
+                                                                                fsharpTypeAliasDeclaration.variants
+                                                                                    |> FastDict.foldl
+                                                                                        (\variantName maybeValue variantsSoFar ->
+                                                                                            variantsSoFar
+                                                                                                |> FastDict.insert
+                                                                                                    ({ moduleOrigin = moduleName
+                                                                                                     , name = variantName
+                                                                                                     }
+                                                                                                        |> referenceToFsharpName
+                                                                                                    )
+                                                                                                    maybeValue
+                                                                                        )
+                                                                                        FastDict.empty
+                                                                            }
+                                                                }
+                                                            }
 
-                                                        _ ->
-                                                            case syntaxChoiceTypeDeclaration |> choiceTypeDeclaration createdModuleContext of
-                                                                Ok fsharpTypeAliasDeclaration ->
-                                                                    { errors = soFar.errors
-                                                                    , declarations =
-                                                                        { valuesAndFunctions = soFar.declarations.valuesAndFunctions
-                                                                        , typeAliases = soFar.declarations.typeAliases
-                                                                        , choiceTypes =
-                                                                            soFar.declarations.choiceTypes
-                                                                                |> FastDict.insert
-                                                                                    ({ moduleOrigin = moduleName
-                                                                                     , name = fsharpTypeAliasDeclaration.name
-                                                                                     }
-                                                                                        |> referenceToFsharpName
-                                                                                    )
-                                                                                    { parameters = fsharpTypeAliasDeclaration.parameters
-                                                                                    , variants =
-                                                                                        fsharpTypeAliasDeclaration.variants
-                                                                                            |> FastDict.foldl
-                                                                                                (\variantName maybeValue variantsSoFar ->
-                                                                                                    variantsSoFar
-                                                                                                        |> FastDict.insert
-                                                                                                            ({ moduleOrigin = moduleName
-                                                                                                             , name = variantName
-                                                                                                             }
-                                                                                                                |> referenceToFsharpName
-                                                                                                            )
-                                                                                                            maybeValue
-                                                                                                )
-                                                                                                FastDict.empty
-                                                                                    }
-                                                                        }
-                                                                    }
-
-                                                                Err error ->
-                                                                    { declarations = soFar.declarations
-                                                                    , errors = error :: soFar.errors
-                                                                    }
+                                                        Err error ->
+                                                            { declarations = soFar.declarations
+                                                            , errors = error :: soFar.errors
+                                                            }
 
                                                 Elm.Syntax.Declaration.PortDeclaration _ ->
                                                     soFar
@@ -10129,6 +10157,7 @@ defaultDeclarations =
         : List<'combined> =
         List_map5_into_reverse [] combine aList bList cList dList eList
 
+
     let inline Maybe_map4
         ([<InlineIfLambda>] valuesCombine)
         (aOption: option<'a>)
@@ -10152,6 +10181,88 @@ defaultDeclarations =
         | Some(a), Some(b), Some(c), Some(d), Some(e) ->
             Some(valuesCombine a b c d e)
         | _ -> None
+    
+
+    let inline Result_map2
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) -> Ok(valuesCombine a b)
+
+    let inline Result_map3
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) -> Ok(valuesCombine a b c)
+
+    let inline Result_map4
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        (dResult: Result<'d, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) ->
+                    match dResult with
+                    | Error(error) -> Error(error)
+                    | Ok(d) -> Ok(valuesCombine a b c d)
+
+    let inline Result_map5
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        (dResult: Result<'d, 'error>)
+        (eResult: Result<'e, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) ->
+                    match dResult with
+                    | Error(error) -> Error(error)
+                    | Ok(d) ->
+                        match eResult with
+                        | Error(error) -> Error(error)
+                        | Ok(e) -> Ok(valuesCombine a b c d e)
+
+    let inline Result_fromMaybe
+        (errorOnNothing: 'error)
+        (maybe: option<'value>)
+        : Result<'value, 'error> =
+        match maybe with
+        | None -> Error(errorOnNothing)
+        | Some(value) -> Ok(value)
+    
 
     let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
 

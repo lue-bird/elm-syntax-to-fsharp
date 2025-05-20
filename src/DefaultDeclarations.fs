@@ -599,8 +599,9 @@ module Elm =
         : List<'combined> =
         List_map5_into_reverse [] combine aList bList cList dList eList
 
+
     let inline Maybe_map4
-        ([<InlineIfLambda>] valuesCombine)
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
         (aOption: option<'a>)
         (bOption: option<'b>)
         (cOption: option<'c>)
@@ -611,7 +612,7 @@ module Elm =
         | _ -> None
 
     let inline Maybe_map5
-        ([<InlineIfLambda>] valuesCombine)
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
         (aOption: option<'a>)
         (bOption: option<'b>)
         (cOption: option<'c>)
@@ -622,6 +623,88 @@ module Elm =
         | Some(a), Some(b), Some(c), Some(d), Some(e) ->
             Some(valuesCombine a b c d e)
         | _ -> None
+
+
+    let inline Result_map2
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) -> Ok(valuesCombine a b)
+
+    let inline Result_map3
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) -> Ok(valuesCombine a b c)
+
+    let inline Result_map4
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        (dResult: Result<'d, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) ->
+                    match dResult with
+                    | Error(error) -> Error(error)
+                    | Ok(d) -> Ok(valuesCombine a b c d)
+
+    let inline Result_map5
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aResult: Result<'a, 'error>)
+        (bResult: Result<'b, 'error>)
+        (cResult: Result<'c, 'error>)
+        (dResult: Result<'d, 'error>)
+        (eResult: Result<'e, 'error>)
+        : Result<'combined, 'error> =
+        match aResult with
+        | Error(error) -> Error(error)
+        | Ok(a) ->
+            match bResult with
+            | Error(error) -> Error(error)
+            | Ok(b) ->
+                match cResult with
+                | Error(error) -> Error(error)
+                | Ok(c) ->
+                    match dResult with
+                    | Error(error) -> Error(error)
+                    | Ok(d) ->
+                        match eResult with
+                        | Error(error) -> Error(error)
+                        | Ok(e) -> Ok(valuesCombine a b c d e)
+
+    let inline Result_fromMaybe
+        (errorOnNothing: 'error)
+        (maybe: option<'value>)
+        : Result<'value, 'error> =
+        match maybe with
+        | None -> Error(errorOnNothing)
+        | Some(value) -> Ok(value)
+
 
     let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
 
