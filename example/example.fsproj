@@ -6,6 +6,7 @@
     <RootNamespace>example</RootNamespace>
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Speed</OptimizationPreference>
+    <IlcTrimMetadata>true</IlcTrimMetadata>
     <PublishTrimmed>true</PublishTrimmed>
     <StripSymbols>true</StripSymbols>
   </PropertyGroup>
