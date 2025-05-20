@@ -75,7 +75,7 @@ Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issu
 -   it's pretty much a superset of elm which makes transpiling easy
 
 ### how do I use the transpiled output?
-An example can be found in [`example/`](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main/example).
+An example can be found in [`example-hello-world/`](https://github.com/lue-bird/elm-syntax-to-fsharp/tree/main/example-hello-world).
 
 Add a project config `yourProjectName.fsproj`
 ```xml
