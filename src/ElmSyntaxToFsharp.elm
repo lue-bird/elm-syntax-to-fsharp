@@ -11154,10 +11154,12 @@ defaultDeclarations =
         StringRopeOne(JsonDecode_errorToStringHelp error [])
 
 
+    [<Struct>]
     type Regex_Options =
         { CaseInsensitive: bool
           Multiline: bool }
 
+    [<Struct>]
     type Regex_Match =
         { Match: StringRope
           Index: int64
@@ -12182,9 +12184,10 @@ defaultDeclarations =
     type BytesDecode_Decoder<'value> =
         Bytes_Bytes -> int32 -> ValueOption<struct (int32 * 'value)>
 
+    [<Struct>]
     type BytesDecode_Step<'state, 'a> =
-        | BytesDecode_Loop of 'state
-        | BytesDecode_Done of 'a
+        | BytesDecode_Loop of BytesDecode_Loop: 'state
+        | BytesDecode_Done of BytesDecode_Done: 'a
 
     let BytesDecode_decode
         (decoder: BytesDecode_Decoder<'value>)
