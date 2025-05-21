@@ -315,13 +315,13 @@ module Elm =
 
     let String_uncons
         (stringRope: StringRope)
-        : option<struct (char * StringRope)> =
+        : ValueOption<struct (char * StringRope)> =
         let string: string = StringRope.toString stringRope
 
         if System.String.IsNullOrEmpty(string) then
-            None
+            ValueNone
         else
-            Some(struct (string[0], StringRopeOne(string[1..])))
+            ValueSome(struct (string[0], StringRopeOne(string[1..])))
 
     let String_split
         (separator: StringRope)
@@ -405,15 +405,15 @@ module Elm =
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
     let inline String_fromInt (n: int64) : StringRope = StringRopeOne(string n)
 
-    let String_toInt (string: StringRope) : option<int64> =
+    let String_toInt (string: StringRope) : ValueOption<int64> =
         let (success, num) = System.Int64.TryParse(StringRope.toString string)
 
-        if success then Some num else None
+        if success then ValueSome num else ValueNone
 
-    let String_toFloat (string: StringRope) : option<float> =
+    let String_toFloat (string: StringRope) : ValueOption<float> =
         let (success, num) = System.Double.TryParse(StringRope.toString string)
 
-        if success then Some num else None
+        if success then ValueSome num else ValueNone
 
     let String_slice
         (startInclusivePossiblyNegative: int64)
@@ -446,23 +446,36 @@ module Elm =
 
     let inline List_length (list: List<'a>) : int64 = List.length list
 
-    let inline List_tail (list: List<'a>) : option<List<'a>> =
+    let inline List_head (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | head :: tail -> Some tail
+        | [] -> ValueNone
+        | head :: _ -> ValueSome head
+
+    let inline List_tail (list: List<'a>) : ValueOption<List<'a>> =
+        match list with
+        | [] -> ValueNone
+        | head :: tail -> ValueSome tail
+    
+    let inline List_filterMap
+        ([<InlineIfLambda>] elementToMaybe: 'a -> ValueOption<'b>)
+        (list: List<'a>)
+        : List<'b> =
+        List.choose
+            (fun element -> ValueOption.toOption (elementToMaybe element))
+            list
 
     let inline List_member (needle: 'a) (list: List<'a>) : bool =
         List.contains needle list
 
-    let List_minimum (list: List<'a>) : option<'a> =
+    let List_minimum (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | _ :: _ -> Some(List.min list)
+        | [] -> ValueNone
+        | _ :: _ -> ValueSome(List.min list)
 
-    let List_maximum (list: List<'a>) : option<'a> =
+    let List_maximum (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | _ :: _ -> Some(List.max list)
+        | [] -> ValueNone
+        | _ :: _ -> ValueSome(List.max list)
 
     let List_fproduct (list: List<float>) : float = List.fold (*) 1.0 list
     let List_iproduct (list: List<int64>) : int64 = List.fold (*) 1L list
@@ -602,27 +615,27 @@ module Elm =
 
     let inline Maybe_map4
         ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
-        (aOption: option<'a>)
-        (bOption: option<'b>)
-        (cOption: option<'c>)
-        (dOption: option<'d>)
-        : option<'combined> =
+        (aOption: ValueOption<'a>)
+        (bOption: ValueOption<'b>)
+        (cOption: ValueOption<'c>)
+        (dOption: ValueOption<'d>)
+        : ValueOption<'combined> =
         match aOption, bOption, cOption, dOption with
-        | Some(a), Some(b), Some(c), Some(d) -> Some(valuesCombine a b c d)
-        | _ -> None
+        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d) -> ValueSome(valuesCombine a b c d)
+        | _ -> ValueNone
 
     let inline Maybe_map5
         ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
-        (aOption: option<'a>)
-        (bOption: option<'b>)
-        (cOption: option<'c>)
-        (dOption: option<'d>)
-        (eOption: option<'e>)
-        : option<'combined> =
+        (aOption: ValueOption<'a>)
+        (bOption: ValueOption<'b>)
+        (cOption: ValueOption<'c>)
+        (dOption: ValueOption<'d>)
+        (eOption: ValueOption<'e>)
+        : ValueOption<'combined> =
         match aOption, bOption, cOption, dOption, eOption with
-        | Some(a), Some(b), Some(c), Some(d), Some(e) ->
-            Some(valuesCombine a b c d e)
-        | _ -> None
+        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d), ValueSome(e) ->
+            ValueSome(valuesCombine a b c d e)
+        | _ -> ValueNone
 
 
     let inline Result_map2
@@ -699,11 +712,11 @@ module Elm =
 
     let inline Result_fromMaybe
         (errorOnNothing: 'error)
-        (maybe: option<'value>)
+        (maybe: ValueOption<'value>)
         : Result<'value, 'error> =
         match maybe with
-        | None -> Error(errorOnNothing)
-        | Some(value) -> Ok(value)
+        | ValueNone -> Error(errorOnNothing)
+        | ValueSome(value) -> Ok(value)
 
 
     let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
@@ -737,6 +750,20 @@ module Elm =
         (dict: Map<'key, 'value>)
         : 'state =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
+    
+    let inline Dict_get (key: 'key) (dict: Map<'key, 'value>) : ValueOption<'value> =
+        Option.toValueOption (Map.tryFind key dict)
+    
+    let inline Dict_update
+        (key: 'key)
+        ([<InlineIfLambda>] slotChange: ValueOption<'value> -> ValueOption<'value>)
+        (dict: Map<'key, 'value>)
+        : Map<'key, 'value> =
+        Map.change key
+            (fun slot ->
+                ValueOption.toOption (slotChange (Option.toValueOption slot))
+            )
+            dict
 
     let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
         Seq.toList (Map.keys dict)
@@ -809,8 +836,8 @@ module Elm =
 
     let inline Array_length (array: array<'a>) : int64 = Array.length array
 
-    let Array_get (index: int64) (array: array<'element>) : option<'element> =
-        Array.tryItem (int index) array
+    let Array_get (index: int64) (array: array<'element>) : ValueOption<'element> =
+        Option.toValueOption (Array.tryItem (int index) array)
 
     let inline Array_initialize
         (count: int64)
@@ -1218,12 +1245,12 @@ module Elm =
 
     let JsonDecode_maybe
         (valueDecoder: JsonDecode_Decoder<'value>)
-        : JsonDecode_Decoder<option<'value>> =
+        : JsonDecode_Decoder<ValueOption<'value>> =
         fun json ->
             Ok(
                 match valueDecoder json with
-                | Ok valueDecodeResult -> Some valueDecodeResult
-                | Error valueError -> None
+                | Ok valueDecodeResult -> ValueSome valueDecodeResult
+                | Error valueError -> ValueNone
             )
 
     let rec JsonDecode_oneOfWithErrorsReverse
@@ -1495,13 +1522,13 @@ module Elm =
 
     let JsonDecode_nullable
         (valueDecoder: JsonDecode_Decoder<'value>)
-        : JsonDecode_Decoder<option<'value>> =
+        : JsonDecode_Decoder<ValueOption<'value>> =
         fun json ->
-            match JsonDecode_null None json with
+            match JsonDecode_null ValueNone json with
             | Ok nullDecodeResult -> Ok nullDecodeResult
             | Error nullError ->
                 match valueDecoder json with
-                | Ok valueDecodeResult -> Ok(Some valueDecodeResult)
+                | Ok valueDecodeResult -> Ok(ValueSome valueDecodeResult)
                 | Error valueError ->
                     Error(JsonDecode_OneOf [ nullError; valueError ])
 
@@ -1525,8 +1552,8 @@ module Elm =
         | JsonDecode_Field(f, err) ->
             let isSimple =
                 match String_uncons f with
-                | None -> false
-                | Some(char, rest) ->
+                | ValueNone -> false
+                | ValueSome(char, rest) ->
                     System.Char.IsLetter(char)
                     && String_all System.Char.IsLetter rest
 
@@ -1606,27 +1633,27 @@ module Elm =
         { Match: StringRope
           Index: int64
           Number: int64
-          Submatches: List<option<StringRope>> }
+          Submatches: List<ValueOption<StringRope>> }
 
     let Regex_fromString
         (string: StringRope)
-        : option<System.Text.RegularExpressions.Regex> =
+        : ValueOption<System.Text.RegularExpressions.Regex> =
         try
-            Some(
+            ValueSome(
                 System.Text.RegularExpressions.Regex(
                     StringRope.toString string,
                     System.Text.RegularExpressions.RegexOptions.ECMAScript
                 )
             )
         with _ ->
-            None
+            ValueNone
 
     let Regex_fromStringWith
         (options: Regex_Options)
         (string: StringRope)
-        : option<System.Text.RegularExpressions.Regex> =
+        : ValueOption<System.Text.RegularExpressions.Regex> =
         try
-            Some(
+            ValueSome(
                 System.Text.RegularExpressions.Regex(
                     StringRope.toString string,
                     if options.Multiline then
@@ -1651,7 +1678,7 @@ module Elm =
                 )
             )
         with _ ->
-            None
+            ValueNone
 
     let Regex_never: System.Text.RegularExpressions.Regex =
         System.Text.RegularExpressions.Regex("/.^/")
@@ -1694,8 +1721,8 @@ module Elm =
             Seq.toList (
                 Seq.map
                     (fun (subMatch: System.Text.RegularExpressions.Group) ->
-                        // TODO when does elm return None?
-                        Some(StringRopeOne subMatch.Value))
+                        // TODO when does elm return ValueNone?
+                        ValueSome(StringRopeOne subMatch.Value))
                     regexMatch.Groups
             ) }
 
@@ -1962,10 +1989,10 @@ module Elm =
 
     let inline ElmKernelUrl_percentDecode
         (string: StringRope)
-        : option<StringRope> =
+        : ValueOption<StringRope> =
         match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
-        | null -> None
-        | decodedString -> Some(StringRopeOne decodedString)
+        | null -> ValueNone
+        | decodedString -> ValueSome(StringRopeOne decodedString)
 
 
     [<Struct>]
@@ -2634,10 +2661,10 @@ module Elm =
     let BytesDecode_decode
         (decoder: BytesDecode_Decoder<'value>)
         (bytes: Bytes_Bytes)
-        : option<'value> =
+        : ValueOption<'value> =
         match decoder bytes 0 with
-        | ValueNone -> None
-        | ValueSome(_, value) -> Some value
+        | ValueNone -> ValueNone
+        | ValueSome(_, value) -> ValueSome value
 
     let BytesDecode_succeed (value: 'value) : BytesDecode_Decoder<'value> =
         fun bytes index -> ValueSome(index, value)
@@ -3353,9 +3380,9 @@ module Elm =
 
     let MathMatrix4_inverse
         (matrix4: System.Numerics.Matrix4x4)
-        : option<System.Numerics.Matrix4x4> =
+        : ValueOption<System.Numerics.Matrix4x4> =
         let (wasSuccessful, result) = System.Numerics.Matrix4x4.Invert(matrix4)
-        if wasSuccessful then Some(result) else None
+        if wasSuccessful then ValueSome(result) else ValueNone
 
     let inline MathMatrix4_mul
         (a: System.Numerics.Matrix4x4)

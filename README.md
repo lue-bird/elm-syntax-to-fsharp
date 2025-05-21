@@ -117,6 +117,8 @@ Here's some special types you can expect:
   - elm tuples/triples like `( float, float )`
     will be of type `(struct( float * float ))`.
     You can create them with `struct( 1.1, 2.2 )` und destructure them with `struct( a, b )`
+  - elm `Maybe.Maybe`s will be of type `ValueOption`.
+    You can create and match them with `ValueSome` for `Just` and `ValueNone` for `Nothing`
   - elm `Json.Encode.Value`/`Json.Decode.Value` will be of type
     [`System.Text.Json.Nodes.JsonNode`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonnode?view=net-9.0).
     Encode and decode them like you would in elm, like `Elm.JsonEncode_float 2.2`
@@ -128,7 +130,7 @@ Here's some special types you can expect:
     Create them like you would in elm with `Elm.Regex_fromString`, `Elm.Regex_fromStringWith` or `Elm.Regex_never`
   - elm-exploration/linear-algebra's `Math.Matrix2.Vec2`, `Math.Matrix3.Vec3`, `Math.Matrix4.Vec4`, `Math.Matrix4.Mat4` will be of type [`System.Numerics.Vector2`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector2?view=net-9.0), [`System.Numerics.Vector3`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector3?view=net-9.0), [`System.Numerics.Vector4`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector4?view=net-9.0), [`System.Numerics.Matrix4x4`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.matrix4x4?view=net-9.0)
 
-The rest is pretty obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Float` → `Map<float, float>`. `Maybe Float` → `option<float>`, `Result error value` → `Result<'value, 'error>`, `Order` → `Elm.Basics_Order` (enum).
+The rest is more obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Char` → `Map<float, char>`, `Result Float Char` → `Result<char, float>`, `Order` → `Elm.Basics_Order` (enum).
 
 Compile the resulting F# to an executable:
 ```bash

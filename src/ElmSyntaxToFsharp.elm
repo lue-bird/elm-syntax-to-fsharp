@@ -2676,7 +2676,7 @@ typeConstructReferenceToCoreFsharp reference =
         [ "Maybe" ] ->
             case reference.name of
                 "Maybe" ->
-                    Just { moduleOrigin = Nothing, name = "option" }
+                    Just { moduleOrigin = Nothing, name = "ValueOption" }
 
                 _ ->
                     Nothing
@@ -3296,7 +3296,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "List_repeat" }
 
                 "head" ->
-                    Just { moduleOrigin = Just "List", name = "tryHead" }
+                    Just { moduleOrigin = Nothing, name = "List_head" }
 
                 "tail" ->
                     Just { moduleOrigin = Nothing, name = "List_tail" }
@@ -3311,7 +3311,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "filter" }
 
                 "filterMap" ->
-                    Just { moduleOrigin = Just "List", name = "choose" }
+                    Just { moduleOrigin = Nothing, name = "List_filterMap" }
 
                 "map" ->
                     Just { moduleOrigin = Just "List", name = "map" }
@@ -3412,7 +3412,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "Map", name = "filter" }
 
                 "get" ->
-                    Just { moduleOrigin = Just "Map", name = "tryFind" }
+                    Just { moduleOrigin = Nothing, name = "Dict_get" }
 
                 "member" ->
                     Just { moduleOrigin = Just "Map", name = "containsKey" }
@@ -3421,7 +3421,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "Map", name = "add" }
 
                 "update" ->
-                    Just { moduleOrigin = Just "Map", name = "change" }
+                    Just { moduleOrigin = Nothing, name = "Dict_update" }
 
                 "remove" ->
                     Just { moduleOrigin = Just "Map", name = "remove" }
@@ -3683,22 +3683,22 @@ referenceToCoreFsharp reference =
         [ "Maybe" ] ->
             case reference.name of
                 "Nothing" ->
-                    Just { moduleOrigin = Nothing, name = "None" }
+                    Just { moduleOrigin = Nothing, name = "ValueNone" }
 
                 "Just" ->
-                    Just { moduleOrigin = Nothing, name = "Some" }
+                    Just { moduleOrigin = Nothing, name = "ValueSome" }
 
                 "withDefault" ->
-                    Just { moduleOrigin = Just "Option", name = "defaultValue" }
+                    Just { moduleOrigin = Just "ValueOption", name = "defaultValue" }
 
                 "map" ->
-                    Just { moduleOrigin = Just "Option", name = "map" }
+                    Just { moduleOrigin = Just "ValueOption", name = "map" }
 
                 "map2" ->
-                    Just { moduleOrigin = Just "Option", name = "map2" }
+                    Just { moduleOrigin = Just "ValueOption", name = "map2" }
 
                 "map3" ->
-                    Just { moduleOrigin = Just "Option", name = "map3" }
+                    Just { moduleOrigin = Just "ValueOption", name = "map3" }
 
                 "map4" ->
                     Just { moduleOrigin = Nothing, name = "Maybe_map4" }
@@ -3707,7 +3707,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "Maybe_map5" }
 
                 "andThen" ->
-                    Just { moduleOrigin = Just "Option", name = "bind" }
+                    Just { moduleOrigin = Just "ValueOption", name = "bind" }
 
                 _ ->
                     Nothing
@@ -3742,7 +3742,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "Result", name = "defaultValue" }
 
                 "toMaybe" ->
-                    Just { moduleOrigin = Just "Result", name = "toOption" }
+                    Just { moduleOrigin = Just "Result", name = "toValueOption" }
 
                 "fromMaybe" ->
                     Just { moduleOrigin = Nothing, name = "Result_fromMaybe" }
@@ -6667,6 +6667,7 @@ fsharpKeywords =
         , "string"
         , "unit"
         , "option"
+        , "voption"
         , "list"
         ]
 
@@ -9679,7 +9680,7 @@ defaultDeclarations =
     [<CustomEquality; CustomComparison>]
     type StringRope =
         | StringRopeOne of string
-        | StringRopeAppend of struct(StringRope * StringRope)
+        | StringRopeAppend of struct (StringRope * StringRope)
 
         static member toString(this: StringRope) : string =
             match this with
@@ -9871,13 +9872,13 @@ defaultDeclarations =
 
     let String_uncons
         (stringRope: StringRope)
-        : option<struct (char * StringRope)> =
+        : ValueOption<struct (char * StringRope)> =
         let string: string = StringRope.toString stringRope
 
         if System.String.IsNullOrEmpty(string) then
-            None
+            ValueNone
         else
-            Some(struct (string[0], StringRopeOne(string[1..])))
+            ValueSome(struct (string[0], StringRopeOne(string[1..])))
 
     let String_split
         (separator: StringRope)
@@ -9890,17 +9891,15 @@ defaultDeclarations =
                 ((StringRope.toString string).Split(StringRope.toString separator))
         )
 
-    let newLineOptions: array<string> =
-        [| "\\r\\n"; "\\n" |]
+    let newLineOptions: array<string> = [| "\\r\\n"; "\\n" |]
+
     let String_lines (string: StringRope) : List<StringRope> =
         // can be optimized
         List.ofArray (
             (Array.map
                 (fun line -> StringRopeOne line)
-                ((StringRope.toString string).Split(
-                    newLineOptions,
-                    System.StringSplitOptions.None
-                )))
+                ((StringRope.toString string)
+                    .Split(newLineOptions, System.StringSplitOptions.None)))
         )
 
     let String_reverse (string: StringRope) : StringRope =
@@ -9963,15 +9962,15 @@ defaultDeclarations =
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
     let inline String_fromInt (n: int64) : StringRope = StringRopeOne(string n)
 
-    let String_toInt (string: StringRope) : option<int64> =
+    let String_toInt (string: StringRope) : ValueOption<int64> =
         let (success, num) = System.Int64.TryParse(StringRope.toString string)
 
-        if success then Some num else None
+        if success then ValueSome num else ValueNone
 
-    let String_toFloat (string: StringRope) : option<float> =
+    let String_toFloat (string: StringRope) : ValueOption<float> =
         let (success, num) = System.Double.TryParse(StringRope.toString string)
 
-        if success then Some num else None
+        if success then ValueSome num else ValueNone
 
     let String_slice
         (startInclusivePossiblyNegative: int64)
@@ -10004,23 +10003,36 @@ defaultDeclarations =
 
     let inline List_length (list: List<'a>) : int64 = List.length list
 
-    let inline List_tail (list: List<'a>) : option<List<'a>> =
+    let inline List_head (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | head :: tail -> Some tail
+        | [] -> ValueNone
+        | head :: _ -> ValueSome head
+
+    let inline List_tail (list: List<'a>) : ValueOption<List<'a>> =
+        match list with
+        | [] -> ValueNone
+        | head :: tail -> ValueSome tail
+    
+    let inline List_filterMap
+        ([<InlineIfLambda>] elementToMaybe: 'a -> ValueOption<'b>)
+        (list: List<'a>)
+        : List<'b> =
+        List.choose
+            (fun element -> ValueOption.toOption (elementToMaybe element))
+            list
 
     let inline List_member (needle: 'a) (list: List<'a>) : bool =
         List.contains needle list
 
-    let List_minimum (list: List<'a>) : option<'a> =
+    let List_minimum (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | _ :: _ -> Some(List.min list)
+        | [] -> ValueNone
+        | _ :: _ -> ValueSome(List.min list)
 
-    let List_maximum (list: List<'a>) : option<'a> =
+    let List_maximum (list: List<'a>) : ValueOption<'a> =
         match list with
-        | [] -> None
-        | _ :: _ -> Some(List.max list)
+        | [] -> ValueNone
+        | _ :: _ -> ValueSome(List.max list)
 
     let List_fproduct (list: List<float>) : float = List.fold (*) 1.0 list
     let List_iproduct (list: List<int64>) : int64 = List.fold (*) 1L list
@@ -10159,29 +10171,29 @@ defaultDeclarations =
 
 
     let inline Maybe_map4
-        ([<InlineIfLambda>] valuesCombine)
-        (aOption: option<'a>)
-        (bOption: option<'b>)
-        (cOption: option<'c>)
-        (dOption: option<'d>)
-        : option<'combined> =
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
+        (aOption: ValueOption<'a>)
+        (bOption: ValueOption<'b>)
+        (cOption: ValueOption<'c>)
+        (dOption: ValueOption<'d>)
+        : ValueOption<'combined> =
         match aOption, bOption, cOption, dOption with
-        | Some(a), Some(b), Some(c), Some(d) -> Some(valuesCombine a b c d)
-        | _ -> None
+        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d) -> ValueSome(valuesCombine a b c d)
+        | _ -> ValueNone
 
     let inline Maybe_map5
-        ([<InlineIfLambda>] valuesCombine)
-        (aOption: option<'a>)
-        (bOption: option<'b>)
-        (cOption: option<'c>)
-        (dOption: option<'d>)
-        (eOption: option<'e>)
-        : option<'combined> =
+        ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
+        (aOption: ValueOption<'a>)
+        (bOption: ValueOption<'b>)
+        (cOption: ValueOption<'c>)
+        (dOption: ValueOption<'d>)
+        (eOption: ValueOption<'e>)
+        : ValueOption<'combined> =
         match aOption, bOption, cOption, dOption, eOption with
-        | Some(a), Some(b), Some(c), Some(d), Some(e) ->
-            Some(valuesCombine a b c d e)
-        | _ -> None
-    
+        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d), ValueSome(e) ->
+            ValueSome(valuesCombine a b c d e)
+        | _ -> ValueNone
+
 
     let inline Result_map2
         ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'combined)
@@ -10257,12 +10269,12 @@ defaultDeclarations =
 
     let inline Result_fromMaybe
         (errorOnNothing: 'error)
-        (maybe: option<'value>)
+        (maybe: ValueOption<'value>)
         : Result<'value, 'error> =
         match maybe with
-        | None -> Error(errorOnNothing)
-        | Some(value) -> Ok(value)
-    
+        | ValueNone -> Error(errorOnNothing)
+        | ValueSome(value) -> Ok(value)
+
 
     let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
 
@@ -10295,6 +10307,20 @@ defaultDeclarations =
         (dict: Map<'key, 'value>)
         : 'state =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
+    
+    let inline Dict_get (key: 'key) (dict: Map<'key, 'value>) : ValueOption<'value> =
+        Option.toValueOption (Map.tryFind key dict)
+    
+    let inline Dict_update
+        (key: 'key)
+        ([<InlineIfLambda>] slotChange: ValueOption<'value> -> ValueOption<'value>)
+        (dict: Map<'key, 'value>)
+        : Map<'key, 'value> =
+        Map.change key
+            (fun slot ->
+                ValueOption.toOption (slotChange (Option.toValueOption slot))
+            )
+            dict
 
     let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
         Seq.toList (Map.keys dict)
@@ -10367,8 +10393,8 @@ defaultDeclarations =
 
     let inline Array_length (array: array<'a>) : int64 = Array.length array
 
-    let Array_get (index: int64) (array: array<'element>) : option<'element> =
-        Array.tryItem (int index) array
+    let Array_get (index: int64) (array: array<'element>) : ValueOption<'element> =
+        Option.toValueOption (Array.tryItem (int index) array)
 
     let inline Array_initialize
         (count: int64)
@@ -10776,12 +10802,12 @@ defaultDeclarations =
 
     let JsonDecode_maybe
         (valueDecoder: JsonDecode_Decoder<'value>)
-        : JsonDecode_Decoder<option<'value>> =
+        : JsonDecode_Decoder<ValueOption<'value>> =
         fun json ->
             Ok(
                 match valueDecoder json with
-                | Ok valueDecodeResult -> Some valueDecodeResult
-                | Error valueError -> None
+                | Ok valueDecodeResult -> ValueSome valueDecodeResult
+                | Error valueError -> ValueNone
             )
 
     let rec JsonDecode_oneOfWithErrorsReverse
@@ -11053,13 +11079,13 @@ defaultDeclarations =
 
     let JsonDecode_nullable
         (valueDecoder: JsonDecode_Decoder<'value>)
-        : JsonDecode_Decoder<option<'value>> =
+        : JsonDecode_Decoder<ValueOption<'value>> =
         fun json ->
-            match JsonDecode_null None json with
+            match JsonDecode_null ValueNone json with
             | Ok nullDecodeResult -> Ok nullDecodeResult
             | Error nullError ->
                 match valueDecoder json with
-                | Ok valueDecodeResult -> Ok(Some valueDecodeResult)
+                | Ok valueDecodeResult -> Ok(ValueSome valueDecodeResult)
                 | Error valueError ->
                     Error(JsonDecode_OneOf [ nullError; valueError ])
 
@@ -11083,8 +11109,8 @@ defaultDeclarations =
         | JsonDecode_Field(f, err) ->
             let isSimple =
                 match String_uncons f with
-                | None -> false
-                | Some(char, rest) ->
+                | ValueNone -> false
+                | ValueSome(char, rest) ->
                     System.Char.IsLetter(char)
                     && String_all System.Char.IsLetter rest
 
@@ -11164,27 +11190,27 @@ defaultDeclarations =
         { Match: StringRope
           Index: int64
           Number: int64
-          Submatches: List<option<StringRope>> }
+          Submatches: List<ValueOption<StringRope>> }
 
     let Regex_fromString
         (string: StringRope)
-        : option<System.Text.RegularExpressions.Regex> =
+        : ValueOption<System.Text.RegularExpressions.Regex> =
         try
-            Some(
+            ValueSome(
                 System.Text.RegularExpressions.Regex(
                     StringRope.toString string,
                     System.Text.RegularExpressions.RegexOptions.ECMAScript
                 )
             )
         with _ ->
-            None
+            ValueNone
 
     let Regex_fromStringWith
         (options: Regex_Options)
         (string: StringRope)
-        : option<System.Text.RegularExpressions.Regex> =
+        : ValueOption<System.Text.RegularExpressions.Regex> =
         try
-            Some(
+            ValueSome(
                 System.Text.RegularExpressions.Regex(
                     StringRope.toString string,
                     if options.Multiline then
@@ -11209,7 +11235,7 @@ defaultDeclarations =
                 )
             )
         with _ ->
-            None
+            ValueNone
 
     let Regex_never: System.Text.RegularExpressions.Regex =
         System.Text.RegularExpressions.Regex("/.^/")
@@ -11252,8 +11278,8 @@ defaultDeclarations =
             Seq.toList (
                 Seq.map
                     (fun (subMatch: System.Text.RegularExpressions.Group) ->
-                        // TODO when does elm return None?
-                        Some(StringRopeOne subMatch.Value))
+                        // TODO when does elm return ValueNone?
+                        ValueSome(StringRopeOne subMatch.Value))
                     regexMatch.Groups
             ) }
 
@@ -11520,10 +11546,10 @@ defaultDeclarations =
 
     let inline ElmKernelUrl_percentDecode
         (string: StringRope)
-        : option<StringRope> =
+        : ValueOption<StringRope> =
         match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
-        | null -> None
-        | decodedString -> Some(StringRopeOne decodedString)
+        | null -> ValueNone
+        | decodedString -> ValueSome(StringRopeOne decodedString)
 
 
     [<Struct>]
@@ -12192,10 +12218,10 @@ defaultDeclarations =
     let BytesDecode_decode
         (decoder: BytesDecode_Decoder<'value>)
         (bytes: Bytes_Bytes)
-        : option<'value> =
+        : ValueOption<'value> =
         match decoder bytes 0 with
-        | ValueNone -> None
-        | ValueSome(_, value) -> Some value
+        | ValueNone -> ValueNone
+        | ValueSome(_, value) -> ValueSome value
 
     let BytesDecode_succeed (value: 'value) : BytesDecode_Decoder<'value> =
         fun bytes index -> ValueSome(index, value)
@@ -12911,9 +12937,9 @@ defaultDeclarations =
 
     let MathMatrix4_inverse
         (matrix4: System.Numerics.Matrix4x4)
-        : option<System.Numerics.Matrix4x4> =
+        : ValueOption<System.Numerics.Matrix4x4> =
         let (wasSuccessful, result) = System.Numerics.Matrix4x4.Invert(matrix4)
-        if wasSuccessful then Some(result) else None
+        if wasSuccessful then ValueSome(result) else ValueNone
 
     let inline MathMatrix4_mul
         (a: System.Numerics.Matrix4x4)
