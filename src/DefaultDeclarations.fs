@@ -455,7 +455,7 @@ module Elm =
         match list with
         | [] -> ValueNone
         | head :: tail -> ValueSome tail
-    
+
     let inline List_filterMap
         ([<InlineIfLambda>] elementToMaybe: 'a -> ValueOption<'b>)
         (list: List<'a>)
@@ -621,7 +621,8 @@ module Elm =
         (dOption: ValueOption<'d>)
         : ValueOption<'combined> =
         match aOption, bOption, cOption, dOption with
-        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d) -> ValueSome(valuesCombine a b c d)
+        | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d) ->
+            ValueSome(valuesCombine a b c d)
         | _ -> ValueNone
 
     let inline Maybe_map5
@@ -750,19 +751,22 @@ module Elm =
         (dict: Map<'key, 'value>)
         : 'state =
         Map.fold (fun soFar k v -> reduce k v soFar) initialState dict
-    
-    let inline Dict_get (key: 'key) (dict: Map<'key, 'value>) : ValueOption<'value> =
+
+    let inline Dict_get
+        (key: 'key)
+        (dict: Map<'key, 'value>)
+        : ValueOption<'value> =
         Option.toValueOption (Map.tryFind key dict)
-    
+
     let inline Dict_update
         (key: 'key)
         ([<InlineIfLambda>] slotChange: ValueOption<'value> -> ValueOption<'value>)
         (dict: Map<'key, 'value>)
         : Map<'key, 'value> =
-        Map.change key
+        Map.change
+            key
             (fun slot ->
-                ValueOption.toOption (slotChange (Option.toValueOption slot))
-            )
+                ValueOption.toOption (slotChange (Option.toValueOption slot)))
             dict
 
     let inline Dict_keys (dict: Map<'key, 'value>) : List<'key> =
