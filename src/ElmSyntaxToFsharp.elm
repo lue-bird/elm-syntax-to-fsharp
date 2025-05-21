@@ -60,7 +60,7 @@ type FsharpPattern
     = FsharpPatternIgnore
     | FsharpPatternInt Int
     | FsharpPatternChar Char
-    | FsharpPatternString String
+    | FsharpPatternStringLiteral String
     | FsharpPatternVariable String
     | FsharpPatternAs
         { variable : String
@@ -91,7 +91,7 @@ type FsharpExpression
     | FsharpExpressionFloat Float
     | FsharpExpressionInt Int
     | FsharpExpressionChar Char
-    | FsharpExpressionString String
+    | FsharpExpressionStringLiteral String
     | FsharpExpressionReference
         { moduleOrigin : Maybe String
         , name : String
@@ -1000,7 +1000,7 @@ fsharpExpressionContainedConstructedRecords syntaxExpression =
             FsharpExpressionChar _ ->
                 FastSet.empty
 
-            FsharpExpressionString _ ->
+            FsharpExpressionStringLiteral _ ->
                 FastSet.empty
 
             FsharpExpressionReference _ ->
@@ -1069,6 +1069,21 @@ fsharpExpressionSubs fsharpExpression =
         FsharpExpressionUnit ->
             []
 
+        FsharpExpressionInt _ ->
+            []
+
+        FsharpExpressionFloat _ ->
+            []
+
+        FsharpExpressionStringLiteral _ ->
+            []
+
+        FsharpExpressionChar _ ->
+            []
+
+        FsharpExpressionReference _ ->
+            []
+
         FsharpExpressionCall call ->
             call.called
                 :: call.arguments
@@ -1116,21 +1131,6 @@ fsharpExpressionSubs fsharpExpression =
 
         FsharpExpressionRecordAccess recordAccess ->
             [ recordAccess.record ]
-
-        FsharpExpressionInt _ ->
-            []
-
-        FsharpExpressionFloat _ ->
-            []
-
-        FsharpExpressionString _ ->
-            []
-
-        FsharpExpressionChar _ ->
-            []
-
-        FsharpExpressionReference _ ->
-            []
 
 
 choiceTypeDeclaration :
@@ -2019,8 +2019,8 @@ stringFirstCharToLower string =
             String.cons (Char.toLower headChar) tailString
 
 
-printFsharpString : String -> Print
-printFsharpString stringContent =
+printFsharpStringLiteral : String -> Print
+printFsharpStringLiteral stringContent =
     let
         singleDoubleQuotedStringContentEscaped : String
         singleDoubleQuotedStringContentEscaped =
@@ -2031,8 +2031,7 @@ printFsharpString stringContent =
                     )
                     ""
     in
-    -- TODO integrate more nicely
-    Print.exactly ("(StringRopeOne \"" ++ singleDoubleQuotedStringContentEscaped ++ "\")")
+    Print.exactly ("\"" ++ singleDoubleQuotedStringContentEscaped ++ "\"")
 
 
 singleDoubleQuotedStringCharToEscaped : Char -> String
@@ -2353,7 +2352,13 @@ pattern patternInferred =
 
         ElmSyntaxTypeInfer.PatternString stringValue ->
             Ok
-                { pattern = FsharpPatternString stringValue
+                { pattern =
+                    FsharpPatternVariant
+                        { moduleOrigin = Nothing
+                        , name = "StringRopeOne"
+                        , values =
+                            [ FsharpPatternStringLiteral stringValue ]
+                        }
                 , introducedVariables = FastSet.empty
                 }
 
@@ -4412,8 +4417,8 @@ printFsharpPatternNotParenthesized fsharpPattern =
         FsharpPatternChar charValue ->
             Print.exactly (charLiteral charValue)
 
-        FsharpPatternString string ->
-            printFsharpString string
+        FsharpPatternStringLiteral string ->
+            printFsharpStringLiteral string
 
         FsharpPatternVariable name ->
             Print.exactly name
@@ -6778,7 +6783,10 @@ expression context expressionTypedNode =
             Ok (FsharpExpressionChar charValue)
 
         ElmSyntaxTypeInfer.ExpressionString stringValue ->
-            Ok (FsharpExpressionString stringValue)
+            Ok
+                (createFsharpExpressionCalStringRopeOne
+                    (FsharpExpressionStringLiteral stringValue)
+                )
 
         ElmSyntaxTypeInfer.ExpressionRecordAccessFunction fieldName ->
             case expressionTypedNode.type_ of
@@ -6882,25 +6890,22 @@ expression context expressionTypedNode =
                                             }
                                         )
                             then
-                                case left of
-                                    FsharpExpressionString "" ->
-                                        right
+                                if left |> fsharpExpressionIsEmptyString then
+                                    right
 
-                                    leftNotStringEmpty ->
-                                        case right of
-                                            FsharpExpressionString "" ->
-                                                leftNotStringEmpty
+                                else if right |> fsharpExpressionIsEmptyString then
+                                    left
 
-                                            rightNotStringEmpty ->
-                                                FsharpExpressionCall
-                                                    { called =
-                                                        FsharpExpressionReference
-                                                            { moduleOrigin = Nothing
-                                                            , name = "String_append"
-                                                            }
-                                                    , arguments =
-                                                        [ leftNotStringEmpty, rightNotStringEmpty ]
-                                                    }
+                                else
+                                    FsharpExpressionCall
+                                        { called =
+                                            FsharpExpressionReference
+                                                { moduleOrigin = Nothing
+                                                , name = "String_append"
+                                                }
+                                        , arguments =
+                                            [ left, right ]
+                                        }
 
                             else
                                 FsharpExpressionCall
@@ -7105,7 +7110,9 @@ expression context expressionTypedNode =
                                                         , name = "PlatformCmd_portOutgoingWithName"
                                                         }
                                                 , arguments =
-                                                    [ FsharpExpressionString reference.name ]
+                                                    [ createFsharpExpressionCalStringRopeOne
+                                                        (FsharpExpressionStringLiteral reference.name)
+                                                    ]
                                                 }
                                             )
 
@@ -7118,7 +7125,9 @@ expression context expressionTypedNode =
                                                         , name = "PlatformSub_portIncomingWithName"
                                                         }
                                                 , arguments =
-                                                    [ FsharpExpressionString reference.name ]
+                                                    [ createFsharpExpressionCalStringRopeOne
+                                                        (FsharpExpressionStringLiteral reference.name)
+                                                    ]
                                                 }
                                             )
 
@@ -7401,6 +7410,29 @@ expression context expressionTypedNode =
                                 variablesForWholeLetIn
                         )
                 )
+
+
+createFsharpExpressionCalStringRopeOne : FsharpExpression -> FsharpExpression
+createFsharpExpressionCalStringRopeOne argument =
+    FsharpExpressionCall
+        { called =
+            FsharpExpressionReference
+                { moduleOrigin = Nothing
+                , name = "StringRopeOne"
+                }
+        , arguments = [ argument ]
+        }
+
+
+fsharpExpressionIsEmptyString : FsharpExpression -> Bool
+fsharpExpressionIsEmptyString fsharpExpression =
+    fsharpExpression == fsharpExpressionStringRopeEmpty
+
+
+fsharpExpressionStringRopeEmpty : FsharpExpression
+fsharpExpressionStringRopeEmpty =
+    createFsharpExpressionCalStringRopeOne
+        (FsharpExpressionStringLiteral "")
 
 
 inferredTypeExpandFunction :
@@ -8463,7 +8495,7 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
         FsharpExpressionFloat _ ->
             False
 
-        FsharpExpressionString _ ->
+        FsharpExpressionStringLiteral _ ->
             False
 
         FsharpExpressionReference _ ->
@@ -8528,8 +8560,8 @@ printFsharpExpressionNotParenthesized fsharpExpression =
         FsharpExpressionFloat float ->
             Print.exactly (float |> floatLiteral)
 
-        FsharpExpressionString string ->
-            printFsharpString string
+        FsharpExpressionStringLiteral string ->
+            printFsharpStringLiteral string
 
         FsharpExpressionTuple parts ->
             printFsharpExpressionTuple parts
@@ -8745,7 +8777,7 @@ patternIsSpaceSeparated fsharpPattern =
         FsharpPatternChar _ ->
             False
 
-        FsharpPatternString _ ->
+        FsharpPatternStringLiteral _ ->
             False
 
         FsharpPatternVariable _ ->
@@ -9241,7 +9273,7 @@ fsharpPatternContainedVariables fsharpPattern =
         FsharpPatternChar _ ->
             FastSet.empty
 
-        FsharpPatternString _ ->
+        FsharpPatternStringLiteral _ ->
             FastSet.empty
 
         FsharpPatternVariable variable ->
