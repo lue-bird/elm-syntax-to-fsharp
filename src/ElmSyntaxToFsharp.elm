@@ -11125,7 +11125,7 @@ defaultDeclarations =
                 | Error valueError ->
                     Error(JsonDecode_OneOf [ nullError; valueError ])
 
-    let inline JsonDecoder_oneOrMore
+    let inline JsonDecode_oneOrMore
         ([<InlineIfLambda>] combineHeadTail: 'element -> List<'element> -> 'combined)
         (elementDecoder: JsonDecode_Decoder<'element>)
         : JsonDecode_Decoder<'combined> =
