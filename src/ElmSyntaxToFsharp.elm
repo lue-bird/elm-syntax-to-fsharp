@@ -110,7 +110,8 @@ type FsharpExpression
         , onTrue : FsharpExpression
         , onFalse : FsharpExpression
         }
-    | FsharpExpressionList (List FsharpExpression)
+    | FsharpExpressionListLiteral (List FsharpExpression)
+    | FsharpExpressionArrayLiteral (List FsharpExpression)
     | FsharpExpressionRecord (FastDict.Dict String FsharpExpression)
     | FsharpExpressionRecordUpdate
         { originalRecordVariable : String
@@ -1024,7 +1025,10 @@ fsharpExpressionContainedConstructedRecords syntaxExpression =
             FsharpExpressionIfElse _ ->
                 FastSet.empty
 
-            FsharpExpressionList _ ->
+            FsharpExpressionListLiteral _ ->
+                FastSet.empty
+
+            FsharpExpressionArrayLiteral _ ->
                 FastSet.empty
 
             FsharpExpressionRecordUpdate _ ->
@@ -1095,7 +1099,10 @@ fsharpExpressionSubs fsharpExpression =
             call.called
                 :: call.arguments
 
-        FsharpExpressionList elements ->
+        FsharpExpressionListLiteral elements ->
+            elements
+
+        FsharpExpressionArrayLiteral elements ->
             elements
 
         FsharpExpressionRecord fields ->
@@ -5434,7 +5441,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     |> List.foldr
                                         (\(Elm.Syntax.Node.Node _ declaration) soFar ->
                                             case declaration of
-                                                Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
+                                                Elm.Syntax.Declaration.FunctionDeclaration _ ->
                                                     -- handled below
                                                     soFar
 
@@ -6630,7 +6637,7 @@ expression context expressionTypedNode =
                 (parts.part2 |> expression context)
 
         ElmSyntaxTypeInfer.ExpressionList elementNodes ->
-            Result.map (\elements -> FsharpExpressionList elements)
+            Result.map (\elements -> FsharpExpressionListLiteral elements)
                 (elementNodes
                     |> listMapAndCombineOk
                         (\element -> element |> expression context)
@@ -7025,11 +7032,95 @@ condenseExpressionCall call =
                         , arguments = call.argument0 :: call.argument1Up
                         }
 
+        FsharpExpressionReference reference ->
+            case callAsArrayFromList reference call.argument0 of
+                Just elements ->
+                    FsharpExpressionArrayLiteral elements
+
+                Nothing ->
+                    FsharpExpressionCall
+                        { called = FsharpExpressionReference reference
+                        , arguments = call.argument0 :: call.argument1Up
+                        }
+
         calledNotCall ->
             FsharpExpressionCall
                 { called = calledNotCall
                 , arguments = call.argument0 :: call.argument1Up
                 }
+
+
+callAsArrayFromList :
+    { moduleOrigin : Maybe String, name : String }
+    -> FsharpExpression
+    -> Maybe (List FsharpExpression)
+callAsArrayFromList reference argument =
+    case reference.name of
+        "fromList" ->
+            case reference.moduleOrigin of
+                Nothing ->
+                    Nothing
+
+                Just moduleOrigin ->
+                    case moduleOrigin of
+                        "Array" ->
+                            case argument of
+                                FsharpExpressionListLiteral elements ->
+                                    Just elements
+
+                                FsharpExpressionArrayLiteral _ ->
+                                    Nothing
+
+                                FsharpExpressionUnit ->
+                                    Nothing
+
+                                FsharpExpressionFloat _ ->
+                                    Nothing
+
+                                FsharpExpressionInt _ ->
+                                    Nothing
+
+                                FsharpExpressionChar _ ->
+                                    Nothing
+
+                                FsharpExpressionStringLiteral _ ->
+                                    Nothing
+
+                                FsharpExpressionReference _ ->
+                                    Nothing
+
+                                FsharpExpressionRecordAccess _ ->
+                                    Nothing
+
+                                FsharpExpressionTuple _ ->
+                                    Nothing
+
+                                FsharpExpressionIfElse _ ->
+                                    Nothing
+
+                                FsharpExpressionRecord _ ->
+                                    Nothing
+
+                                FsharpExpressionRecordUpdate _ ->
+                                    Nothing
+
+                                FsharpExpressionCall _ ->
+                                    Nothing
+
+                                FsharpExpressionLambda _ ->
+                                    Nothing
+
+                                FsharpExpressionMatchWith _ ->
+                                    Nothing
+
+                                FsharpExpressionWithLetDeclarations _ ->
+                                    Nothing
+
+                        _ ->
+                            Nothing
+
+        _ ->
+            Nothing
 
 
 case_ :
@@ -7859,7 +7950,10 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
         FsharpExpressionIfElse _ ->
             True
 
-        FsharpExpressionList _ ->
+        FsharpExpressionListLiteral _ ->
+            False
+
+        FsharpExpressionArrayLiteral _ ->
             False
 
         FsharpExpressionRecord _ ->
@@ -7927,8 +8021,11 @@ printFsharpExpressionNotParenthesized fsharpExpression =
         FsharpExpressionRecord fields ->
             printFsharpExpressionRecord fields
 
-        FsharpExpressionList elements ->
-            printFsharpExpressionList elements
+        FsharpExpressionListLiteral elements ->
+            printFsharpExpressionListLiteral elements
+
+        FsharpExpressionArrayLiteral elements ->
+            printFsharpExpressionArrayLiteral elements
 
         FsharpExpressionRecordAccess syntaxRecordAccess ->
             printFsharpExpressionParenthesizedIfSpaceSeparated
@@ -8037,8 +8134,8 @@ printFsharpExpressionCall call =
             )
 
 
-printFsharpExpressionList : List FsharpExpression -> Print
-printFsharpExpressionList listElements =
+printFsharpExpressionListLiteral : List FsharpExpression -> Print
+printFsharpExpressionListLiteral listElements =
     case listElements of
         [] ->
             Print.exactly "[]"
@@ -8067,6 +8164,38 @@ printFsharpExpressionList listElements =
                     )
                 |> Print.followedBy
                     (Print.exactly "]")
+
+
+printFsharpExpressionArrayLiteral : List FsharpExpression -> Print
+printFsharpExpressionArrayLiteral elements =
+    case elements of
+        [] ->
+            Print.exactly "[||]"
+
+        element0 :: element1Up ->
+            let
+                elementsPrint : Print
+                elementsPrint =
+                    (element0 :: element1Up)
+                        |> Print.listMapAndIntersperseAndFlatten
+                            (\element ->
+                                printFsharpExpressionNotParenthesized element
+                            )
+                            (Print.exactly ";"
+                                |> Print.followedBy Print.linebreakIndented
+                            )
+            in
+            Print.exactly "[| "
+                |> Print.followedBy
+                    (Print.withIndentIncreasedBy 2
+                        elementsPrint
+                    )
+                |> Print.followedBy
+                    (Print.spaceOrLinebreakIndented
+                        (elementsPrint |> Print.lineSpread)
+                    )
+                |> Print.followedBy
+                    (Print.exactly "|]")
 
 
 printFsharpExpressionRecordUpdate :
