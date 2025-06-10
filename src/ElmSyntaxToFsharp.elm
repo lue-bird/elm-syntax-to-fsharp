@@ -1408,15 +1408,6 @@ printFsharpRecordTypeDeclaration fsharpRecordFieldNames =
             )
 
 
-fsharpTypeInt64 : FsharpType
-fsharpTypeInt64 =
-    FsharpTypeConstruct
-        { moduleOrigin = Nothing
-        , name = "int64"
-        , arguments = []
-        }
-
-
 fsharpTypeFloat : FsharpType
 fsharpTypeFloat =
     FsharpTypeConstruct
@@ -2147,12 +2138,28 @@ characterIsNotPrint character =
     if
         -- Unicode.getCategory is very expensive so we shortcut if at all possible
         charIsLatinAlphaNumOrUnderscoreFast character
-            || (character == ' ')
-            || (character == '.')
-            || (character == '!')
-            || (character == '?')
-            || (character == '-')
-            || (character == ':')
+            || (case character of
+                    ' ' ->
+                        True
+
+                    '.' ->
+                        True
+
+                    '!' ->
+                        True
+
+                    '?' ->
+                        True
+
+                    '-' ->
+                        True
+
+                    ':' ->
+                        True
+
+                    _ ->
+                        False
+               )
     then
         False
 
