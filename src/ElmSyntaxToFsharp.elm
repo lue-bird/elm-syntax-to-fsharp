@@ -247,24 +247,12 @@ importsToModuleContext moduleExposes imports =
                                     exposes =
                                         case syntaxImport.exposingList of
                                             Nothing ->
-                                                { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
-                                                    FastSet.empty
-                                                , variants = FastDict.empty
-                                                , recordTypeAliases = FastDict.empty
-                                                , portsOutgoing = FastSet.empty
-                                                , portsIncoming = FastSet.empty
-                                                }
+                                                exposesEmpty
 
                                             Just (Elm.Syntax.Node.Node _ syntaxExposing) ->
                                                 case moduleExposes |> FastDict.get importModuleName of
                                                     Nothing ->
-                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
-                                                            FastSet.empty
-                                                        , variants = FastDict.empty
-                                                        , recordTypeAliases = FastDict.empty
-                                                        , portsOutgoing = FastSet.empty
-                                                        , portsIncoming = FastSet.empty
-                                                        }
+                                                        exposesEmpty
 
                                                     Just moduleExposedNames ->
                                                         case syntaxExposing of
@@ -371,13 +359,7 @@ importsToModuleContext moduleExposes imports =
                                                                                     , portsIncoming = soFar.portsIncoming
                                                                                     }
                                                                         )
-                                                                        { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
-                                                                            FastSet.empty
-                                                                        , variants = FastDict.empty
-                                                                        , recordTypeAliases = FastDict.empty
-                                                                        , portsOutgoing = FastSet.empty
-                                                                        , portsIncoming = FastSet.empty
-                                                                        }
+                                                                        exposesEmpty
                                 in
                                 { moduleName = importModuleName
                                 , alias =
@@ -574,6 +556,26 @@ importsToModuleContext moduleExposes imports =
             , portIncomingLookup = FastSet.empty
             , portOutgoingLookup = FastSet.empty
             }
+
+
+exposesEmpty :
+    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes :
+        FastSet.Set String
+    , variants :
+        FastDict.Dict String { valueCount : Int }
+    , recordTypeAliases :
+        FastDict.Dict String (List String)
+    , portsOutgoing : FastSet.Set String
+    , portsIncoming : FastSet.Set String
+    }
+exposesEmpty =
+    { valuesAndFunctionsAndTypeAliasesAndChoiceTypes =
+        FastSet.empty
+    , variants = FastDict.empty
+    , recordTypeAliases = FastDict.empty
+    , portsOutgoing = FastSet.empty
+    , portsIncoming = FastSet.empty
+    }
 
 
 moduleContextMerge : ModuleContext -> ModuleContext -> ModuleContext
@@ -1073,6 +1075,7 @@ fsharpExpressionUsedLocalReferences syntaxExpression =
 
 
 {-| All surface-level child [expression](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Expression)s.
+Order is not specified
 -}
 fsharpExpressionSubs : FsharpExpression -> List FsharpExpression
 fsharpExpressionSubs fsharpExpression =
@@ -1118,7 +1121,7 @@ fsharpExpressionSubs fsharpExpression =
             ]
 
         FsharpExpressionWithLetDeclarations letIn ->
-            List.foldr
+            List.foldl
                 (\declaration soFar ->
                     case declaration of
                         FsharpLetDeclarationValueOrFunction letValueOrFunction ->
@@ -1370,13 +1373,9 @@ printFsharpRecordTypeDeclaration fsharpRecordFieldNames =
                                     )
                             )
                     )
-                    (Print.linebreakIndented
-                        |> Print.followedBy
-                            (Print.exactly "; ")
-                    )
+                    printLinebreakIndentedSemicolonSpace
     in
-    Print.exactly "[<Struct>]"
-        |> Print.followedBy Print.linebreakIndented
+    printExactlyStructLinebreakIndented
         |> Print.followedBy
             (Print.exactly
                 ("type "
@@ -1396,16 +1395,27 @@ printFsharpRecordTypeDeclaration fsharpRecordFieldNames =
             )
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
-                (Print.linebreakIndented
-                    |> Print.followedBy (Print.exactly "{ ")
+                (linebreakIndentedCurlyOpeningSpace
                     |> Print.followedBy fieldsPrint
                     |> Print.followedBy
                         (Print.spaceOrLinebreakIndented
                             (fieldsPrint |> Print.lineSpread)
                         )
-                    |> Print.followedBy (Print.exactly "}")
+                    |> Print.followedBy printExactlyCurlyClosing
                 )
             )
+
+
+linebreakIndentedCurlyOpeningSpace : Print
+linebreakIndentedCurlyOpeningSpace =
+    Print.linebreakIndented
+        |> Print.followedBy printExactlyCurlyOpeningSpace
+
+
+printExactlyStructLinebreakIndented : Print
+printExactlyStructLinebreakIndented =
+    Print.exactly "[<Struct>]"
+        |> Print.followedBy Print.linebreakIndented
 
 
 fsharpTypeFloat : FsharpType
@@ -1417,6 +1427,11 @@ fsharpTypeFloat =
         }
 
 
+okFsharpTypeFloat : Result error_ FsharpType
+okFsharpTypeFloat =
+    Ok fsharpTypeFloat
+
+
 type_ :
     ElmSyntaxTypeInfer.Type
     -> Result String FsharpType
@@ -1426,7 +1441,7 @@ type_ inferredType =
         ElmSyntaxTypeInfer.TypeVariable variable ->
             if variable.name |> String.startsWith "number" then
                 -- assume Float
-                Ok fsharpTypeFloat
+                okFsharpTypeFloat
 
             else
                 Ok (FsharpTypeVariable (variable.name |> variableNameDisambiguateFromFsharpKeywords))
@@ -1434,7 +1449,7 @@ type_ inferredType =
         ElmSyntaxTypeInfer.TypeNotVariable syntaxTypeNotVariable ->
             case syntaxTypeNotVariable of
                 ElmSyntaxTypeInfer.TypeUnit ->
-                    Ok fsharpTypeUnit
+                    okFsharpTypeUnit
 
                 ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
                     Result.map
@@ -1586,7 +1601,7 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
     -- IGNORE TCO
     case syntaxType of
         Elm.Syntax.TypeAnnotation.Unit ->
-            Ok fsharpTypeUnit
+            okFsharpTypeUnit
 
         Elm.Syntax.TypeAnnotation.GenericType variable ->
             Ok (FsharpTypeVariable (variable |> variableNameDisambiguateFromFsharpKeywords))
@@ -1648,7 +1663,7 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
             case parts of
                 [] ->
                     -- should be handled by Unit
-                    Ok fsharpTypeUnit
+                    okFsharpTypeUnit
 
                 [ inParens ] ->
                     typeAnnotation moduleOriginLookup inParens
@@ -1727,6 +1742,11 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
             Err "extensible record types are not supported"
 
 
+okFsharpTypeUnit : Result error_ FsharpType
+okFsharpTypeUnit =
+    Ok fsharpTypeUnit
+
+
 printFsharpTypeNotParenthesized : FsharpType -> Print
 printFsharpTypeNotParenthesized fsharpType =
     -- IGNORE TCO
@@ -1779,7 +1799,7 @@ printFsharpTypeFunction typeFunction =
                 |> List.map Print.withIndentAtNextMultipleOf4
            )
         |> Print.listIntersperseAndFlatten
-            (Print.exactly " ->"
+            (printExactlySpaceMinusGreaterThan
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
                         (Print.spaceOrLinebreakIndented fullLineSpread)
@@ -1829,11 +1849,7 @@ printFsharpTypeTuple parts =
             parts.part2Up
                 |> List.map printFsharpTypeNotParenthesized
     in
-    Print.exactly "(struct("
-        |> Print.followedBy
-            (Print.withIndentIncreasedBy 2
-                Print.linebreakIndented
-            )
+    printExactlyParenOpeningStructParenOpeningLinebreakIndentedSpaceSpace
         |> Print.followedBy
             ((part0Print :: part1Print :: part2UpPrints)
                 |> Print.listMapAndIntersperseAndFlatten
@@ -1841,13 +1857,31 @@ printFsharpTypeTuple parts =
                         Print.withIndentIncreasedBy 2
                             partPrint
                     )
-                    (Print.linebreakIndented
-                        |> Print.followedBy
-                            (Print.exactly "* ")
-                    )
+                    printLinebreakIndentedStarSpace
             )
         |> Print.followedBy
-            Print.linebreakIndented
+            printLinebreakIndentedParenClosingParenClosing
+
+
+printExactlyParenOpeningStructParenOpeningLinebreakIndentedSpaceSpace : Print
+printExactlyParenOpeningStructParenOpeningLinebreakIndentedSpaceSpace =
+    printExactlyParenOpeningStructParenOpening
+        |> Print.followedBy
+            (Print.withIndentIncreasedBy 2
+                Print.linebreakIndented
+            )
+
+
+printLinebreakIndentedStarSpace : Print
+printLinebreakIndentedStarSpace =
+    Print.linebreakIndented
+        |> Print.followedBy
+            (Print.exactly "* ")
+
+
+printLinebreakIndentedParenClosingParenClosing : Print
+printLinebreakIndentedParenClosingParenClosing =
+    Print.linebreakIndented
         |> Print.followedBy (Print.exactly "))")
 
 
@@ -1885,14 +1919,14 @@ printFsharpTypeConstruct typeConstruct =
                         |> Print.lineSpreadListMapAndCombine Print.lineSpread
             in
             referencePrint
-                |> Print.followedBy (Print.exactly "<")
+                |> Print.followedBy printExactlyLessThan
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
                         (Print.emptyOrLinebreakIndented fullLineSpread
                             |> Print.followedBy
                                 (argumentPrints
                                     |> Print.listIntersperseAndFlatten
-                                        (Print.exactly ","
+                                        (printExactlyComma
                                             |> Print.followedBy
                                                 (Print.spaceOrLinebreakIndented fullLineSpread)
                                         )
@@ -1900,9 +1934,24 @@ printFsharpTypeConstruct typeConstruct =
                             |> Print.followedBy
                                 (Print.emptyOrLinebreakIndented fullLineSpread)
                             |> Print.followedBy
-                                (Print.exactly ">")
+                                printExactlyGreaterThan
                         )
                     )
+
+
+printExactlyLessThan : Print
+printExactlyLessThan =
+    Print.exactly "<"
+
+
+printExactlyGreaterThan : Print
+printExactlyGreaterThan =
+    Print.exactly ">"
+
+
+printExactlyComma : Print
+printExactlyComma =
+    Print.exactly ","
 
 
 typeIsSpaceSeparated : FsharpType -> Bool
@@ -2337,16 +2386,10 @@ pattern patternInferred =
     -- IGNORE TCO
     case patternInferred.value of
         ElmSyntaxTypeInfer.PatternIgnored ->
-            Ok
-                { pattern = FsharpPatternIgnore
-                , introducedVariables = FastSet.empty
-                }
+            okFsharpPatternIgnoreIntroducedVariablesSetEmpty
 
         ElmSyntaxTypeInfer.PatternUnit ->
-            Ok
-                { pattern = FsharpPatternIgnore
-                , introducedVariables = FastSet.empty
-                }
+            okFsharpPatternIgnoreIntroducedVariablesSetEmpty
 
         ElmSyntaxTypeInfer.PatternChar charValue ->
             Ok
@@ -2562,6 +2605,19 @@ pattern patternInferred =
                     }
                 )
                 (patternAs.pattern |> pattern)
+
+
+okFsharpPatternIgnoreIntroducedVariablesSetEmpty :
+    Result
+        error_
+        { pattern : FsharpPattern
+        , introducedVariables : FastSet.Set String
+        }
+okFsharpPatternIgnoreIntroducedVariablesSetEmpty =
+    Ok
+        { pattern = FsharpPatternIgnore
+        , introducedVariables = FastSet.empty
+        }
 
 
 typedPattern :
@@ -6467,7 +6523,7 @@ expression context expressionTypedNode =
                 Just fieldOrder ->
                     case fieldOrder of
                         [] ->
-                            Ok (FsharpExpressionRecord FastDict.empty)
+                            okFsharpExpressionRecordEmpty
 
                         fieldName0 :: fieldName1Up ->
                             Result.map
@@ -6628,15 +6684,15 @@ expression context expressionTypedNode =
                                     ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                                         case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
                                             ( "Basics", "Float" ) ->
-                                                { moduleOrigin = Nothing, name = "Basics_fnegate" }
+                                                referenceBasicsFnegate
 
                                             _ ->
                                                 -- assume Int
-                                                { moduleOrigin = Nothing, name = "Basics_inegate" }
+                                                referenceBasicsInegate
 
                                     _ ->
                                         -- assume Int
-                                        { moduleOrigin = Nothing, name = "Basics_inegate" }
+                                        referenceBasicsInegate
                                 )
                         , arguments = [ inNegation ]
                         }
@@ -6847,6 +6903,21 @@ expression context expressionTypedNode =
                 )
 
 
+okFsharpExpressionRecordEmpty : Result error_ FsharpExpression
+okFsharpExpressionRecordEmpty =
+    Ok (FsharpExpressionRecord FastDict.empty)
+
+
+referenceBasicsInegate : { moduleOrigin : Maybe String, name : String }
+referenceBasicsInegate =
+    { moduleOrigin = Nothing, name = "Basics_inegate" }
+
+
+referenceBasicsFnegate : { moduleOrigin : Maybe String, name : String }
+referenceBasicsFnegate =
+    { moduleOrigin = Nothing, name = "Basics_fnegate" }
+
+
 fsharpExpressionReferenceListAppend : FsharpExpression
 fsharpExpressionReferenceListAppend =
     FsharpExpressionReference
@@ -6934,8 +7005,7 @@ in the [pattern](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-S
 (like `a` and `b` in `( Just a, { b } )`)
 -}
 patternBindings :
-    ElmSyntaxTypeInfer.TypedNode
-        ElmSyntaxTypeInfer.Pattern
+    ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern
     -> List String
 patternBindings syntaxPattern =
     -- IGNORE TCO
@@ -7381,19 +7451,19 @@ expressionOperatorToFsharpFunctionReference :
 expressionOperatorToFsharpFunctionReference operator =
     case operator.symbol of
         "+" ->
-            Ok { moduleOrigin = Nothing, name = "(+)" }
+            okReferenceAdd
 
         "-" ->
-            Ok { moduleOrigin = Nothing, name = "(-)" }
+            okReferenceSub
 
         "*" ->
-            Ok { moduleOrigin = Nothing, name = "(*)" }
+            okReferenceMul
 
         "/" ->
-            Ok { moduleOrigin = Nothing, name = "(/)" }
+            okReferenceDivIntOrFloat
 
         "//" ->
-            Ok { moduleOrigin = Nothing, name = "(/)" }
+            okReferenceDivIntOrFloat
 
         "^" ->
             case operator.type_ of
@@ -7402,87 +7472,212 @@ expressionOperatorToFsharpFunctionReference operator =
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                             case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
                                 ( "Basics", "Float" ) ->
-                                    Ok { moduleOrigin = Nothing, name = "Basics_fpow" }
+                                    okReferenceFpow
 
                                 _ ->
                                     -- assume Int
-                                    Ok { moduleOrigin = Nothing, name = "Basics_ipow" }
+                                    okReferenceIpow
 
                         _ ->
                             -- assume Int
-                            Ok { moduleOrigin = Nothing, name = "Basics_ipow" }
+                            okReferenceIpow
 
                 _ ->
                     -- assume Int
-                    Ok { moduleOrigin = Nothing, name = "Basics_ipow" }
+                    okReferenceIpow
 
         "==" ->
-            Ok { moduleOrigin = Nothing, name = "Basics_eq" }
+            okReferenceEq
 
         "/=" ->
-            Ok { moduleOrigin = Nothing, name = "Basics_neq" }
+            okReferenceNeq
 
         "||" ->
-            Ok { moduleOrigin = Nothing, name = "Basics_or" }
+            okReferenceOr
 
         "&&" ->
-            Ok { moduleOrigin = Nothing, name = "Basics_and" }
+            okReferenceAnd
 
         "<" ->
-            Ok { moduleOrigin = Nothing, name = "(<)" }
+            okReferenceLt
 
         ">" ->
-            Ok { moduleOrigin = Nothing, name = "(>)" }
+            okReferenceGt
 
         "<=" ->
-            Ok { moduleOrigin = Nothing, name = "(<=)" }
+            okReferenceLe
 
         ">=" ->
-            Ok { moduleOrigin = Nothing, name = "(>=)" }
+            okReferenceGe
 
         "::" ->
-            Ok { moduleOrigin = Nothing, name = "List_cons" }
+            okReferenceListCons
 
         "++" ->
             case operator.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
                     if typeFunction.input == inferredTypeString then
-                        Ok { moduleOrigin = Nothing, name = "String_append" }
+                        okReferenceStringAppend
 
                     else
                         -- assume List
-                        Ok { moduleOrigin = Just "List", name = "append" }
+                        okReferenceListAppend
 
                 _ ->
                     -- assume List
-                    Ok { moduleOrigin = Just "List", name = "append" }
+                    okReferenceListAppend
 
         "|>" ->
-            Ok { moduleOrigin = Nothing, name = "(|>)" }
+            okReferenceApR
 
         "<|" ->
-            Ok { moduleOrigin = Nothing, name = "(<|)" }
+            okReferenceApL
 
         ">>" ->
-            Ok { moduleOrigin = Nothing, name = "(>>)" }
+            okReferenceComposeR
 
         "<<" ->
-            Ok { moduleOrigin = Nothing, name = "(<<)" }
+            okReferenceComposeL
 
         "|=" ->
-            Ok { moduleOrigin = Nothing, name = "ParserAdvanced_keeper" }
+            okReferenceParserAdvancedKeeper
 
         "|." ->
-            Ok { moduleOrigin = Nothing, name = "ParserAdvanced_ignorer" }
+            okReferenceParserAdvancedIgnorer
 
         "</>" ->
-            Ok { moduleOrigin = Nothing, name = "UrlParser_slash" }
+            okReferenceUrlParserSlash
 
         "<?>" ->
-            Ok { moduleOrigin = Nothing, name = "UrlParser_questionMark" }
+            okReferenceUrlParserQuestionMark
 
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
+
+
+okReferenceIpow : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceIpow =
+    Ok { moduleOrigin = Nothing, name = "Basics_ipow" }
+
+
+okReferenceFpow : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceFpow =
+    Ok { moduleOrigin = Nothing, name = "Basics_fpow" }
+
+
+okReferenceNeq : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceNeq =
+    Ok { moduleOrigin = Nothing, name = "Basics_neq" }
+
+
+okReferenceEq : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceEq =
+    Ok { moduleOrigin = Nothing, name = "Basics_eq" }
+
+
+okReferenceOr : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceOr =
+    Ok { moduleOrigin = Nothing, name = "Basics_or" }
+
+
+okReferenceAnd : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceAnd =
+    Ok { moduleOrigin = Nothing, name = "Basics_and" }
+
+
+okReferenceLt : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceLt =
+    Ok { moduleOrigin = Nothing, name = "(<)" }
+
+
+okReferenceGt : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceGt =
+    Ok { moduleOrigin = Nothing, name = "(>)" }
+
+
+okReferenceLe : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceLe =
+    Ok { moduleOrigin = Nothing, name = "(<=)" }
+
+
+okReferenceGe : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceGe =
+    Ok { moduleOrigin = Nothing, name = "(>=)" }
+
+
+okReferenceMul : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceMul =
+    Ok { moduleOrigin = Nothing, name = "(*)" }
+
+
+okReferenceDivIntOrFloat : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceDivIntOrFloat =
+    Ok { moduleOrigin = Nothing, name = "(/)" }
+
+
+okReferenceSub : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceSub =
+    Ok { moduleOrigin = Nothing, name = "(-)" }
+
+
+okReferenceAdd : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceAdd =
+    Ok { moduleOrigin = Nothing, name = "(+)" }
+
+
+okReferenceApR : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceApR =
+    Ok { moduleOrigin = Nothing, name = "(|>)" }
+
+
+okReferenceApL : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceApL =
+    Ok { moduleOrigin = Nothing, name = "(<|)" }
+
+
+okReferenceComposeR : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceComposeR =
+    Ok { moduleOrigin = Nothing, name = "(>>)" }
+
+
+okReferenceComposeL : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceComposeL =
+    Ok { moduleOrigin = Nothing, name = "(<<)" }
+
+
+okReferenceParserAdvancedKeeper : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceParserAdvancedKeeper =
+    Ok { moduleOrigin = Nothing, name = "ParserAdvanced_keeper" }
+
+
+okReferenceParserAdvancedIgnorer : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceParserAdvancedIgnorer =
+    Ok { moduleOrigin = Nothing, name = "ParserAdvanced_ignorer" }
+
+
+okReferenceUrlParserSlash : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceUrlParserSlash =
+    Ok { moduleOrigin = Nothing, name = "UrlParser_slash" }
+
+
+okReferenceUrlParserQuestionMark : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceUrlParserQuestionMark =
+    Ok { moduleOrigin = Nothing, name = "UrlParser_questionMark" }
+
+
+okReferenceListCons : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceListCons =
+    Ok { moduleOrigin = Nothing, name = "List_cons" }
+
+
+okReferenceStringAppend : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceStringAppend =
+    Ok { moduleOrigin = Nothing, name = "String_append" }
+
+
+okReferenceListAppend : Result error_ { moduleOrigin : Maybe String, name : String }
+okReferenceListAppend =
+    Ok { moduleOrigin = Just "List", name = "append" }
 
 
 inferredTypeString : ElmSyntaxTypeInfer.Type
@@ -7594,18 +7789,8 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
             in
             Print.exactly
                 (fsharpValueOrFunctionDeclaration.name
-                    ++ (case typeVariablesToDeclare of
-                            [] ->
-                                ""
-
-                            typeVariable0 :: typeVariable1Up ->
-                                "<"
-                                    ++ ((typeVariable0 :: typeVariable1Up)
-                                            |> List.map (\typeVariable -> "'" ++ typeVariable)
-                                            |> String.join ", "
-                                       )
-                                    ++ ">"
-                       )
+                    ++ fsharpTypeParametersToString typeVariablesToDeclare
+                    ++ ""
                 )
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
@@ -8341,7 +8526,7 @@ printFsharpExpressionRecordUpdate syntaxRecordUpdate =
             )
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
-                (printLinebreakIndentedExactlySpaceWith
+                (printLinebreakIndentedSpaceWith
                     |> Print.followedBy
                         (Print.withIndentAtNextMultipleOf4
                             (Print.linebreakIndented
@@ -8365,7 +8550,7 @@ printFsharpExpressionRecordUpdate syntaxRecordUpdate =
                         )
                 )
             )
-        |> Print.followedBy printLinebreakIndentedExactlyCurlyClosing
+        |> Print.followedBy printLinebreakIndentedCurlyClosing
 
 
 printExactlyCurlyOpeningSpace : Print
@@ -8373,8 +8558,8 @@ printExactlyCurlyOpeningSpace =
     Print.exactly "{ "
 
 
-printLinebreakIndentedExactlySpaceWith : Print
-printLinebreakIndentedExactlySpaceWith =
+printLinebreakIndentedSpaceWith : Print
+printLinebreakIndentedSpaceWith =
     Print.linebreakIndented
         |> Print.followedBy
             (Print.exactly " with")
@@ -8387,8 +8572,8 @@ printLinebreakIndentedSemicolonSpace =
             (Print.exactly "; ")
 
 
-printLinebreakIndentedExactlyCurlyClosing : Print
-printLinebreakIndentedExactlyCurlyClosing =
+printLinebreakIndentedCurlyClosing : Print
+printLinebreakIndentedCurlyClosing =
     Print.linebreakIndented
         |> Print.followedBy
             (Print.exactly "}")
@@ -8882,9 +9067,7 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
                                         :: soFar.leastToMostDependedOn
                                 }
                     )
-                    { destructuringHasBeenInserted = False
-                    , leastToMostDependedOn = []
-                    }
+                    destructuringHasBeenInsertedFalseLeastToMostDependedOnListEmpty
     in
     { mostToLeastDependedOn =
         if withLetDestructuring.destructuringHasBeenInserted then
@@ -8895,6 +9078,16 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
                 (FsharpLetDestructuring fsharpLetDestructuringToInsert)
                 :: withLetDestructuring.leastToMostDependedOn
                 |> List.reverse
+    }
+
+
+destructuringHasBeenInsertedFalseLeastToMostDependedOnListEmpty :
+    { destructuringHasBeenInserted : Bool
+    , leastToMostDependedOn : List a_
+    }
+destructuringHasBeenInsertedFalseLeastToMostDependedOnListEmpty =
+    { destructuringHasBeenInserted = False
+    , leastToMostDependedOn = []
     }
 
 
@@ -9183,7 +9376,7 @@ module Elm =
                                                     (recursiveBucketMember1Up
                                                         |> Print.listMapAndIntersperseAndFlatten
                                                             (\typeDeclaration ->
-                                                                printLinebreakLinebreakIndentedExactlyAndSpace
+                                                                printLinebreakLinebreakIndentedAndSpace
                                                                     |> Print.followedBy
                                                                         (case typeDeclaration of
                                                                             FsharpChoiceTypeDeclaration enumDeclaration ->
@@ -9246,8 +9439,8 @@ module Elm =
 """
 
 
-printLinebreakLinebreakIndentedExactlyAndSpace : Print
-printLinebreakLinebreakIndentedExactlyAndSpace =
+printLinebreakLinebreakIndentedAndSpace : Print
+printLinebreakLinebreakIndentedAndSpace =
     printLinebreakLinebreakIndented
         |> Print.followedBy printExactlyAndSpace
 
