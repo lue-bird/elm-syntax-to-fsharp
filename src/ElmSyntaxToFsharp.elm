@@ -169,20 +169,20 @@ Contains variants, variant function and value declaration names.
 type alias ModuleContext =
     { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            String
     , variantLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            { moduleOrigin : String
             , valueCount : Int
             }
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
+            ( String, String )
             (List String)
-    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portIncomingLookup : FastSet.Set ( String, String )
+    , portOutgoingLookup : FastSet.Set ( String, String )
     }
 
 
@@ -195,7 +195,7 @@ so we can resolve `exposing (..)` and `ChoiceType(..)`.
 -}
 importsToModuleContext :
     FastDict.Dict
-        Elm.Syntax.ModuleName.ModuleName
+        String
         { valueOrFunctionOrTypeAliasNames : FastSet.Set String
         , choiceTypesExposingVariants :
             FastDict.Dict String (FastDict.Dict String { valueCount : Int })
@@ -210,7 +210,7 @@ importsToModuleContext moduleExposes imports =
     let
         importsNormal :
             List
-                { moduleName : Elm.Syntax.ModuleName.ModuleName
+                { moduleName : String
                 , alias : Maybe String
                 , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                     FastSet.Set String
@@ -227,9 +227,11 @@ importsToModuleContext moduleExposes imports =
                         |> List.map
                             (\(Elm.Syntax.Node.Node _ syntaxImport) ->
                                 let
-                                    importModuleName : Elm.Syntax.ModuleName.ModuleName
+                                    importModuleName : String
                                     importModuleName =
-                                        syntaxImport.moduleName |> Elm.Syntax.Node.value
+                                        syntaxImport.moduleName
+                                            |> Elm.Syntax.Node.value
+                                            |> String.join "."
 
                                     exposes :
                                         { valuesAndFunctionsAndTypeAliasesAndChoiceTypes :
@@ -449,7 +451,7 @@ importsToModuleContext moduleExposes imports =
                                 |> FastDict.foldl
                                     (\variantName variantInfo dictSoFar ->
                                         dictSoFar
-                                            |> FastDict.insert ( [], variantName )
+                                            |> FastDict.insert ( "", variantName )
                                                 { moduleOrigin = syntaxImport.moduleName
                                                 , valueCount = variantInfo.valueCount
                                                 }
@@ -460,7 +462,7 @@ importsToModuleContext moduleExposes imports =
                                 |> FastSet.foldl
                                     (\expose dictSoFar ->
                                         dictSoFar
-                                            |> FastDict.insert ( [], expose )
+                                            |> FastDict.insert ( "", expose )
                                                 syntaxImport.moduleName
                                     )
                                     FastDict.empty
@@ -469,16 +471,16 @@ importsToModuleContext moduleExposes imports =
                                 |> FastDict.foldl
                                     (\typeAliasName fieldOrder dictSoFar ->
                                         dictSoFar
-                                            |> FastDict.insert ( [], typeAliasName )
+                                            |> FastDict.insert ( "", typeAliasName )
                                                 fieldOrder
                                     )
                                     FastDict.empty
                         , portIncomingLookup =
                             syntaxImport.exposedPortsIncoming
-                                |> FastSet.map (\portName -> ( [], portName ))
+                                |> FastSet.map (\portName -> ( "", portName ))
                         , portOutgoingLookup =
                             syntaxImport.exposedPortsOutgoing
-                                |> FastSet.map (\portName -> ( [], portName ))
+                                |> FastSet.map (\portName -> ( "", portName ))
                         }
                         (case syntaxImport.alias of
                             Nothing ->
@@ -528,7 +530,7 @@ importsToModuleContext moduleExposes imports =
                                             (\exposeFromImportedModule dictSoFar ->
                                                 dictSoFar
                                                     |> FastDict.insert
-                                                        ( [ importAlias ], exposeFromImportedModule )
+                                                        ( importAlias, exposeFromImportedModule )
                                                         syntaxImport.moduleName
                                             )
                                             FastDict.empty
@@ -538,7 +540,7 @@ importsToModuleContext moduleExposes imports =
                                             (\exposeFromImportedModule variantInfo dictSoFar ->
                                                 dictSoFar
                                                     |> FastDict.insert
-                                                        ( [ importAlias ], exposeFromImportedModule )
+                                                        ( importAlias, exposeFromImportedModule )
                                                         { moduleOrigin = syntaxImport.moduleName
                                                         , valueCount = variantInfo.valueCount
                                                         }
@@ -549,16 +551,16 @@ importsToModuleContext moduleExposes imports =
                                         |> FastDict.foldl
                                             (\typeAliasName fieldOrder dictSoFar ->
                                                 dictSoFar
-                                                    |> FastDict.insert ( [ importAlias ], typeAliasName )
+                                                    |> FastDict.insert ( importAlias, typeAliasName )
                                                         fieldOrder
                                             )
                                             FastDict.empty
                                 , portIncomingLookup =
                                     syntaxImport.exposedPortsIncoming
-                                        |> FastSet.map (\portName -> ( [ importAlias ], portName ))
+                                        |> FastSet.map (\portName -> ( importAlias, portName ))
                                 , portOutgoingLookup =
                                     syntaxImport.exposedPortsOutgoing
-                                        |> FastSet.map (\portName -> ( [ importAlias ], portName ))
+                                        |> FastSet.map (\portName -> ( importAlias, portName ))
                                 }
                         )
                     )
@@ -596,7 +598,7 @@ moduleContextMerge a b =
 
 implicitImports :
     List
-        { moduleName : Elm.Syntax.ModuleName.ModuleName
+        { moduleName : String
         , alias : Maybe String
         , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
@@ -608,7 +610,7 @@ implicitImports :
         , exposedPortsIncoming : FastSet.Set String
         }
 implicitImports =
-    [ { moduleName = [ "Basics" ]
+    [ { moduleName = "Basics"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -666,7 +668,7 @@ implicitImports =
                 , "never"
                 ]
       }
-    , { moduleName = [ "List" ]
+    , { moduleName = "List"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -675,7 +677,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "List" ]
       }
-    , { moduleName = [ "Maybe" ]
+    , { moduleName = "Maybe"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -688,7 +690,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Maybe" ]
       }
-    , { moduleName = [ "Result" ]
+    , { moduleName = "Result"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -701,7 +703,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Result" ]
       }
-    , { moduleName = [ "String" ]
+    , { moduleName = "String"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -710,7 +712,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "String" ]
       }
-    , { moduleName = [ "Char" ]
+    , { moduleName = "Char"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -719,7 +721,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Char" ]
       }
-    , { moduleName = [ "Tuple" ]
+    , { moduleName = "Tuple"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -728,7 +730,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
-    , { moduleName = [ "Debug" ]
+    , { moduleName = "Debug"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -737,7 +739,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.empty
       }
-    , { moduleName = [ "Platform" ]
+    , { moduleName = "Platform"
       , alias = Nothing
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -746,7 +748,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Program" ]
       }
-    , { moduleName = [ "Platform", "Cmd" ]
+    , { moduleName = "Platform.Cmd"
       , alias = Just "Cmd"
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -755,7 +757,7 @@ implicitImports =
       , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes =
             FastSet.fromList [ "Cmd" ]
       }
-    , { moduleName = [ "Platform", "Sub" ]
+    , { moduleName = "Platform.Sub"
       , alias = Just "Sub"
       , exposedRecordTypeAliases = FastDict.empty
       , exposedPortsOutgoing = FastSet.empty
@@ -769,7 +771,7 @@ implicitImports =
 
 importsCombine :
     List
-        { moduleName : Elm.Syntax.ModuleName.ModuleName
+        { moduleName : String
         , alias : Maybe String
         , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
@@ -782,7 +784,7 @@ importsCombine :
         }
     ->
         List
-            { moduleName : Elm.Syntax.ModuleName.ModuleName
+            { moduleName : String
             , alias : Maybe String
             , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
@@ -799,7 +801,7 @@ importsCombine syntaxImports =
 
 importsCombineFrom :
     List
-        { moduleName : Elm.Syntax.ModuleName.ModuleName
+        { moduleName : String
         , alias : Maybe String
         , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
@@ -812,7 +814,7 @@ importsCombineFrom :
         }
     ->
         List
-            { moduleName : Elm.Syntax.ModuleName.ModuleName
+            { moduleName : String
             , alias : Maybe String
             , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
@@ -825,7 +827,7 @@ importsCombineFrom :
             }
     ->
         List
-            { moduleName : Elm.Syntax.ModuleName.ModuleName
+            { moduleName : String
             , alias : Maybe String
             , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
                 FastSet.Set String
@@ -858,7 +860,7 @@ importsCombineFrom soFar syntaxImports =
 
 
 importsMerge :
-    { moduleName : Elm.Syntax.ModuleName.ModuleName
+    { moduleName : String
     , alias : Maybe String
     , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
         FastSet.Set String
@@ -870,7 +872,7 @@ importsMerge :
     , exposedPortsIncoming : FastSet.Set String
     }
     ->
-        { moduleName : Elm.Syntax.ModuleName.ModuleName
+        { moduleName : String
         , alias : Maybe String
         , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
@@ -882,7 +884,7 @@ importsMerge :
         , exposedPortsIncoming : FastSet.Set String
         }
     ->
-        { moduleName : Elm.Syntax.ModuleName.ModuleName
+        { moduleName : String
         , alias : Maybe String
         , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
             FastSet.Set String
@@ -961,8 +963,15 @@ fsharpTypeContainedRecords fsharpType =
                         (typeConstruct.name
                             |> String.split "_"
                             |> List.drop 1
-                            |> List.filter (\field -> field /= "")
-                            |> List.map stringFirstCharToUpper
+                            |> List.filterMap
+                                (\fieldOrEmpty ->
+                                    case fieldOrEmpty of
+                                        "" ->
+                                            Nothing
+
+                                        field ->
+                                            Just (field |> stringFirstCharToUpper)
+                                )
                             |> List.sort
                         )
 
@@ -1040,10 +1049,8 @@ fsharpExpressionContainedConstructedRecords syntaxExpression =
         )
 
 
-fsharpExpressionContainedLocalReferences :
-    FsharpExpression
-    -> FastSet.Set String
-fsharpExpressionContainedLocalReferences syntaxExpression =
+fsharpExpressionUsedLocalReferences : FsharpExpression -> FastSet.Set String
+fsharpExpressionUsedLocalReferences syntaxExpression =
     -- IGNORE TCO
     case syntaxExpression of
         FsharpExpressionReference reference ->
@@ -1058,7 +1065,7 @@ fsharpExpressionContainedLocalReferences syntaxExpression =
             expressionNotReference
                 |> fsharpExpressionSubs
                 |> listMapToFastSetsAndUnify
-                    fsharpExpressionContainedLocalReferences
+                    fsharpExpressionUsedLocalReferences
 
 
 {-| All surface-level child [expression](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Expression)s.
@@ -1215,19 +1222,7 @@ printFsharpChoiceTypeDeclaration :
 printFsharpChoiceTypeDeclaration fsharpChoiceType =
     Print.exactly
         (fsharpChoiceType.name
-            ++ (case fsharpChoiceType.parameters of
-                    [] ->
-                        ""
-
-                    parameter0 :: parameter1Up ->
-                        "<'"
-                            ++ parameter0
-                            ++ (parameter1Up
-                                    |> List.map (\parameter -> ", '" ++ parameter)
-                                    |> String.concat
-                               )
-                            ++ ">"
-               )
+            ++ fsharpTypeParametersToString fsharpChoiceType.parameters
             ++ " ="
         )
         |> Print.followedBy
@@ -1313,19 +1308,7 @@ printFsharpTypeAliasDeclaration :
 printFsharpTypeAliasDeclaration fsharpTypeAliasDeclaration =
     Print.exactly
         (fsharpTypeAliasDeclaration.name
-            ++ (case fsharpTypeAliasDeclaration.parameters of
-                    [] ->
-                        ""
-
-                    parameter0 :: parameter1Up ->
-                        "<'"
-                            ++ parameter0
-                            ++ (parameter1Up
-                                    |> List.map (\parameter -> ", '" ++ parameter)
-                                    |> String.concat
-                               )
-                            ++ ">"
-               )
+            ++ fsharpTypeParametersToString fsharpTypeAliasDeclaration.parameters
             ++ " ="
         )
         |> Print.followedBy
@@ -1427,19 +1410,28 @@ fsharpTypeInt64 =
         }
 
 
+fsharpTypeFloat : FsharpType
+fsharpTypeFloat =
+    FsharpTypeConstruct
+        { moduleOrigin = Nothing
+        , name = "float"
+        , arguments = []
+        }
+
+
 type_ :
-    ElmSyntaxTypeInfer.Type String
+    ElmSyntaxTypeInfer.Type
     -> Result String FsharpType
 type_ inferredType =
     -- IGNORE TCO
     case inferredType of
         ElmSyntaxTypeInfer.TypeVariable variable ->
-            if variable |> String.startsWith "number" then
-                -- assume Int
-                Ok fsharpTypeInt64
+            if variable.name |> String.startsWith "number" then
+                -- assume Float
+                Ok fsharpTypeFloat
 
             else
-                Ok (FsharpTypeVariable (variable |> variableNameDisambiguateFromFsharpKeywords))
+                Ok (FsharpTypeVariable (variable.name |> variableNameDisambiguateFromFsharpKeywords))
 
         ElmSyntaxTypeInfer.TypeNotVariable syntaxTypeNotVariable ->
             case syntaxTypeNotVariable of
@@ -1603,15 +1595,18 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
 
         Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ reference) typedArguments ->
             let
-                ( qualification, name ) =
+                ( qualificationAsDotSeparated, name ) =
                     reference
             in
-            case moduleOriginLookup.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup |> FastDict.get reference of
+            case
+                moduleOriginLookup.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
+                    |> FastDict.get ( qualificationAsDotSeparated |> String.join ".", name )
+            of
                 Nothing ->
                     Err
                         ("could not find module origin of the type reference "
                             ++ qualifiedToString
-                                { qualification = qualification
+                                { qualification = qualificationAsDotSeparated
                                 , name = name
                                 }
                         )
@@ -1768,8 +1763,7 @@ printFsharpTypeFunction typeFunction =
         outputPrints : List Print
         outputPrints =
             outputExpanded
-                |> List.map
-                    printFsharpTypeParenthesizedIfSpaceSeparated
+                |> List.map printFsharpTypeParenthesizedIfSpaceSeparated
 
         fullLineSpread : Print.LineSpread
         fullLineSpread =
@@ -1784,11 +1778,7 @@ printFsharpTypeFunction typeFunction =
     in
     inputPrint
         :: (outputPrints
-                |> List.map
-                    (\outputPartPrint ->
-                        Print.withIndentAtNextMultipleOf4
-                            outputPartPrint
-                    )
+                |> List.map Print.withIndentAtNextMultipleOf4
            )
         |> Print.listIntersperseAndFlatten
             (Print.exactly " ->"
@@ -2321,8 +2311,7 @@ charIsLatinAlphaNumOrUnderscoreFast c =
 
 pattern :
     ElmSyntaxTypeInfer.TypedNode
-        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-        (ElmSyntaxTypeInfer.Type String)
+        ElmSyntaxTypeInfer.Pattern
     ->
         Result
             String
@@ -2562,8 +2551,7 @@ pattern patternInferred =
 
 typedPattern :
     ElmSyntaxTypeInfer.TypedNode
-        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-        (ElmSyntaxTypeInfer.Type String)
+        ElmSyntaxTypeInfer.Pattern
     ->
         Result
             String
@@ -2600,7 +2588,7 @@ printFsharpPatternListCons syntaxCons =
 
 
 typeConstructReferenceToCoreFsharp :
-    { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+    { moduleOrigin : String
     , name : String
     }
     ->
@@ -2610,7 +2598,7 @@ typeConstructReferenceToCoreFsharp :
             }
 typeConstructReferenceToCoreFsharp reference =
     case reference.moduleOrigin of
-        [ "Basics" ] ->
+        "Basics" ->
             case reference.name of
                 "Order" ->
                     Just { moduleOrigin = Nothing, name = "Basics_Order" }
@@ -2630,7 +2618,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "String" ] ->
+        "String" ->
             case reference.name of
                 "String" ->
                     Just { moduleOrigin = Nothing, name = "StringRope" }
@@ -2638,7 +2626,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Char" ] ->
+        "Char" ->
             case reference.name of
                 "Char" ->
                     Just { moduleOrigin = Nothing, name = "char" }
@@ -2646,7 +2634,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "List" ] ->
+        "List" ->
             case reference.name of
                 "List" ->
                     Just { moduleOrigin = Nothing, name = "List" }
@@ -2654,7 +2642,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Dict" ] ->
+        "Dict" ->
             case reference.name of
                 "Dict" ->
                     Just { moduleOrigin = Nothing, name = "Map" }
@@ -2662,7 +2650,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Set" ] ->
+        "Set" ->
             case reference.name of
                 "Set" ->
                     Just { moduleOrigin = Nothing, name = "Set" }
@@ -2670,7 +2658,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Array" ] ->
+        "Array" ->
             case reference.name of
                 "Array" ->
                     Just { moduleOrigin = Nothing, name = "array" }
@@ -2678,7 +2666,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Maybe" ] ->
+        "Maybe" ->
             case reference.name of
                 "Maybe" ->
                     Just { moduleOrigin = Nothing, name = "ValueOption" }
@@ -2686,7 +2674,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Result" ] ->
+        "Result" ->
             case reference.name of
                 "Result" ->
                     Just { moduleOrigin = Nothing, name = "Result_Result" }
@@ -2694,7 +2682,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Json", "Encode" ] ->
+        "Json.Encode" ->
             case reference.name of
                 "Value" ->
                     Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
@@ -2702,7 +2690,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Json", "Decode" ] ->
+        "Json.Decode" ->
             case reference.name of
                 "Value" ->
                     Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
@@ -2716,7 +2704,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Regex" ] ->
+        "Regex" ->
             case reference.name of
                 "Regex" ->
                     Just { moduleOrigin = Just "System.Text.RegularExpressions", name = "Regex" }
@@ -2730,7 +2718,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Random" ] ->
+        "Random" ->
             case reference.name of
                 "Seed" ->
                     Just { moduleOrigin = Nothing, name = "Random_Seed" }
@@ -2741,7 +2729,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Time" ] ->
+        "Time" ->
             case reference.name of
                 "Posix" ->
                     Just { moduleOrigin = Nothing, name = "Time_Posix" }
@@ -2761,7 +2749,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes" ] ->
+        "Bytes" ->
             case reference.name of
                 "Endianness" ->
                     Just { moduleOrigin = Nothing, name = "Bytes_Endianness" }
@@ -2772,7 +2760,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes", "Decode" ] ->
+        "Bytes.Decode" ->
             case reference.name of
                 "Decoder" ->
                     Just { moduleOrigin = Nothing, name = "BytesDecode_Decoder" }
@@ -2783,7 +2771,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes", "Encode" ] ->
+        "Bytes.Encode" ->
             case reference.name of
                 "Encoder" ->
                     Just { moduleOrigin = Nothing, name = "BytesEncode_Encoder" }
@@ -2791,7 +2779,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector2" ] ->
+        "Math.Vector2" ->
             case reference.name of
                 "Vec2" ->
                     Just { moduleOrigin = Just "System.Numerics", name = "Vector2" }
@@ -2799,7 +2787,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector3" ] ->
+        "Math.Vector3" ->
             case reference.name of
                 "Vec3" ->
                     Just { moduleOrigin = Just "System.Numerics", name = "Vector3" }
@@ -2807,7 +2795,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector4" ] ->
+        "Math.Vector4" ->
             case reference.name of
                 "Vec4" ->
                     Just { moduleOrigin = Just "System.Numerics", name = "Vector4" }
@@ -2815,7 +2803,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Matrix4" ] ->
+        "Math.Matrix4" ->
             case reference.name of
                 "Mat4" ->
                     Just { moduleOrigin = Just "System.Numerics", name = "Matrix4x4" }
@@ -2823,7 +2811,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform" ] ->
+        "Platform" ->
             case reference.name of
                 "Program" ->
                     Just { moduleOrigin = Nothing, name = "Platform_Program" }
@@ -2831,7 +2819,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform", "Cmd" ] ->
+        "Platform.Cmd" ->
             case reference.name of
                 "Cmd" ->
                     Just { moduleOrigin = Nothing, name = "PlatformCmd_Cmd" }
@@ -2839,7 +2827,7 @@ typeConstructReferenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform", "Sub" ] ->
+        "Platform.Sub" ->
             case reference.name of
                 "Sub" ->
                     Just { moduleOrigin = Nothing, name = "PlatformSub_Sub" }
@@ -2854,9 +2842,9 @@ typeConstructReferenceToCoreFsharp reference =
 {-| Use `typeConstructReferenceToCoreFsharp` for types
 -}
 referenceToCoreFsharp :
-    { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+    { moduleOrigin : String
     , name : String
-    , type_ : ElmSyntaxTypeInfer.Type String
+    , type_ : ElmSyntaxTypeInfer.Type
     }
     ->
         Maybe
@@ -2865,7 +2853,7 @@ referenceToCoreFsharp :
             }
 referenceToCoreFsharp reference =
     case reference.moduleOrigin of
-        [ "Basics" ] ->
+        "Basics" ->
             case reference.name of
                 "identity" ->
                     Just { moduleOrigin = Nothing, name = "id" }
@@ -2927,7 +2915,7 @@ referenceToCoreFsharp reference =
                             case typeFunction.input of
                                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                                     case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( [ "Basics" ], "Float" ) ->
+                                        ( "Basics", "Float" ) ->
                                             Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
 
                                         _ ->
@@ -2937,6 +2925,15 @@ referenceToCoreFsharp reference =
                                 _ ->
                                     -- assume Int
                                     Just { moduleOrigin = Nothing, name = "Basics_inegate" }
+
+                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                            if typeVariable.name |> String.startsWith "number" then
+                                -- assume Float
+                                Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
+
+                            else
+                                -- assume Int
+                                Just { moduleOrigin = Nothing, name = "Basics_inegate" }
 
                         _ ->
                             -- assume Int
@@ -2948,7 +2945,7 @@ referenceToCoreFsharp reference =
                             case typeFunction.input of
                                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                                     case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( [ "Basics" ], "Float" ) ->
+                                        ( "Basics", "Float" ) ->
                                             Just { moduleOrigin = Nothing, name = "Basics_fabs" }
 
                                         _ ->
@@ -2958,6 +2955,15 @@ referenceToCoreFsharp reference =
                                 _ ->
                                     -- assume Int
                                     Just { moduleOrigin = Nothing, name = "Basics_iabs" }
+
+                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                            if typeVariable.name |> String.startsWith "number" then
+                                -- assume Float
+                                Just { moduleOrigin = Nothing, name = "Basics_fabs" }
+
+                            else
+                                -- assume Int
+                                Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
                         _ ->
                             -- assume Int
@@ -3027,7 +3033,7 @@ referenceToCoreFsharp reference =
                                 typeFunction.input
                                     == ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ], name = "Float", arguments = [] }
+                                            { moduleOrigin = "Basics", name = "Float", arguments = [] }
                                         )
                             then
                                 Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
@@ -3046,7 +3052,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bitwise" ] ->
+        "Bitwise" ->
             case reference.name of
                 "complement" ->
                     Just { moduleOrigin = Nothing, name = "(~~~)" }
@@ -3072,7 +3078,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "String" ] ->
+        "String" ->
             case reference.name of
                 "isEmpty" ->
                     Just { moduleOrigin = Nothing, name = "String_isEmpty" }
@@ -3188,7 +3194,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Char" ] ->
+        "Char" ->
             case reference.name of
                 "toCode" ->
                     Just { moduleOrigin = Nothing, name = "int64" }
@@ -3232,7 +3238,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "List" ] ->
+        "List" ->
             case reference.name of
                 "singleton" ->
                     Just { moduleOrigin = Just "List", name = "singleton" }
@@ -3261,11 +3267,11 @@ referenceToCoreFsharp reference =
                             case typeFunction.input of
                                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                                     case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( [ "List" ], "List" ) ->
+                                        ( "List", "List" ) ->
                                             case typeFunction.input of
                                                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputListElementTypeConstruct) ->
                                                     case ( inputListElementTypeConstruct.moduleOrigin, inputListElementTypeConstruct.name ) of
-                                                        ( [ "Basics" ], "Float" ) ->
+                                                        ( "Basics", "Float" ) ->
                                                             Just { moduleOrigin = Nothing, name = "List_fproduct" }
 
                                                         _ ->
@@ -3375,7 +3381,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Dict" ] ->
+        "Dict" ->
             case reference.name of
                 "size" ->
                     Just { moduleOrigin = Nothing, name = "Dict_size" }
@@ -3446,7 +3452,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Set" ] ->
+        "Set" ->
             case reference.name of
                 "size" ->
                     Just { moduleOrigin = Nothing, name = "Set_size" }
@@ -3499,7 +3505,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Json", "Encode" ] ->
+        "Json.Encode" ->
             case reference.name of
                 "encode" ->
                     Just { moduleOrigin = Nothing, name = "JsonEncode_encode" }
@@ -3537,7 +3543,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Json", "Decode" ] ->
+        "Json.Decode" ->
             case reference.name of
                 "Field" ->
                     Just { moduleOrigin = Nothing, name = "JsonDecode_Field" }
@@ -3650,7 +3656,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Regex" ] ->
+        "Regex" ->
             case reference.name of
                 "fromString" ->
                     Just { moduleOrigin = Nothing, name = "Regex_fromString" }
@@ -3685,7 +3691,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Maybe" ] ->
+        "Maybe" ->
             case reference.name of
                 "Nothing" ->
                     Just { moduleOrigin = Nothing, name = "ValueNone" }
@@ -3717,7 +3723,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Result" ] ->
+        "Result" ->
             case reference.name of
                 "Err" ->
                     Just { moduleOrigin = Nothing, name = "Error" }
@@ -3758,7 +3764,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Array" ] ->
+        "Array" ->
             case reference.name of
                 "isEmpty" ->
                     Just { moduleOrigin = Just "Array", name = "iEmpty" }
@@ -3820,7 +3826,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Random" ] ->
+        "Random" ->
             case reference.name of
                 "int" ->
                     Just { moduleOrigin = Nothing, name = "Random_int" }
@@ -3882,7 +3888,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Time" ] ->
+        "Time" ->
             case reference.name of
                 "posixToMillis" ->
                     Just { moduleOrigin = Nothing, name = "Time_posixToMillis" }
@@ -3923,7 +3929,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes" ] ->
+        "Bytes" ->
             case reference.name of
                 "LE" ->
                     Just { moduleOrigin = Nothing, name = "Bytes_LE" }
@@ -3937,7 +3943,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes", "Decode" ] ->
+        "Bytes.Decode" ->
             case reference.name of
                 "Loop" ->
                     Just { moduleOrigin = Nothing, name = "BytesDecode_Loop" }
@@ -4008,7 +4014,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Bytes", "Encode" ] ->
+        "Bytes.Encode" ->
             case reference.name of
                 "encode" ->
                     Just { moduleOrigin = Nothing, name = "BytesEncode_encode" }
@@ -4052,7 +4058,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Debug" ] ->
+        "Debug" ->
             case reference.name of
                 "log" ->
                     Just { moduleOrigin = Nothing, name = "Debug_log" }
@@ -4066,7 +4072,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector2" ] ->
+        "Math.Vector2" ->
             case reference.name of
                 "add" ->
                     Just { moduleOrigin = Nothing, name = "MathVector2_add" }
@@ -4125,7 +4131,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector3" ] ->
+        "Math.Vector3" ->
             case reference.name of
                 "add" ->
                     Just { moduleOrigin = Nothing, name = "MathVector3_add" }
@@ -4202,7 +4208,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Vector4" ] ->
+        "Math.Vector4" ->
             case reference.name of
                 "add" ->
                     Just { moduleOrigin = Nothing, name = "MathVector4_add" }
@@ -4273,7 +4279,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Math", "Matrix4" ] ->
+        "Math.Matrix4" ->
             case reference.name of
                 "fromRecord" ->
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_fromRecord" }
@@ -4353,7 +4359,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform" ] ->
+        "Platform" ->
             case reference.name of
                 "worker" ->
                     Just { moduleOrigin = Nothing, name = "Platform_worker" }
@@ -4361,7 +4367,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform", "Cmd" ] ->
+        "Platform.Cmd" ->
             case reference.name of
                 "none" ->
                     Just { moduleOrigin = Nothing, name = "PlatformCmd_none" }
@@ -4375,7 +4381,7 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
-        [ "Platform", "Sub" ] ->
+        "Platform.Sub" ->
             case reference.name of
                 "none" ->
                     Just { moduleOrigin = Nothing, name = "PlatformSub_none" }
@@ -4394,14 +4400,19 @@ referenceToCoreFsharp reference =
 
 
 referenceToFsharpName :
-    { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+    { moduleOrigin : String
     , name : String
     }
     -> String
 referenceToFsharpName reference =
-    (reference.moduleOrigin |> String.concat)
-        ++ "_"
-        ++ reference.name
+    case reference.moduleOrigin |> String.replace "." "" of
+        "" ->
+            reference.name
+
+        moduleOriginNotEmpty ->
+            moduleOriginNotEmpty
+                ++ "_"
+                ++ reference.name
 
 
 printFsharpPatternNotParenthesized : FsharpPattern -> Print
@@ -4625,190 +4636,190 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 |> Elm.Syntax.Node.value
                                 |> moduleHeaderName
                         of
-                            [ "Basics" ] ->
+                            "Basics" ->
                                 False
 
-                            [ "Array" ] ->
+                            "Array" ->
                                 False
 
                             -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
-                            [ "Elm", "JsArray" ] ->
+                            "Elm.JsArray" ->
                                 False
 
-                            [ "Bitwise" ] ->
+                            "Bitwise" ->
                                 False
 
-                            [ "Debug" ] ->
+                            "Debug" ->
                                 False
 
-                            [ "Char" ] ->
+                            "Char" ->
                                 False
 
-                            [ "String" ] ->
+                            "String" ->
                                 False
 
-                            [ "List" ] ->
+                            "List" ->
                                 False
 
-                            [ "Maybe" ] ->
+                            "Maybe" ->
                                 False
 
-                            [ "Result" ] ->
+                            "Result" ->
                                 False
 
-                            [ "Dict" ] ->
+                            "Dict" ->
                                 False
 
-                            [ "Set" ] ->
+                            "Set" ->
                                 False
 
-                            [ "Platform" ] ->
+                            "Platform" ->
                                 False
 
-                            [ "Platform", "Cmd" ] ->
+                            "Platform.Cmd" ->
                                 False
 
-                            [ "Platform", "Sub" ] ->
+                            "Platform.Sub" ->
                                 False
 
-                            [ "Process" ] ->
+                            "Process" ->
                                 False
 
-                            [ "Task" ] ->
+                            "Task" ->
                                 False
 
-                            [ "Json", "Decode" ] ->
+                            "Json.Decode" ->
                                 False
 
-                            [ "Json", "Encode" ] ->
+                            "Json.Encode" ->
                                 False
 
-                            [ "Regex" ] ->
+                            "Regex" ->
                                 False
 
-                            [ "File" ] ->
+                            "File" ->
                                 False
 
-                            [ "Bytes" ] ->
+                            "Bytes" ->
                                 False
 
-                            [ "Bytes", "Encode" ] ->
+                            "Bytes.Encode" ->
                                 False
 
-                            [ "Bytes", "Decode" ] ->
+                            "Bytes.Decode" ->
                                 False
 
-                            [ "Http" ] ->
+                            "Http" ->
                                 False
 
-                            [ "VirtualDom" ] ->
+                            "VirtualDom" ->
                                 False
 
-                            [ "Browser" ] ->
+                            "Browser" ->
                                 False
 
-                            [ "Browser", "Events" ] ->
+                            "Browser.Events" ->
                                 False
 
-                            [ "Browser", "Navigation" ] ->
+                            "Browser.Navigation" ->
                                 False
 
-                            [ "Browser", "Dom" ] ->
+                            "Browser.Dom" ->
                                 False
 
                             -- https://github.com/elm/browser/blob/master/src/Browser/AnimationManager.elm
-                            [ "Browser", "AnimationManager" ] ->
+                            "Browser.AnimationManager" ->
                                 False
 
                             -- https://github.com/elm/browser/tree/master/src/Debugger
-                            [ "Debugger", "Expando" ] ->
+                            "Debugger.Expando" ->
                                 False
 
-                            [ "Debugger", "History" ] ->
+                            "Debugger.History" ->
                                 False
 
-                            [ "Debugger", "Main" ] ->
+                            "Debugger.Main" ->
                                 False
 
-                            [ "Debugger", "Metadata" ] ->
+                            "Debugger.Metadata" ->
                                 False
 
-                            [ "Debugger", "Overlay" ] ->
+                            "Debugger.Overlay" ->
                                 False
 
-                            [ "Debugger", "Report" ] ->
+                            "Debugger.Report" ->
                                 False
 
-                            [ "Html" ] ->
+                            "Html" ->
                                 False
 
-                            [ "Html", "Attributes" ] ->
+                            "Html.Attributes" ->
                                 False
 
-                            [ "Html", "Events" ] ->
+                            "Html.Events" ->
                                 False
 
-                            [ "Html", "Keyed" ] ->
+                            "Html.Keyed" ->
                                 False
 
-                            [ "Html", "Lazy" ] ->
+                            "Html.Lazy" ->
                                 False
 
-                            [ "Svg" ] ->
+                            "Svg" ->
                                 False
 
-                            [ "Svg", "Attributes" ] ->
+                            "Svg.Attributes" ->
                                 False
 
-                            [ "Svg", "Events" ] ->
+                            "Svg.Events" ->
                                 False
 
-                            [ "Svg", "Keyed" ] ->
+                            "Svg.Keyed" ->
                                 False
 
-                            [ "Svg", "Lazy" ] ->
+                            "Svg.Lazy" ->
                                 False
 
-                            [ "Time" ] ->
+                            "Time" ->
                                 False
 
-                            [ "Random" ] ->
+                            "Random" ->
                                 False
 
-                            [ "Markdown" ] ->
+                            "Markdown" ->
                                 False
 
-                            [ "Benchmark" ] ->
+                            "Benchmark" ->
                                 False
 
-                            [ "WebGL" ] ->
+                            "WebGL" ->
                                 False
 
-                            [ "WebGL", "Settings" ] ->
+                            "WebGL.Settings" ->
                                 False
 
-                            [ "WebGL", "Settings", "Blend" ] ->
+                            "WebGL.Settings.Blend" ->
                                 False
 
-                            [ "WebGL", "Settings", "DepthTest" ] ->
+                            "WebGL.Settings.DepthTest" ->
                                 False
 
-                            [ "WebGL", "Settings", "StencilTest" ] ->
+                            "WebGL.Settings.StencilTest" ->
                                 False
 
-                            [ "WebGL", "Texture" ] ->
+                            "WebGL.Texture" ->
                                 False
 
-                            [ "Math", "Matrix4" ] ->
+                            "Math.Matrix4" ->
                                 False
 
-                            [ "Math", "Vector2" ] ->
+                            "Math.Vector2" ->
                                 False
 
-                            [ "Math", "Vector3" ] ->
+                            "Math.Vector3" ->
                                 False
 
-                            [ "Math", "Vector4" ] ->
+                            "Math.Vector4" ->
                                 False
 
                             _ ->
@@ -4827,55 +4838,59 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         , syntaxModule.imports
                             |> List.map
                                 (\(Elm.Syntax.Node.Node _ import_) ->
-                                    import_.moduleName |> Elm.Syntax.Node.value
+                                    import_.moduleName |> Elm.Syntax.Node.value |> String.join "."
                                 )
                         )
                     )
-                |> Data.Graph.stronglyConnComp
-                |> -- we assume the given module do not have cyclic imports
-                   Data.Graph.flattenSCCs
+                |> Data.Graph.stronglyConnCompR
+                |> List.concatMap
+                    (\edge0 ->
+                        case edge0 of
+                            Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                                [ n ]
+
+                            Data.Graph.CyclicSCC triples ->
+                                -- we assume the given module do not have cyclic imports
+                                List.map (\( n, _, _ ) -> n) triples
+                    )
 
         syntaxModuleTypes :
             { errors : List String
             , types :
-                FastDict.Dict
-                    Elm.Syntax.ModuleName.ModuleName
-                    ElmSyntaxTypeInfer.ModuleTypes
+                FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
             }
         syntaxModuleTypes =
             syntaxModulesFromMostToLeastImported
                 |> List.foldl
                     (\syntaxModule soFar ->
                         let
+                            moduleName : String
+                            moduleName =
+                                syntaxModule.moduleDefinition
+                                    |> Elm.Syntax.Node.value
+                                    |> moduleHeaderName
+
                             declarationTypesAndErrors : { types : ElmSyntaxTypeInfer.ModuleTypes, errors : List String }
                             declarationTypesAndErrors =
                                 syntaxModule.declarations
-                                    |> List.map Elm.Syntax.Node.value
                                     |> ElmSyntaxTypeInfer.moduleDeclarationsToTypes
-                                        (syntaxModule.imports
-                                            |> ElmSyntaxTypeInfer.importsToModuleOriginLookup
-                                                soFar.types
-                                        )
+                                        { moduleName = moduleName
+                                        , moduleOriginLookup =
+                                            syntaxModule.imports
+                                                |> ElmSyntaxTypeInfer.importsToModuleOriginLookup
+                                                    soFar.types
+                                        }
                         in
                         { errors = declarationTypesAndErrors.errors ++ soFar.errors
                         , types =
                             soFar.types
                                 |> FastDict.insert
-                                    (syntaxModule.moduleDefinition
-                                        |> Elm.Syntax.Node.value
-                                        |> moduleHeaderName
-                                    )
+                                    moduleName
                                     declarationTypesAndErrors.types
                         }
                     )
                     { errors = []
-                    , types =
-                        ElmSyntaxTypeInfer.elmCoreTypes
-                            |> FastDict.union elmJsonTypes
-                            |> FastDict.union elmBytesTypes
-                            |> FastDict.union elmRegexTypes
-                            |> FastDict.union elmKernelParserTypes
-                            |> FastDict.union elmKernelUrlTypes
+                    , types = baseElmDeclarationTypes
                     }
 
         syntaxModulesInferred :
@@ -4884,9 +4899,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                 (List
                     { module_ : Elm.Syntax.File.File
                     , declarationsInferred :
-                        FastDict.Dict
-                            String
-                            { nameRange : Elm.Syntax.Range.Range
+                        List
+                            { name : String
+                            , nameRange : Elm.Syntax.Range.Range
                             , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
                             , signature :
                                 Maybe
@@ -4895,9 +4910,9 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
                                     , annotationTypeRange : Elm.Syntax.Range.Range
                                     }
-                            , parameters : List (ElmSyntaxTypeInfer.TypedNode (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String)) (ElmSyntaxTypeInfer.Type String))
-                            , result : ElmSyntaxTypeInfer.TypedNode (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String)) (ElmSyntaxTypeInfer.Type String)
-                            , type_ : ElmSyntaxTypeInfer.Type String
+                            , parameters : List (ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern)
+                            , result : ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Expression
+                            , type_ : ElmSyntaxTypeInfer.Type
                             }
                     }
                 )
@@ -4906,17 +4921,18 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                 |> listMapAndCombineOk
                     (\syntaxModule ->
                         let
-                            moduleName : Elm.Syntax.ModuleName.ModuleName
+                            moduleName : String
                             moduleName =
                                 syntaxModule.moduleDefinition
                                     |> Elm.Syntax.Node.value
                                     |> moduleHeaderName
                         in
-                        -- _ =
-                        --     Debug.log "inferring module" (moduleName |> String.join ".")
                         case syntaxModuleTypes.types |> FastDict.get moduleName of
                             Nothing ->
-                                Err "module types did not contain info about the module name"
+                                Err
+                                    ("module types did not contain info about the module named "
+                                        ++ moduleName
+                                    )
 
                             Just otherModuleDeclaredTypes ->
                                 syntaxModule.declarations
@@ -4942,7 +4958,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                     Nothing
                                         )
                                     |> ElmSyntaxTypeInfer.valueAndFunctionDeclarations
-                                        { importedTypes =
+                                        { moduleName = moduleName
+                                        , importedTypes =
                                             syntaxModuleTypes.types
                                                 |> FastDict.remove moduleName
                                         , moduleOriginLookup =
@@ -4966,7 +4983,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     |> Result.mapError
                                         (\error ->
                                             "In module "
-                                                ++ (moduleName |> String.join ".")
+                                                ++ moduleName
                                                 ++ " "
                                                 ++ error
                                         )
@@ -4987,7 +5004,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             let
                 moduleMembers :
                     FastDict.Dict
-                        Elm.Syntax.ModuleName.ModuleName
+                        String
                         { valueOrFunctionOrTypeAliasNames : FastSet.Set String
                         , choiceTypesExposingVariants :
                             FastDict.Dict String (FastDict.Dict String { valueCount : Int })
@@ -5006,160 +5023,160 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         |> Elm.Syntax.Node.value
                                         |> moduleHeaderName
                                 of
-                                    [ "Array" ] ->
+                                    "Array" ->
                                         False
 
                                     -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
-                                    [ "Elm", "JsArray" ] ->
+                                    "Elm.JsArray" ->
                                         False
 
-                                    [ "Bitwise" ] ->
+                                    "Bitwise" ->
                                         False
 
-                                    [ "Debug" ] ->
+                                    "Debug" ->
                                         False
 
-                                    [ "Set" ] ->
+                                    "Set" ->
                                         False
 
-                                    [ "Platform" ] ->
+                                    "Platform" ->
                                         False
 
-                                    [ "Platform", "Cmd" ] ->
+                                    "Platform.Cmd" ->
                                         False
 
-                                    [ "Platform", "Sub" ] ->
+                                    "Platform.Sub" ->
                                         False
 
-                                    [ "Process" ] ->
+                                    "Process" ->
                                         False
 
-                                    [ "Task" ] ->
+                                    "Task" ->
                                         False
 
-                                    [ "File" ] ->
+                                    "File" ->
                                         False
 
-                                    [ "Bytes" ] ->
+                                    "Bytes" ->
                                         False
 
-                                    [ "Bytes", "Encode" ] ->
+                                    "Bytes.Encode" ->
                                         False
 
-                                    [ "Bytes", "Decode" ] ->
+                                    "Bytes.Decode" ->
                                         False
 
-                                    [ "Http" ] ->
+                                    "Http" ->
                                         False
 
-                                    [ "VirtualDom" ] ->
+                                    "VirtualDom" ->
                                         False
 
-                                    [ "Browser" ] ->
+                                    "Browser" ->
                                         False
 
-                                    [ "Browser", "Events" ] ->
+                                    "Browser.Events" ->
                                         False
 
-                                    [ "Browser", "Navigation" ] ->
+                                    "Browser.Navigation" ->
                                         False
 
-                                    [ "Browser", "Dom" ] ->
+                                    "Browser.Dom" ->
                                         False
 
                                     -- https://github.com/elm/browser/blob/master/src/Browser/AnimationManager.elm
-                                    [ "Browser", "AnimationManager" ] ->
+                                    "Browser.AnimationManager" ->
                                         False
 
                                     -- https://github.com/elm/browser/tree/master/src/Debugger
-                                    [ "Debugger", "Expando" ] ->
+                                    "Debugger.Expando" ->
                                         False
 
-                                    [ "Debugger", "History" ] ->
+                                    "Debugger.History" ->
                                         False
 
-                                    [ "Debugger", "Main" ] ->
+                                    "Debugger.Main" ->
                                         False
 
-                                    [ "Debugger", "Metadata" ] ->
+                                    "Debugger.Metadata" ->
                                         False
 
-                                    [ "Debugger", "Overlay" ] ->
+                                    "Debugger.Overlay" ->
                                         False
 
-                                    [ "Debugger", "Report" ] ->
+                                    "Debugger.Report" ->
                                         False
 
-                                    [ "Html" ] ->
+                                    "Html" ->
                                         False
 
-                                    [ "Html", "Attributes" ] ->
+                                    "Html.Attributes" ->
                                         False
 
-                                    [ "Html", "Events" ] ->
+                                    "Html.Events" ->
                                         False
 
-                                    [ "Html", "Keyed" ] ->
+                                    "Html.Keyed" ->
                                         False
 
-                                    [ "Html", "Lazy" ] ->
+                                    "Html.Lazy" ->
                                         False
 
-                                    [ "Svg" ] ->
+                                    "Svg" ->
                                         False
 
-                                    [ "Svg", "Attributes" ] ->
+                                    "Svg.Attributes" ->
                                         False
 
-                                    [ "Svg", "Events" ] ->
+                                    "Svg.Events" ->
                                         False
 
-                                    [ "Svg", "Keyed" ] ->
+                                    "Svg.Keyed" ->
                                         False
 
-                                    [ "Svg", "Lazy" ] ->
+                                    "Svg.Lazy" ->
                                         False
 
-                                    [ "Time" ] ->
+                                    "Time" ->
                                         False
 
-                                    [ "Random" ] ->
+                                    "Random" ->
                                         False
 
-                                    [ "Markdown" ] ->
+                                    "Markdown" ->
                                         False
 
-                                    [ "Benchmark" ] ->
+                                    "Benchmark" ->
                                         False
 
-                                    [ "WebGL" ] ->
+                                    "WebGL" ->
                                         False
 
-                                    [ "WebGL", "Settings" ] ->
+                                    "WebGL.Settings" ->
                                         False
 
-                                    [ "WebGL", "Settings", "Blend" ] ->
+                                    "WebGL.Settings.Blend" ->
                                         False
 
-                                    [ "WebGL", "Settings", "DepthTest" ] ->
+                                    "WebGL.Settings.DepthTest" ->
                                         False
 
-                                    [ "WebGL", "Settings", "StencilTest" ] ->
+                                    "WebGL.Settings.StencilTest" ->
                                         False
 
-                                    [ "WebGL", "Texture" ] ->
+                                    "WebGL.Texture" ->
                                         False
 
-                                    [ "Math", "Matrix4" ] ->
+                                    "Math.Matrix4" ->
                                         False
 
-                                    [ "Math", "Vector2" ] ->
+                                    "Math.Vector2" ->
                                         False
 
-                                    [ "Math", "Vector3" ] ->
+                                    "Math.Vector3" ->
                                         False
 
-                                    [ "Math", "Vector4" ] ->
+                                    "Math.Vector4" ->
                                         False
 
                                     _ ->
@@ -5341,7 +5358,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         |> List.foldr
                             (\moduleInferred soFarAcrossModules ->
                                 let
-                                    moduleName : Elm.Syntax.ModuleName.ModuleName
+                                    moduleName : String
                                     moduleName =
                                         moduleInferred.module_.moduleDefinition
                                             |> Elm.Syntax.Node.value
@@ -5375,7 +5392,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             |> FastSet.foldl
                                                                 (\name soFar ->
                                                                     soFar
-                                                                        |> FastDict.insert ( [], name )
+                                                                        |> FastDict.insert ( "", name )
                                                                             moduleName
                                                                 )
                                                                 FastDict.empty
@@ -5387,7 +5404,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                                         |> FastDict.foldl
                                                                             (\name info soFar ->
                                                                                 soFar
-                                                                                    |> FastDict.insert ( [], name )
+                                                                                    |> FastDict.insert ( "", name )
                                                                                         { moduleOrigin = moduleName
                                                                                         , valueCount = info.valueCount
                                                                                         }
@@ -5400,16 +5417,16 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             |> FastDict.foldl
                                                                 (\name fieldOrder soFar ->
                                                                     soFar
-                                                                        |> FastDict.insert ( [], name )
+                                                                        |> FastDict.insert ( "", name )
                                                                             fieldOrder
                                                                 )
                                                                 FastDict.empty
                                                     , portIncomingLookup =
                                                         moduleLocalNames.portsIncoming
-                                                            |> FastSet.map (\portName -> ( [], portName ))
+                                                            |> FastSet.map (\portName -> ( "", portName ))
                                                     , portOutgoingLookup =
                                                         moduleLocalNames.portsOutgoing
-                                                            |> FastSet.map (\portName -> ( [], portName ))
+                                                            |> FastSet.map (\portName -> ( "", portName ))
                                                     }
                                             )
                                 in
@@ -5418,47 +5435,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         (\(Elm.Syntax.Node.Node _ declaration) soFar ->
                                             case declaration of
                                                 Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                                    let
-                                                        declarationName : String
-                                                        declarationName =
-                                                            syntaxValueOrFunctionDeclaration.declaration
-                                                                |> Elm.Syntax.Node.value
-                                                                |> .name
-                                                                |> Elm.Syntax.Node.value
-                                                    in
-                                                    case moduleInferred.declarationsInferred |> FastDict.get declarationName of
-                                                        Just valueOrFunctionDeclarationInferred ->
-                                                            case
-                                                                valueOrFunctionDeclarationInferred
-                                                                    |> valueOrFunctionDeclarationSetLocalToOrigin moduleName
-                                                                    |> valueOrFunctionDeclaration createdModuleContext
-                                                            of
-                                                                Ok fsharpValueOrFunctionDeclaration ->
-                                                                    { errors = soFar.errors
-                                                                    , declarations =
-                                                                        { typeAliases = soFar.declarations.typeAliases
-                                                                        , choiceTypes = soFar.declarations.choiceTypes
-                                                                        , valuesAndFunctions =
-                                                                            soFar.declarations.valuesAndFunctions
-                                                                                |> FastDict.insert
-                                                                                    ({ moduleOrigin = moduleName
-                                                                                     , name = declarationName
-                                                                                     }
-                                                                                        |> referenceToFsharpName
-                                                                                    )
-                                                                                    fsharpValueOrFunctionDeclaration
-                                                                        }
-                                                                    }
-
-                                                                Err error ->
-                                                                    { declarations = soFar.declarations
-                                                                    , errors = error :: soFar.errors
-                                                                    }
-
-                                                        Nothing ->
-                                                            { declarations = soFar.declarations
-                                                            , errors = (declarationName ++ " not inferred") :: soFar.errors
-                                                            }
+                                                    -- handled below
+                                                    soFar
 
                                                 Elm.Syntax.Declaration.AliasDeclaration syntaxTypeAliasDeclaration ->
                                                     case syntaxTypeAliasDeclaration |> typeAliasDeclaration createdModuleContext of
@@ -5534,7 +5512,37 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                 Elm.Syntax.Declaration.Destructuring _ _ ->
                                                     soFar
                                         )
-                                        soFarAcrossModules
+                                        (moduleInferred.declarationsInferred
+                                            |> List.foldl
+                                                (\valueOrFunctionDeclarationInferred soFarAcrossModulesWithInferredValeAndFunctionDeclarations ->
+                                                    case
+                                                        valueOrFunctionDeclarationInferred
+                                                            |> valueOrFunctionDeclaration createdModuleContext
+                                                    of
+                                                        Ok fsharpValueOrFunctionDeclaration ->
+                                                            { errors = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
+                                                            , declarations =
+                                                                { typeAliases = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.typeAliases
+                                                                , choiceTypes = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.choiceTypes
+                                                                , valuesAndFunctions =
+                                                                    soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.valuesAndFunctions
+                                                                        |> FastDict.insert
+                                                                            ({ moduleOrigin = moduleName
+                                                                             , name = valueOrFunctionDeclarationInferred.name
+                                                                             }
+                                                                                |> referenceToFsharpName
+                                                                            )
+                                                                            fsharpValueOrFunctionDeclaration
+                                                                }
+                                                            }
+
+                                                        Err error ->
+                                                            { declarations = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations
+                                                            , errors = error :: soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
+                                                            }
+                                                )
+                                                soFarAcrossModules
+                                        )
                             )
                             { errors = []
                             , declarations =
@@ -5625,6 +5633,16 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             }
 
 
+baseElmDeclarationTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
+baseElmDeclarationTypes =
+    ElmSyntaxTypeInfer.elmCoreTypes
+        |> FastDict.union elmJsonTypes
+        |> FastDict.union elmBytesTypes
+        |> FastDict.union elmRegexTypes
+        |> FastDict.union elmKernelParserTypes
+        |> FastDict.union elmKernelUrlTypes
+
+
 portTypeSignifiesOutgoing :
     Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
     -> Bool
@@ -5672,624 +5690,9 @@ portTypeSignifiesOutgoing (Elm.Syntax.Node.Node _ syntaxType) =
             False
 
 
-valueOrFunctionDeclarationSetLocalToOrigin :
-    Elm.Syntax.ModuleName.ModuleName
-    ->
-        { nameRange : Elm.Syntax.Range.Range
-        , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
-        , signature :
-            Maybe
-                { range : Elm.Syntax.Range.Range
-                , nameRange : Elm.Syntax.Range.Range
-                , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
-                , annotationTypeRange : Elm.Syntax.Range.Range
-                }
-        , parameters :
-            List
-                (ElmSyntaxTypeInfer.TypedNode
-                    (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                    (ElmSyntaxTypeInfer.Type String)
-                )
-        , result :
-            ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
-        , type_ : ElmSyntaxTypeInfer.Type String
-        }
-    ->
-        { nameRange : Elm.Syntax.Range.Range
-        , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
-        , signature :
-            Maybe
-                { range : Elm.Syntax.Range.Range
-                , nameRange : Elm.Syntax.Range.Range
-                , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
-                , annotationTypeRange : Elm.Syntax.Range.Range
-                }
-        , parameters :
-            List
-                (ElmSyntaxTypeInfer.TypedNode
-                    (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                    (ElmSyntaxTypeInfer.Type String)
-                )
-        , result :
-            ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
-        , type_ : ElmSyntaxTypeInfer.Type String
-        }
-valueOrFunctionDeclarationSetLocalToOrigin moduleOrigin inferredValueOrFunctionDeclaration =
-    { nameRange = inferredValueOrFunctionDeclaration.nameRange
-    , documentation = inferredValueOrFunctionDeclaration.documentation
-    , signature = inferredValueOrFunctionDeclaration.signature
-    , parameters =
-        inferredValueOrFunctionDeclaration.parameters
-            |> List.map
-                (\parameter ->
-                    parameter
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                )
-    , result =
-        inferredValueOrFunctionDeclaration.result
-            |> expressionTypedNodeSetLocalToOrigin
-                { localExpressionVariables =
-                    inferredValueOrFunctionDeclaration.parameters
-                        |> listMapToFastSetsAndUnify patternTypedNodeIntroducedVariables
-                }
-                moduleOrigin
-    , type_ =
-        inferredValueOrFunctionDeclaration.type_
-            |> typeSetLocalToOrigin moduleOrigin
-    }
-
-
-patternTypedNodeSetLocalToOrigin :
-    Elm.Syntax.ModuleName.ModuleName
-    ->
-        ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableVariable))
-            (ElmSyntaxTypeInfer.Type comparableVariable)
-    ->
-        ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableVariable))
-            (ElmSyntaxTypeInfer.Type comparableVariable)
-patternTypedNodeSetLocalToOrigin moduleOrigin patternTypedNode =
-    { range = patternTypedNode.range
-    , type_ =
-        patternTypedNode.type_
-            |> typeSetLocalToOrigin moduleOrigin
-    , value =
-        patternTypedNode.value
-            |> patternSetLocalToOrigin moduleOrigin
-    }
-
-
-patternSetLocalToOrigin :
-    Elm.Syntax.ModuleName.ModuleName
-    -> ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableVariable)
-    -> ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableVariable)
-patternSetLocalToOrigin moduleOrigin patternInferred =
-    case patternInferred of
-        ElmSyntaxTypeInfer.PatternIgnored ->
-            ElmSyntaxTypeInfer.PatternIgnored
-
-        ElmSyntaxTypeInfer.PatternUnit ->
-            ElmSyntaxTypeInfer.PatternUnit
-
-        ElmSyntaxTypeInfer.PatternChar char ->
-            ElmSyntaxTypeInfer.PatternChar char
-
-        ElmSyntaxTypeInfer.PatternString string ->
-            ElmSyntaxTypeInfer.PatternString string
-
-        ElmSyntaxTypeInfer.PatternInt int ->
-            ElmSyntaxTypeInfer.PatternInt int
-
-        ElmSyntaxTypeInfer.PatternVariable variable ->
-            ElmSyntaxTypeInfer.PatternVariable variable
-
-        ElmSyntaxTypeInfer.PatternParenthesized inParens ->
-            ElmSyntaxTypeInfer.PatternParenthesized
-                (inParens
-                    |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                )
-
-        ElmSyntaxTypeInfer.PatternAs patternAs ->
-            ElmSyntaxTypeInfer.PatternAs
-                { variable =
-                    { range = patternAs.variable.range
-                    , value = patternAs.variable.value
-                    , type_ =
-                        patternAs.variable.type_
-                            |> typeSetLocalToOrigin moduleOrigin
-                    }
-                , pattern =
-                    patternAs.pattern
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.PatternListCons listCons ->
-            ElmSyntaxTypeInfer.PatternListCons
-                { head =
-                    listCons.head
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , tail =
-                    listCons.tail
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.PatternTuple parts ->
-            ElmSyntaxTypeInfer.PatternTuple
-                { part0 =
-                    parts.part0
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.PatternTriple parts ->
-            ElmSyntaxTypeInfer.PatternTriple
-                { part0 =
-                    parts.part0
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , part2 =
-                    parts.part2
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.PatternRecord fields ->
-            ElmSyntaxTypeInfer.PatternRecord
-                (fields
-                    |> List.map
-                        (\field ->
-                            { range = field.range
-                            , value = field.value
-                            , type_ =
-                                field.type_
-                                    |> typeSetLocalToOrigin moduleOrigin
-                            }
-                        )
-                )
-
-        ElmSyntaxTypeInfer.PatternListExact elements ->
-            ElmSyntaxTypeInfer.PatternListExact
-                (elements
-                    |> List.map
-                        (\element ->
-                            element
-                                |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                        )
-                )
-
-        ElmSyntaxTypeInfer.PatternVariant patternVariant ->
-            ElmSyntaxTypeInfer.PatternVariant
-                { name = patternVariant.name
-                , qualification = patternVariant.qualification
-                , moduleOrigin =
-                    case patternVariant.moduleOrigin of
-                        moduleOriginPart0 :: moduleOriginPart1Up ->
-                            moduleOriginPart0 :: moduleOriginPart1Up
-
-                        [] ->
-                            moduleOrigin
-                , values =
-                    patternVariant.values
-                        |> List.map
-                            (\value ->
-                                value
-                                    |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                            )
-                }
-
-
-expressionTypedNodeSetLocalToOrigin :
-    { localExpressionVariables : FastSet.Set String }
-    -> Elm.Syntax.ModuleName.ModuleName
-    ->
-        ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type comparableVariable))
-            (ElmSyntaxTypeInfer.Type comparableVariable)
-    ->
-        ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type comparableVariable))
-            (ElmSyntaxTypeInfer.Type comparableVariable)
-expressionTypedNodeSetLocalToOrigin context moduleOrigin expressionTypedNode =
-    { range = expressionTypedNode.range
-    , type_ = expressionTypedNode.type_ |> typeSetLocalToOrigin moduleOrigin
-    , value =
-        expressionTypedNode.value
-            |> expressionSetLocalToOrigin context moduleOrigin
-    }
-
-
-expressionSetLocalToOrigin :
-    { localExpressionVariables : FastSet.Set String }
-    -> Elm.Syntax.ModuleName.ModuleName
-    -> ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type comparableVariable)
-    -> ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type comparableVariable)
-expressionSetLocalToOrigin context moduleOrigin inferredExpression =
-    case inferredExpression of
-        ElmSyntaxTypeInfer.ExpressionUnit ->
-            ElmSyntaxTypeInfer.ExpressionUnit
-
-        ElmSyntaxTypeInfer.ExpressionInteger integer ->
-            ElmSyntaxTypeInfer.ExpressionInteger integer
-
-        ElmSyntaxTypeInfer.ExpressionFloat float ->
-            ElmSyntaxTypeInfer.ExpressionFloat float
-
-        ElmSyntaxTypeInfer.ExpressionString string ->
-            ElmSyntaxTypeInfer.ExpressionString string
-
-        ElmSyntaxTypeInfer.ExpressionChar char ->
-            ElmSyntaxTypeInfer.ExpressionChar char
-
-        ElmSyntaxTypeInfer.ExpressionReference reference ->
-            ElmSyntaxTypeInfer.ExpressionReference
-                (case reference.moduleOrigin of
-                    [] ->
-                        if context.localExpressionVariables |> FastSet.member reference.name then
-                            reference
-
-                        else
-                            { name = reference.name
-                            , qualification = reference.qualification
-                            , moduleOrigin = moduleOrigin
-                            }
-
-                    _ :: _ ->
-                        reference
-                )
-
-        ElmSyntaxTypeInfer.ExpressionOperatorFunction operatorFunction ->
-            ElmSyntaxTypeInfer.ExpressionOperatorFunction operatorFunction
-
-        ElmSyntaxTypeInfer.ExpressionRecordAccessFunction recordAccessFunction ->
-            ElmSyntaxTypeInfer.ExpressionRecordAccessFunction recordAccessFunction
-
-        ElmSyntaxTypeInfer.ExpressionNegation negated ->
-            ElmSyntaxTypeInfer.ExpressionNegation
-                (negated
-                    |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                )
-
-        ElmSyntaxTypeInfer.ExpressionParenthesized inParens ->
-            ElmSyntaxTypeInfer.ExpressionParenthesized
-                (inParens
-                    |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                )
-
-        ElmSyntaxTypeInfer.ExpressionTuple parts ->
-            ElmSyntaxTypeInfer.ExpressionTuple
-                { part0 =
-                    parts.part0
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionTriple parts ->
-            ElmSyntaxTypeInfer.ExpressionTriple
-                { part0 =
-                    parts.part0
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , part2 =
-                    parts.part2
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionRecordAccess recordAccess ->
-            ElmSyntaxTypeInfer.ExpressionRecordAccess
-                { record =
-                    recordAccess.record
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , fieldNameRange = recordAccess.fieldNameRange
-                , fieldName = recordAccess.fieldName
-                }
-
-        ElmSyntaxTypeInfer.ExpressionInfixOperation infixOperation ->
-            ElmSyntaxTypeInfer.ExpressionInfixOperation
-                { operator =
-                    { symbol = infixOperation.operator.symbol
-                    , moduleOrigin = infixOperation.operator.moduleOrigin
-                    , type_ =
-                        infixOperation.operator.type_
-                            |> typeSetLocalToOrigin moduleOrigin
-                    }
-                , left =
-                    infixOperation.left
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , right =
-                    infixOperation.right
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionIfThenElse ifThenElse ->
-            ElmSyntaxTypeInfer.ExpressionIfThenElse
-                { condition =
-                    ifThenElse.condition
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , onTrue =
-                    ifThenElse.onTrue
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , onFalse =
-                    ifThenElse.onFalse
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionList elements ->
-            ElmSyntaxTypeInfer.ExpressionList
-                (elements
-                    |> List.map
-                        (\element ->
-                            element |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                        )
-                )
-
-        ElmSyntaxTypeInfer.ExpressionCall call ->
-            ElmSyntaxTypeInfer.ExpressionCall
-                { called =
-                    call.called
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , argument0 =
-                    call.argument0
-                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                , argument1Up =
-                    call.argument1Up
-                        |> List.map
-                            (\element ->
-                                element |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                            )
-                }
-
-        ElmSyntaxTypeInfer.ExpressionRecord fields ->
-            ElmSyntaxTypeInfer.ExpressionRecord
-                (fields
-                    |> List.map
-                        (\field ->
-                            { range = field.range
-                            , nameRange = field.nameRange
-                            , name = field.name
-                            , value =
-                                field.value
-                                    |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                            }
-                        )
-                )
-
-        ElmSyntaxTypeInfer.ExpressionRecordUpdate recordUpdate ->
-            ElmSyntaxTypeInfer.ExpressionRecordUpdate
-                { recordVariable =
-                    { range = recordUpdate.recordVariable.range
-                    , type_ =
-                        recordUpdate.recordVariable.type_
-                            |> typeSetLocalToOrigin moduleOrigin
-                    , value =
-                        recordUpdate.recordVariable.value
-                            |> (\reference ->
-                                    case reference.moduleOrigin of
-                                        [] ->
-                                            if context.localExpressionVariables |> FastSet.member reference.name then
-                                                reference
-
-                                            else
-                                                { name = reference.name
-                                                , moduleOrigin = moduleOrigin
-                                                }
-
-                                        _ :: _ ->
-                                            reference
-                               )
-                    }
-                , field0 =
-                    recordUpdate.field0
-                        |> (\field ->
-                                { range = field.range
-                                , nameRange = field.nameRange
-                                , name = field.name
-                                , value =
-                                    field.value
-                                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                                }
-                           )
-                , field1Up =
-                    recordUpdate.field1Up
-                        |> List.map
-                            (\field ->
-                                { range = field.range
-                                , nameRange = field.nameRange
-                                , name = field.name
-                                , value =
-                                    field.value
-                                        |> expressionTypedNodeSetLocalToOrigin context moduleOrigin
-                                }
-                            )
-                }
-
-        ElmSyntaxTypeInfer.ExpressionLambda lambda ->
-            let
-                introducedParameterPatternVariables : FastSet.Set String
-                introducedParameterPatternVariables =
-                    (lambda.parameter0 :: lambda.parameter1Up)
-                        |> listMapToFastSetsAndUnify
-                            patternTypedNodeIntroducedVariables
-            in
-            ElmSyntaxTypeInfer.ExpressionLambda
-                { parameter0 =
-                    lambda.parameter0
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , parameter1Up =
-                    lambda.parameter1Up
-                        |> List.map
-                            (\parameter ->
-                                parameter
-                                    |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                            )
-                , result =
-                    lambda.result
-                        |> expressionTypedNodeSetLocalToOrigin
-                            { localExpressionVariables =
-                                FastSet.union
-                                    context.localExpressionVariables
-                                    introducedParameterPatternVariables
-                            }
-                            moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionLetIn letIn ->
-            let
-                introducedExpressionVariablesAcrossLetIn : FastSet.Set String
-                introducedExpressionVariablesAcrossLetIn =
-                    (letIn.declaration0 :: letIn.declaration1Up)
-                        |> listMapToFastSetsAndUnify
-                            (\inferredLetDeclaration ->
-                                case inferredLetDeclaration.declaration of
-                                    ElmSyntaxTypeInfer.LetDestructuring letDestructuring ->
-                                        letDestructuring.pattern
-                                            |> patternTypedNodeIntroducedVariables
-
-                                    ElmSyntaxTypeInfer.LetValueOrFunctionDeclaration letValueOrFunction ->
-                                        FastSet.insert letValueOrFunction.name
-                                            (letValueOrFunction.parameters
-                                                |> listMapToFastSetsAndUnify
-                                                    patternTypedNodeIntroducedVariables
-                                            )
-                            )
-
-                newContext : { localExpressionVariables : FastSet.Set String }
-                newContext =
-                    { localExpressionVariables =
-                        FastSet.union context.localExpressionVariables
-                            introducedExpressionVariablesAcrossLetIn
-                    }
-            in
-            ElmSyntaxTypeInfer.ExpressionLetIn
-                { declaration0 =
-                    letIn.declaration0
-                        |> (\inferredLetDeclaration ->
-                                { range = inferredLetDeclaration.range
-                                , declaration =
-                                    inferredLetDeclaration.declaration
-                                        |> letDeclarationSetLocalToOrigin newContext
-                                            moduleOrigin
-                                }
-                           )
-                , declaration1Up =
-                    letIn.declaration1Up
-                        |> List.map
-                            (\inferredLetDeclaration ->
-                                { range = inferredLetDeclaration.range
-                                , declaration =
-                                    inferredLetDeclaration.declaration
-                                        |> letDeclarationSetLocalToOrigin newContext
-                                            moduleOrigin
-                                }
-                            )
-                , result =
-                    letIn.result
-                        |> expressionTypedNodeSetLocalToOrigin newContext
-                            moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.ExpressionCaseOf caseOf ->
-            ElmSyntaxTypeInfer.ExpressionCaseOf
-                { matchedExpression =
-                    caseOf.matchedExpression
-                        |> expressionTypedNodeSetLocalToOrigin
-                            context
-                            moduleOrigin
-                , case0 =
-                    caseOf.case0
-                        |> (\caseInferred ->
-                                { pattern =
-                                    caseInferred.pattern
-                                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                                , result =
-                                    caseInferred.result
-                                        |> expressionTypedNodeSetLocalToOrigin
-                                            { localExpressionVariables =
-                                                FastSet.union
-                                                    context.localExpressionVariables
-                                                    (caseInferred.pattern
-                                                        |> patternTypedNodeIntroducedVariables
-                                                    )
-                                            }
-                                            moduleOrigin
-                                }
-                           )
-                , case1Up =
-                    caseOf.case1Up
-                        |> List.map
-                            (\caseInferred ->
-                                { pattern =
-                                    caseInferred.pattern
-                                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                                , result =
-                                    caseInferred.result
-                                        |> expressionTypedNodeSetLocalToOrigin
-                                            { localExpressionVariables =
-                                                FastSet.union
-                                                    context.localExpressionVariables
-                                                    (caseInferred.pattern
-                                                        |> patternTypedNodeIntroducedVariables
-                                                    )
-                                            }
-                                            moduleOrigin
-                                }
-                            )
-                }
-
-
-letDeclarationSetLocalToOrigin :
-    { localExpressionVariables : FastSet.Set String }
-    -> Elm.Syntax.ModuleName.ModuleName
-    -> ElmSyntaxTypeInfer.LetDeclaration (ElmSyntaxTypeInfer.Type comparableVariable)
-    -> ElmSyntaxTypeInfer.LetDeclaration (ElmSyntaxTypeInfer.Type comparableVariable)
-letDeclarationSetLocalToOrigin context moduleOrigin inferredLetDeclaration =
-    case inferredLetDeclaration of
-        ElmSyntaxTypeInfer.LetDestructuring letDestructuring ->
-            ElmSyntaxTypeInfer.LetDestructuring
-                { pattern =
-                    letDestructuring.pattern
-                        |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                , expression =
-                    letDestructuring.expression
-                        |> expressionTypedNodeSetLocalToOrigin context
-                            moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.LetValueOrFunctionDeclaration letValueOrFunction ->
-            ElmSyntaxTypeInfer.LetValueOrFunctionDeclaration
-                { signature = letValueOrFunction.signature
-                , nameRange = letValueOrFunction.nameRange
-                , name = letValueOrFunction.name
-                , parameters =
-                    letValueOrFunction.parameters
-                        |> List.map
-                            (\parameter ->
-                                parameter
-                                    |> patternTypedNodeSetLocalToOrigin moduleOrigin
-                            )
-                , result =
-                    letValueOrFunction.result
-                        |> expressionTypedNodeSetLocalToOrigin context
-                            moduleOrigin
-                , type_ = letValueOrFunction.type_ |> typeSetLocalToOrigin moduleOrigin
-                }
-
-
 patternTypedNodeIntroducedVariables :
     ElmSyntaxTypeInfer.TypedNode
-        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableTypeVariable))
-        (ElmSyntaxTypeInfer.Type comparableTypeVariable)
+        ElmSyntaxTypeInfer.Pattern
     -> FastSet.Set String
 patternTypedNodeIntroducedVariables patternTypedNode =
     patternTypedNode.value
@@ -6297,7 +5700,7 @@ patternTypedNodeIntroducedVariables patternTypedNode =
 
 
 patternIntroducedVariables :
-    ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type comparableTypeVariable_)
+    ElmSyntaxTypeInfer.Pattern
     -> FastSet.Set String
 patternIntroducedVariables inferredPattern =
     case inferredPattern of
@@ -6387,9 +5790,9 @@ patternIntroducedVariables inferredPattern =
 
 
 typeSetLocalToOrigin :
-    Elm.Syntax.ModuleName.ModuleName
-    -> ElmSyntaxTypeInfer.Type variable
-    -> ElmSyntaxTypeInfer.Type variable
+    String
+    -> ElmSyntaxTypeInfer.Type
+    -> ElmSyntaxTypeInfer.Type
 typeSetLocalToOrigin moduleOrigin inferredType =
     case inferredType of
         ElmSyntaxTypeInfer.TypeVariable variable ->
@@ -6401,9 +5804,9 @@ typeSetLocalToOrigin moduleOrigin inferredType =
 
 
 typeNotVariableSetLocalToOrigin :
-    Elm.Syntax.ModuleName.ModuleName
-    -> ElmSyntaxTypeInfer.TypeNotVariable variable
-    -> ElmSyntaxTypeInfer.TypeNotVariable variable
+    String
+    -> ElmSyntaxTypeInfer.TypeNotVariable
+    -> ElmSyntaxTypeInfer.TypeNotVariable
 typeNotVariableSetLocalToOrigin moduleOrigin typeNotVariable =
     case typeNotVariable of
         ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
@@ -6411,11 +5814,11 @@ typeNotVariableSetLocalToOrigin moduleOrigin typeNotVariable =
                 { name = typeConstruct.name
                 , moduleOrigin =
                     case typeConstruct.moduleOrigin of
-                        [] ->
+                        "" ->
                             moduleOrigin
 
-                        moduleOriginPart0 :: moduleOriginPart1Up ->
-                            moduleOriginPart0 :: moduleOriginPart1Up
+                        aliasOrModuleName ->
+                            aliasOrModuleName
                 , arguments =
                     typeConstruct.arguments
                         |> List.map
@@ -6504,17 +5907,20 @@ generatedFsharpRecordTypeAliasName recordFields =
     "Generated_" ++ (recordFields |> String.join "_")
 
 
-moduleHeaderName : Elm.Syntax.Module.Module -> Elm.Syntax.ModuleName.ModuleName
+moduleHeaderName : Elm.Syntax.Module.Module -> String
 moduleHeaderName moduleHeader =
-    case moduleHeader of
+    (case moduleHeader of
         Elm.Syntax.Module.NormalModule header ->
-            header.moduleName |> Elm.Syntax.Node.value
+            header.moduleName
 
         Elm.Syntax.Module.PortModule header ->
-            header.moduleName |> Elm.Syntax.Node.value
+            header.moduleName
 
         Elm.Syntax.Module.EffectModule header ->
-            header.moduleName |> Elm.Syntax.Node.value
+            header.moduleName
+    )
+        |> Elm.Syntax.Node.value
+        |> String.join "."
 
 
 valueOrFunctionDeclaration :
@@ -6524,14 +5930,12 @@ valueOrFunctionDeclaration :
             | parameters :
                 List
                     (ElmSyntaxTypeInfer.TypedNode
-                        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                        (ElmSyntaxTypeInfer.Type String)
+                        ElmSyntaxTypeInfer.Pattern
                     )
             , result :
                 ElmSyntaxTypeInfer.TypedNode
-                    (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String))
-                    (ElmSyntaxTypeInfer.Type String)
-            , type_ : ElmSyntaxTypeInfer.Type String
+                    ElmSyntaxTypeInfer.Expression
+            , type_ : ElmSyntaxTypeInfer.Type
         }
     ->
         Result
@@ -6557,9 +5961,7 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
                 )
                 (syntaxDeclarationValueOrFunction.result
                     |> expression
-                        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                            moduleContext.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                        , variantLookup = moduleContext.variantLookup
+                        { variantLookup = moduleContext.variantLookup
                         , recordTypeAliasLookup = moduleContext.recordTypeAliasLookup
                         , portIncomingLookup = moduleContext.portIncomingLookup
                         , portOutgoingLookup = moduleContext.portOutgoingLookup
@@ -6680,47 +6082,37 @@ fsharpKeywords =
 expressionContextAddVariablesInScope :
     FastSet.Set String
     ->
-        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+        { variantLookup :
             FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
-                Elm.Syntax.ModuleName.ModuleName
-        , variantLookup :
-            FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
-                { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+                ( String, String )
+                { moduleOrigin : String
                 , valueCount : Int
                 }
         , recordTypeAliasLookup :
             FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
+                ( String, String )
                 (List String)
-        , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-        , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+        , portIncomingLookup : FastSet.Set ( String, String )
+        , portOutgoingLookup : FastSet.Set ( String, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
     ->
-        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+        { variantLookup :
             FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
-                Elm.Syntax.ModuleName.ModuleName
-        , variantLookup :
-            FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
-                { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+                ( String, String )
+                { moduleOrigin : String
                 , valueCount : Int
                 }
         , recordTypeAliasLookup :
             FastDict.Dict
-                ( Elm.Syntax.ModuleName.ModuleName, String )
+                ( String, String )
                 (List String)
-        , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-        , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+        , portIncomingLookup : FastSet.Set ( String, String )
+        , portOutgoingLookup : FastSet.Set ( String, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
         }
 expressionContextAddVariablesInScope additionalVariablesInScope context =
-    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-        context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-    , variantLookup = context.variantLookup
+    { variantLookup = context.variantLookup
     , recordTypeAliasLookup = context.recordTypeAliasLookup
     , portIncomingLookup = context.portIncomingLookup
     , portOutgoingLookup = context.portOutgoingLookup
@@ -6732,28 +6124,23 @@ expressionContextAddVariablesInScope additionalVariablesInScope context =
 
 
 expression :
-    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+    { variantLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            Elm.Syntax.ModuleName.ModuleName
-    , variantLookup :
-        FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            { moduleOrigin : String
             , valueCount : Int
             }
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
+            ( String, String )
             (List String)
-    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portIncomingLookup : FastSet.Set ( String, String )
+    , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
         ElmSyntaxTypeInfer.TypedNode
-            (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String))
-            (ElmSyntaxTypeInfer.Type String)
+            ElmSyntaxTypeInfer.Expression
     -> Result String FsharpExpression
 expression context expressionTypedNode =
     -- IGNORE TCO
@@ -6765,12 +6152,21 @@ expression context expressionTypedNode =
             case expressionTypedNode.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct typeConstruct) ->
                     case ( typeConstruct.moduleOrigin, typeConstruct.name ) of
-                        ( [ "Basics" ], "Float" ) ->
+                        ( "Basics", "Float" ) ->
                             Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
 
                         _ ->
                             -- assume Int
                             Ok (FsharpExpressionInt intValue.value)
+
+                ElmSyntaxTypeInfer.TypeVariable variable ->
+                    if variable.name |> String.startsWith "number" then
+                        -- assume Float
+                        Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
+
+                    else
+                        -- assume Int
+                        Ok (FsharpExpressionInt intValue.value)
 
                 _ ->
                     -- assume Int
@@ -6825,9 +6221,7 @@ expression context expressionTypedNode =
 
         ElmSyntaxTypeInfer.ExpressionOperatorFunction operator ->
             Result.map
-                (\operationFunctionReference ->
-                    FsharpExpressionReference operationFunctionReference
-                )
+                FsharpExpressionReference
                 (expressionOperatorToFsharpFunctionReference
                     { moduleOrigin = operator.moduleOrigin
                     , symbol = operator.symbol
@@ -6884,7 +6278,7 @@ expression context expressionTypedNode =
                                 infixOperation.left.type_
                                     == ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -6935,15 +6329,146 @@ expression context expressionTypedNode =
                         (infixOperation.left |> expression context)
                         (infixOperation.right |> expression context)
 
+        ElmSyntaxTypeInfer.ExpressionReferenceVariant reference ->
+            let
+                fsharpReference : { moduleOrigin : Maybe String, name : String }
+                fsharpReference =
+                    case
+                        { moduleOrigin = reference.moduleOrigin
+                        , name = reference.name
+                        , type_ = expressionTypedNode.type_
+                        }
+                            |> referenceToCoreFsharp
+                    of
+                        Just fsharpCoreReference ->
+                            fsharpCoreReference
+
+                        Nothing ->
+                            { moduleOrigin = Nothing
+                            , name =
+                                referenceToFsharpName
+                                    { moduleOrigin = reference.moduleOrigin
+                                    , name = reference.name
+                                    }
+                            }
+            in
+            case expressionTypedNode.type_ |> inferredTypeExpandFunction |> .inputs |> listMapAndCombineOk type_ of
+                Err error ->
+                    Err error
+
+                Ok [] ->
+                    Ok (FsharpExpressionReference fsharpReference)
+
+                Ok (valueType0 :: valueType1Up) ->
+                    let
+                        generatedValueVariableReference : Int -> FsharpExpression
+                        generatedValueVariableReference valueIndex =
+                            FsharpExpressionReference
+                                { moduleOrigin = Nothing
+                                , name =
+                                    "generated_"
+                                        ++ (valueIndex |> String.fromInt)
+                                }
+
+                        generatedValueTypedPattern : Int -> FsharpPattern
+                        generatedValueTypedPattern valueIndex =
+                            FsharpPatternVariable
+                                ("generated_"
+                                    ++ (valueIndex |> String.fromInt)
+                                )
+                    in
+                    Ok
+                        (FsharpExpressionLambda
+                            { parameters =
+                                { pattern = generatedValueTypedPattern 0
+                                , type_ = valueType0
+                                }
+                                    :: (valueType1Up
+                                            |> List.indexedMap
+                                                (\i valueType ->
+                                                    { pattern = generatedValueTypedPattern (i + 1)
+                                                    , type_ = valueType
+                                                    }
+                                                )
+                                       )
+                            , result =
+                                FsharpExpressionCall
+                                    { called = FsharpExpressionReference fsharpReference
+                                    , arguments =
+                                        [ case valueType1Up of
+                                            [] ->
+                                                generatedValueVariableReference 0
+
+                                            _ :: valueType2Up ->
+                                                FsharpExpressionTuple
+                                                    { part0 = generatedValueVariableReference 0
+                                                    , part1 = generatedValueVariableReference 1
+                                                    , part2Up =
+                                                        valueType2Up
+                                                            |> List.indexedMap
+                                                                (\i _ -> generatedValueVariableReference (i + 2))
+                                                    }
+                                        ]
+                                    }
+                            }
+                        )
+
+        ElmSyntaxTypeInfer.ExpressionReferenceRecordTypeAliasConstructorFunction reference ->
+            case context.recordTypeAliasLookup |> FastDict.get ( reference.qualification, reference.name ) of
+                Just fieldOrder ->
+                    case fieldOrder of
+                        [] ->
+                            Ok (FsharpExpressionRecord FastDict.empty)
+
+                        fieldName0 :: fieldName1Up ->
+                            Result.map
+                                (\fsharpType ->
+                                    let
+                                        parameterTypes : List FsharpType
+                                        parameterTypes =
+                                            fsharpTypeExpandFunctionIntoReverse []
+                                                fsharpType
+                                                |> List.drop 1
+                                                |> List.reverse
+                                    in
+                                    FsharpExpressionLambda
+                                        { parameters =
+                                            List.map2
+                                                (\fieldName fieldType ->
+                                                    { pattern = FsharpPatternVariable ("generated_" ++ fieldName)
+                                                    , type_ = fieldType
+                                                    }
+                                                )
+                                                (fieldName0 :: fieldName1Up)
+                                                parameterTypes
+                                        , result =
+                                            FsharpExpressionRecord
+                                                ((fieldName0 :: fieldName1Up)
+                                                    |> List.foldl
+                                                        (\fieldName soFar ->
+                                                            soFar
+                                                                |> FastDict.insert fieldName
+                                                                    (FsharpExpressionReference
+                                                                        { moduleOrigin = Nothing
+                                                                        , name = "generated_" ++ fieldName
+                                                                        }
+                                                                    )
+                                                        )
+                                                        FastDict.empty
+                                                )
+                                        }
+                                )
+                                (expressionTypedNode.type_ |> type_)
+
+                Nothing ->
+                    Err ""
+
         ElmSyntaxTypeInfer.ExpressionReference reference ->
             let
                 asVariableFromWithinDeclaration : Maybe String
                 asVariableFromWithinDeclaration =
                     case reference.moduleOrigin of
-                        _ :: _ ->
-                            Nothing
-
-                        [] ->
+                        "" ->
                             let
                                 fsharpName : String
                                 fsharpName =
@@ -6957,6 +6482,9 @@ expression context expressionTypedNode =
 
                             else
                                 Nothing
+
+                        _ ->
+                            Nothing
             in
             case asVariableFromWithinDeclaration of
                 Just variableFromWithinDeclaration ->
@@ -6968,192 +6496,59 @@ expression context expressionTypedNode =
                         )
 
                 Nothing ->
-                    case context.variantLookup |> FastDict.get ( reference.qualification, reference.name ) of
-                        Just _ ->
-                            let
-                                fsharpReference : { moduleOrigin : Maybe String, name : String }
-                                fsharpReference =
-                                    case
-                                        { moduleOrigin = reference.moduleOrigin
-                                        , name = reference.name
-                                        , type_ = expressionTypedNode.type_
+                    if context.portOutgoingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                        Ok
+                            (FsharpExpressionCall
+                                { called =
+                                    FsharpExpressionReference
+                                        { moduleOrigin = Nothing
+                                        , name = "PlatformCmd_portOutgoingWithName"
                                         }
-                                            |> referenceToCoreFsharp
-                                    of
-                                        Just fsharpCoreReference ->
-                                            fsharpCoreReference
+                                , arguments =
+                                    [ createFsharpExpressionCalStringRopeOne
+                                        (FsharpExpressionStringLiteral reference.name)
+                                    ]
+                                }
+                            )
 
-                                        Nothing ->
-                                            { moduleOrigin = Nothing
-                                            , name =
-                                                referenceToFsharpName
-                                                    { moduleOrigin = reference.moduleOrigin
-                                                    , name = reference.name
-                                                    }
-                                            }
-                            in
-                            case expressionTypedNode.type_ |> inferredTypeExpandFunction |> .inputs |> listMapAndCombineOk type_ of
-                                Err error ->
-                                    Err error
+                    else if context.portIncomingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                        Ok
+                            (FsharpExpressionCall
+                                { called =
+                                    FsharpExpressionReference
+                                        { moduleOrigin = Nothing
+                                        , name = "PlatformSub_portIncomingWithName"
+                                        }
+                                , arguments =
+                                    [ createFsharpExpressionCalStringRopeOne
+                                        (FsharpExpressionStringLiteral reference.name)
+                                    ]
+                                }
+                            )
 
-                                Ok [] ->
-                                    Ok (FsharpExpressionReference fsharpReference)
+                    else
+                        Ok
+                            (FsharpExpressionReference
+                                (case
+                                    { moduleOrigin = reference.moduleOrigin
+                                    , name = reference.name
+                                    , type_ = expressionTypedNode.type_
+                                    }
+                                        |> referenceToCoreFsharp
+                                 of
+                                    Just fsharpReference ->
+                                        fsharpReference
 
-                                Ok (valueType0 :: valueType1Up) ->
-                                    let
-                                        generatedValueVariableReference : Int -> FsharpExpression
-                                        generatedValueVariableReference valueIndex =
-                                            FsharpExpressionReference
-                                                { moduleOrigin = Nothing
-                                                , name =
-                                                    "generated_"
-                                                        ++ (valueIndex |> String.fromInt)
+                                    Nothing ->
+                                        { moduleOrigin = Nothing
+                                        , name =
+                                            referenceToFsharpName
+                                                { moduleOrigin = reference.moduleOrigin
+                                                , name = reference.name
                                                 }
-
-                                        generatedValueTypedPattern : Int -> FsharpPattern
-                                        generatedValueTypedPattern valueIndex =
-                                            FsharpPatternVariable
-                                                ("generated_"
-                                                    ++ (valueIndex |> String.fromInt)
-                                                )
-                                    in
-                                    Ok
-                                        (FsharpExpressionLambda
-                                            { parameters =
-                                                { pattern = generatedValueTypedPattern 0
-                                                , type_ = valueType0
-                                                }
-                                                    :: (valueType1Up
-                                                            |> List.indexedMap
-                                                                (\i valueType ->
-                                                                    { pattern = generatedValueTypedPattern (i + 1)
-                                                                    , type_ = valueType
-                                                                    }
-                                                                )
-                                                       )
-                                            , result =
-                                                FsharpExpressionCall
-                                                    { called = FsharpExpressionReference fsharpReference
-                                                    , arguments =
-                                                        [ case valueType1Up of
-                                                            [] ->
-                                                                generatedValueVariableReference 0
-
-                                                            _ :: valueType2Up ->
-                                                                FsharpExpressionTuple
-                                                                    { part0 = generatedValueVariableReference 0
-                                                                    , part1 = generatedValueVariableReference 1
-                                                                    , part2Up =
-                                                                        valueType2Up
-                                                                            |> List.indexedMap
-                                                                                (\i _ -> generatedValueVariableReference (i + 2))
-                                                                    }
-                                                        ]
-                                                    }
-                                            }
-                                        )
-
-                        Nothing ->
-                            case context.recordTypeAliasLookup |> FastDict.get ( reference.qualification, reference.name ) of
-                                Just fieldOrder ->
-                                    case fieldOrder of
-                                        [] ->
-                                            Ok (FsharpExpressionRecord FastDict.empty)
-
-                                        fieldName0 :: fieldName1Up ->
-                                            Result.map
-                                                (\fsharpType ->
-                                                    let
-                                                        parameterTypes : List FsharpType
-                                                        parameterTypes =
-                                                            fsharpTypeExpandFunctionIntoReverse []
-                                                                fsharpType
-                                                                |> List.drop 1
-                                                                |> List.reverse
-                                                    in
-                                                    FsharpExpressionLambda
-                                                        { parameters =
-                                                            List.map2
-                                                                (\fieldName fieldType ->
-                                                                    { pattern = FsharpPatternVariable ("generated_" ++ fieldName)
-                                                                    , type_ = fieldType
-                                                                    }
-                                                                )
-                                                                (fieldName0 :: fieldName1Up)
-                                                                parameterTypes
-                                                        , result =
-                                                            FsharpExpressionRecord
-                                                                ((fieldName0 :: fieldName1Up)
-                                                                    |> List.foldl
-                                                                        (\fieldName soFar ->
-                                                                            soFar
-                                                                                |> FastDict.insert fieldName
-                                                                                    (FsharpExpressionReference
-                                                                                        { moduleOrigin = Nothing
-                                                                                        , name = "generated_" ++ fieldName
-                                                                                        }
-                                                                                    )
-                                                                        )
-                                                                        FastDict.empty
-                                                                )
-                                                        }
-                                                )
-                                                (expressionTypedNode.type_ |> type_)
-
-                                Nothing ->
-                                    if context.portOutgoingLookup |> FastSet.member ( reference.qualification, reference.name ) then
-                                        Ok
-                                            (FsharpExpressionCall
-                                                { called =
-                                                    FsharpExpressionReference
-                                                        { moduleOrigin = Nothing
-                                                        , name = "PlatformCmd_portOutgoingWithName"
-                                                        }
-                                                , arguments =
-                                                    [ createFsharpExpressionCalStringRopeOne
-                                                        (FsharpExpressionStringLiteral reference.name)
-                                                    ]
-                                                }
-                                            )
-
-                                    else if context.portIncomingLookup |> FastSet.member ( reference.qualification, reference.name ) then
-                                        Ok
-                                            (FsharpExpressionCall
-                                                { called =
-                                                    FsharpExpressionReference
-                                                        { moduleOrigin = Nothing
-                                                        , name = "PlatformSub_portIncomingWithName"
-                                                        }
-                                                , arguments =
-                                                    [ createFsharpExpressionCalStringRopeOne
-                                                        (FsharpExpressionStringLiteral reference.name)
-                                                    ]
-                                                }
-                                            )
-
-                                    else
-                                        Ok
-                                            (FsharpExpressionReference
-                                                (case
-                                                    { moduleOrigin = reference.moduleOrigin
-                                                    , name = reference.name
-                                                    , type_ = expressionTypedNode.type_
-                                                    }
-                                                        |> referenceToCoreFsharp
-                                                 of
-                                                    Just fsharpReference ->
-                                                        fsharpReference
-
-                                                    Nothing ->
-                                                        { moduleOrigin = Nothing
-                                                        , name =
-                                                            referenceToFsharpName
-                                                                { moduleOrigin = reference.moduleOrigin
-                                                                , name = reference.name
-                                                                }
-                                                        }
-                                                )
-                                            )
+                                        }
+                                )
+                            )
 
         ElmSyntaxTypeInfer.ExpressionIfThenElse ifThenElse ->
             Result.map3
@@ -7180,7 +6575,7 @@ expression context expressionTypedNode =
                                 (case inNegationNode.type_ of
                                     ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                                         case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                            ( [ "Basics" ], "Float" ) ->
+                                            ( "Basics", "Float" ) ->
                                                 { moduleOrigin = Nothing, name = "Basics_fnegate" }
 
                                             _ ->
@@ -7261,26 +6656,14 @@ expression context expressionTypedNode =
         ElmSyntaxTypeInfer.ExpressionRecordUpdate recordUpdate ->
             Result.map
                 (\fields ->
-                    let
-                        fsharpRecordVariable : String
-                        fsharpRecordVariable =
-                            recordUpdate.recordVariable.value.name
-                                |> variableNameDisambiguateFromFsharpKeywords
-                    in
                     FsharpExpressionRecordUpdate
                         { originalRecordVariable =
-                            case
-                                context.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                                    |> FastDict.get ( [], fsharpRecordVariable )
-                            of
-                                Nothing ->
-                                    fsharpRecordVariable
-
-                                Just moduleOrigin ->
-                                    referenceToFsharpName
-                                        { moduleOrigin = moduleOrigin
-                                        , name = fsharpRecordVariable
-                                        }
+                            referenceToFsharpName
+                                { moduleOrigin = recordUpdate.recordVariable.value.moduleOrigin
+                                , name =
+                                    recordUpdate.recordVariable.value.name
+                                }
+                                |> variableNameDisambiguateFromFsharpKeywords
                         , fields = fields
                         }
                 )
@@ -7347,7 +6730,7 @@ expression context expressionTypedNode =
                         , case1Up = case1Up
                         }
                 )
-                (caseOf.matchedExpression |> expression context)
+                (caseOf.matched |> expression context)
                 (caseOf.case0 |> case_ context)
                 (caseOf.case1Up
                     |> listMapAndCombineOk
@@ -7436,18 +6819,18 @@ fsharpExpressionStringRopeEmpty =
 
 
 inferredTypeExpandFunction :
-    ElmSyntaxTypeInfer.Type String
+    ElmSyntaxTypeInfer.Type
     ->
-        { inputs : List (ElmSyntaxTypeInfer.Type String)
-        , output : ElmSyntaxTypeInfer.Type String
+        { inputs : List ElmSyntaxTypeInfer.Type
+        , output : ElmSyntaxTypeInfer.Type
         }
 inferredTypeExpandFunction inferredType =
     case inferredType of
         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
             let
                 outputExpanded :
-                    { inputs : List (ElmSyntaxTypeInfer.Type String)
-                    , output : ElmSyntaxTypeInfer.Type String
+                    { inputs : List ElmSyntaxTypeInfer.Type
+                    , output : ElmSyntaxTypeInfer.Type
                     }
                 outputExpanded =
                     typeFunction.output |> inferredTypeExpandFunction
@@ -7466,8 +6849,7 @@ in the [pattern](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-S
 -}
 patternBindings :
     ElmSyntaxTypeInfer.TypedNode
-        (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-        (ElmSyntaxTypeInfer.Type String)
+        ElmSyntaxTypeInfer.Pattern
     -> List String
 patternBindings syntaxPattern =
     -- IGNORE TCO
@@ -7651,33 +7033,27 @@ condenseExpressionCall call =
 
 
 case_ :
-    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+    { variantLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            Elm.Syntax.ModuleName.ModuleName
-    , variantLookup :
-        FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            { moduleOrigin : String
             , valueCount : Int
             }
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
+            ( String, String )
             (List String)
-    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portIncomingLookup : FastSet.Set ( String, String )
+    , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
         { pattern :
             ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
+                ElmSyntaxTypeInfer.Pattern
         , result :
             ElmSyntaxTypeInfer.TypedNode
-                (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String))
-                (ElmSyntaxTypeInfer.Type String)
+                ElmSyntaxTypeInfer.Expression
         }
     ->
         Result
@@ -7708,25 +7084,21 @@ case_ context syntaxCase =
 
 
 letDeclaration :
-    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+    { variantLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            Elm.Syntax.ModuleName.ModuleName
-    , variantLookup :
-        FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            { moduleOrigin : String
             , valueCount : Int
             }
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
+            ( String, String )
             (List String)
-    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portIncomingLookup : FastSet.Set ( String, String )
+    , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
-    -> ElmSyntaxTypeInfer.LetDeclaration (ElmSyntaxTypeInfer.Type String)
+    -> ElmSyntaxTypeInfer.LetDeclaration
     -> Result String FsharpLetDeclaration
 letDeclaration context syntaxLetDeclaration =
     case syntaxLetDeclaration of
@@ -7751,22 +7123,18 @@ letDeclaration context syntaxLetDeclaration =
 
 
 letValueOrFunctionDeclaration :
-    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
+    { variantLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            Elm.Syntax.ModuleName.ModuleName
-    , variantLookup :
-        FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
-            { moduleOrigin : Elm.Syntax.ModuleName.ModuleName
+            ( String, String )
+            { moduleOrigin : String
             , valueCount : Int
             }
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( Elm.Syntax.ModuleName.ModuleName, String )
+            ( String, String )
             (List String)
-    , portIncomingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
-    , portOutgoingLookup : FastSet.Set ( Elm.Syntax.ModuleName.ModuleName, String )
+    , portIncomingLookup : FastSet.Set ( String, String )
+    , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
     }
     ->
@@ -7779,9 +7147,9 @@ letValueOrFunctionDeclaration :
                 }
         , nameRange : Elm.Syntax.Range.Range
         , name : String
-        , parameters : List (ElmSyntaxTypeInfer.TypedNode (ElmSyntaxTypeInfer.Pattern (ElmSyntaxTypeInfer.Type String)) (ElmSyntaxTypeInfer.Type String))
-        , result : ElmSyntaxTypeInfer.TypedNode (ElmSyntaxTypeInfer.Expression (ElmSyntaxTypeInfer.Type String)) (ElmSyntaxTypeInfer.Type String)
-        , type_ : ElmSyntaxTypeInfer.Type String
+        , parameters : List (ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern)
+        , result : ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Expression
+        , type_ : ElmSyntaxTypeInfer.Type
         }
     ->
         Result
@@ -7836,8 +7204,8 @@ letValueOrFunctionDeclaration context syntaxLetDeclarationValueOrFunction =
 
 expressionOperatorToFsharpFunctionReference :
     { symbol : String
-    , moduleOrigin : Elm.Syntax.ModuleName.ModuleName
-    , type_ : ElmSyntaxTypeInfer.Type String
+    , moduleOrigin : String
+    , type_ : ElmSyntaxTypeInfer.Type
     }
     -> Result String { moduleOrigin : Maybe String, name : String }
 expressionOperatorToFsharpFunctionReference operator =
@@ -7863,7 +7231,7 @@ expressionOperatorToFsharpFunctionReference operator =
                     case typeFunction.input of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
                             case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                ( [ "Basics" ], "Float" ) ->
+                                ( "Basics", "Float" ) ->
                                     Ok { moduleOrigin = Nothing, name = "Basics_fpow" }
 
                                 _ ->
@@ -7912,7 +7280,7 @@ expressionOperatorToFsharpFunctionReference operator =
                         typeFunction.input
                             == ElmSyntaxTypeInfer.TypeNotVariable
                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                    { moduleOrigin = [ "String" ]
+                                    { moduleOrigin = "String"
                                     , name = "String"
                                     , arguments = []
                                     }
@@ -8270,40 +7638,27 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies :
                 )
         }
 fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclarations =
-    let
-        ordered :
-            List
-                (Data.Graph.SCC
-                    { name : String
-                    , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
-                    , result : FsharpExpression
-                    , resultType : FsharpType
-                    }
-                )
-        ordered =
-            Data.Graph.stronglyConnComp
-                (fsharpValueOrFunctionDeclarations
-                    |> List.map
-                        (\fsharpValueOrFunctionDeclaration ->
-                            ( fsharpValueOrFunctionDeclaration
-                            , fsharpValueOrFunctionDeclaration.name
-                            , fsharpValueOrFunctionDeclaration.result
-                                |> fsharpExpressionContainedLocalReferences
-                                |> FastSet.toList
-                            )
-                        )
-                )
-    in
     { mostToLeastDependedOn =
-        ordered
+        fsharpValueOrFunctionDeclarations
             |> List.map
-                (\fsharpValueOrFunctionDependencyGroup ->
-                    case fsharpValueOrFunctionDependencyGroup of
-                        Data.Graph.CyclicSCC recursiveGroup ->
-                            FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup
+                (\fsharpValueOrFunctionDeclaration ->
+                    ( fsharpValueOrFunctionDeclaration
+                    , fsharpValueOrFunctionDeclaration.name
+                    , fsharpValueOrFunctionDeclaration.result
+                        |> fsharpExpressionUsedLocalReferences
+                        |> FastSet.toList
+                    )
+                )
+            |> Data.Graph.stronglyConnCompR
+            |> List.map
+                (\edge0 ->
+                    case edge0 of
+                        Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                            FsharpValueOrFunctionDependencySingle n
 
-                        Data.Graph.AcyclicSCC single ->
-                            FsharpValueOrFunctionDependencySingle single
+                        Data.Graph.CyclicSCC triples ->
+                            FsharpValueOrFunctionDependencyRecursiveBucket
+                                (List.map (\( n, _, _ ) -> n) triples)
                 )
     }
 
@@ -8343,57 +7698,51 @@ fsharpTypeDeclarationsGroupByDependencies :
                 )
         }
 fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
-    let
-        ordered : List (Data.Graph.SCC FsharpChoiceTypeOrTypeAliasDeclaration)
-        ordered =
-            Data.Graph.stronglyConnComp
-                ((fsharpTypeDeclarations.typeAliases
+    { mostToLeastDependedOn =
+        fsharpTypeDeclarations.typeAliases
+            |> List.foldl
+                (\aliasDeclaration soFar ->
+                    ( FsharpTypeAliasDeclaration aliasDeclaration
+                    , aliasDeclaration.name
+                    , aliasDeclaration.type_
+                        |> fsharpTypeContainedLocalReferences
+                        |> FastSet.toList
+                    )
+                        :: soFar
+                )
+                (fsharpTypeDeclarations.enums
                     |> List.map
-                        (\aliasDeclaration ->
-                            ( FsharpTypeAliasDeclaration aliasDeclaration
-                            , aliasDeclaration.name
-                            , aliasDeclaration.type_
-                                |> fsharpTypeContainedLocalReferences
+                        (\enumDeclaration ->
+                            ( FsharpChoiceTypeDeclaration enumDeclaration
+                            , enumDeclaration.name
+                            , enumDeclaration.variants
+                                |> FastDict.foldl
+                                    (\_ maybeVariantValue soFar ->
+                                        case maybeVariantValue of
+                                            Nothing ->
+                                                soFar
+
+                                            Just variantValue ->
+                                                FastSet.union soFar
+                                                    (variantValue
+                                                        |> fsharpTypeContainedLocalReferences
+                                                    )
+                                    )
+                                    FastSet.empty
                                 |> FastSet.toList
                             )
                         )
-                 )
-                    ++ (fsharpTypeDeclarations.enums
-                            |> List.map
-                                (\enumDeclaration ->
-                                    ( FsharpChoiceTypeDeclaration enumDeclaration
-                                    , enumDeclaration.name
-                                    , enumDeclaration.variants
-                                        |> FastDict.foldl
-                                            (\_ maybeVariantValue soFar ->
-                                                case maybeVariantValue of
-                                                    Nothing ->
-                                                        soFar
-
-                                                    Just variantValue ->
-                                                        FastSet.union
-                                                            (variantValue
-                                                                |> fsharpTypeContainedLocalReferences
-                                                            )
-                                                            soFar
-                                            )
-                                            FastSet.empty
-                                        |> FastSet.toList
-                                    )
-                                )
-                       )
                 )
-    in
-    { mostToLeastDependedOn =
-        ordered
+            |> Data.Graph.stronglyConnCompR
             |> List.map
-                (\fsharpValueOrFunctionDependencyGroup ->
-                    case fsharpValueOrFunctionDependencyGroup of
-                        Data.Graph.CyclicSCC recursiveGroup ->
-                            FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup
+                (\edge0 ->
+                    case edge0 of
+                        Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                            FsharpValueOrFunctionDependencySingle n
 
-                        Data.Graph.AcyclicSCC single ->
-                            FsharpValueOrFunctionDependencySingle single
+                        Data.Graph.CyclicSCC triples ->
+                            FsharpValueOrFunctionDependencyRecursiveBucket
+                                (List.map (\( n, _, _ ) -> n) triples)
                 )
     }
 
@@ -9253,11 +8602,11 @@ fsharpLetDeclarationUsedLocalReferences fsharpLetDeclaration =
     case fsharpLetDeclaration of
         FsharpLetDestructuring fsharpLetDestructuring ->
             fsharpLetDestructuring.expression
-                |> fsharpExpressionContainedLocalReferences
+                |> fsharpExpressionUsedLocalReferences
 
         FsharpLetDeclarationValueOrFunction fsharpLetValueOrFunction ->
             fsharpLetValueOrFunction.result
-                |> fsharpExpressionContainedLocalReferences
+                |> fsharpExpressionUsedLocalReferences
 
 
 fsharpPatternContainedVariables : FsharpPattern -> FastSet.Set String
@@ -10871,6 +10220,17 @@ defaultDeclarations =
     let JsonDecode_value: JsonDecode_Decoder<System.Text.Json.Nodes.JsonNode> =
         fun json -> Ok json
 
+    let JsonDecode_stringRaw: JsonDecode_Decoder<string> =
+        fun json ->
+            try
+                Ok(json.AsValue().GetValue<string>())
+            with _ ->
+                Error(
+                    JsonDecode_Failure(
+                        struct (StringRopeOne "Expecting a STRING", json)
+                    )
+                )
+
     let JsonDecode_string: JsonDecode_Decoder<StringRope> =
         fun json ->
             try
@@ -10917,14 +10277,17 @@ defaultDeclarations =
 
     let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
         fun json ->
-            match json.GetValueKind() with
-            | System.Text.Json.JsonValueKind.Null -> Ok value
-            | _ ->
-                Error(
-                    JsonDecode_Failure(
-                        struct (StringRopeOne "Expecting NULL", json)
+            if json = JsonEncode_null then
+                Ok value
+            else
+                match json.GetValueKind() with
+                | System.Text.Json.JsonValueKind.Null -> Ok value
+                | _ ->
+                    Error(
+                        JsonDecode_Failure(
+                            struct (StringRopeOne "Expecting NULL", json)
+                        )
                     )
-                )
 
     let JsonDecode_index
         (index: int64)
@@ -11016,12 +10379,10 @@ defaultDeclarations =
         // can be optimized
         JsonDecode_map Array.ofList (JsonDecode_list elementDecoder)
 
-    let JsonDecode_field
-        (fieldNameStringRope: StringRope)
+    let JsonDecode_fieldRaw
+        (fieldNameString: string)
         (valueDecoder: JsonDecode_Decoder<'value>)
         : JsonDecode_Decoder<'value> =
-        let fieldNameString = StringRope.toString fieldNameStringRope
-
         fun json ->
             try
                 let jsonObject: System.Text.Json.Nodes.JsonObject = json.AsObject()
@@ -11042,7 +10403,11 @@ defaultDeclarations =
                     match valueDecoder fieldValueJson with
                     | Ok fieldValue -> Ok fieldValue
                     | Error error ->
-                        Error(JsonDecode_Field(struct (fieldNameStringRope, error)))
+                        Error(
+                            JsonDecode_Field(
+                                struct (StringRopeOne fieldNameString, error)
+                            )
+                        )
             with _ ->
                 Error(
                     JsonDecode_Failure(
@@ -11054,6 +10419,14 @@ defaultDeclarations =
                                 json)
                     )
                 )
+
+    let inline JsonDecode_field
+        (fieldNameStringRope: StringRope)
+        (valueDecoder: JsonDecode_Decoder<'value>)
+        : JsonDecode_Decoder<'value> =
+        JsonDecode_fieldRaw
+            (StringRope.toString fieldNameStringRope)
+            valueDecoder
 
     let JsonDecode_at
         (fieldNames: List<StringRope>)
@@ -13412,10 +12785,10 @@ printExactlyUnderscore =
     Print.exactly "_"
 
 
-elmKernelParserTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmKernelParserTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
 elmKernelParserTypes =
     FastDict.singleton
-        [ "Elm", "Kernel", "Parser" ]
+        "Elm.Kernel.Parser"
         { signatures =
             FastDict.fromList
                 [ ( "isSubString"
@@ -13484,10 +12857,9 @@ elmKernelParserTypes =
         }
 
 
-elmKernelUrlTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmKernelUrlTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
 elmKernelUrlTypes =
-    FastDict.singleton
-        [ "Elm", "Kernel", "Url" ]
+    FastDict.singleton "Elm.Kernel.Url"
         { signatures =
             FastDict.fromList
                 [ ( "percentEncode"
@@ -13500,7 +12872,7 @@ elmKernelUrlTypes =
                         [ typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Maybe" ]
+                                { moduleOrigin = "Maybe"
                                 , name = "Maybe"
                                 , arguments = [ typeString ]
                                 }
@@ -13526,9 +12898,9 @@ elmKernelUrlTypes =
 
 
 inferredTypeFunction :
-    List (ElmSyntaxTypeInfer.Type variable)
-    -> ElmSyntaxTypeInfer.Type variable
-    -> ElmSyntaxTypeInfer.Type variable
+    List ElmSyntaxTypeInfer.Type
+    -> ElmSyntaxTypeInfer.Type
+    -> ElmSyntaxTypeInfer.Type
 inferredTypeFunction inputs output =
     case inputs of
         [] ->
@@ -13544,66 +12916,69 @@ inferredTypeFunction inputs output =
                 )
 
 
-typeBool : ElmSyntaxTypeInfer.Type variable_
+typeBool : ElmSyntaxTypeInfer.Type
 typeBool =
     ElmSyntaxTypeInfer.TypeNotVariable
         (ElmSyntaxTypeInfer.TypeConstruct
-            { moduleOrigin = [ "Basics" ]
+            { moduleOrigin = "Basics"
             , name = "Bool"
             , arguments = []
             }
         )
 
 
-typeInt : ElmSyntaxTypeInfer.Type variable_
+typeInt : ElmSyntaxTypeInfer.Type
 typeInt =
     ElmSyntaxTypeInfer.TypeNotVariable
         (ElmSyntaxTypeInfer.TypeConstruct
-            { moduleOrigin = [ "Basics" ]
+            { moduleOrigin = "Basics"
             , name = "Int"
             , arguments = []
             }
         )
 
 
-typeString : ElmSyntaxTypeInfer.Type variable_
+typeString : ElmSyntaxTypeInfer.Type
 typeString =
     ElmSyntaxTypeInfer.TypeNotVariable
         (ElmSyntaxTypeInfer.TypeConstruct
-            { moduleOrigin = [ "String" ]
+            { moduleOrigin = "String"
             , name = "String"
             , arguments = []
             }
         )
 
 
-typeChar : ElmSyntaxTypeInfer.Type variable_
+typeChar : ElmSyntaxTypeInfer.Type
 typeChar =
     ElmSyntaxTypeInfer.TypeNotVariable
         (ElmSyntaxTypeInfer.TypeConstruct
-            { moduleOrigin = [ "Char" ]
+            { moduleOrigin = "Char"
             , name = "Char"
             , arguments = []
             }
         )
 
 
-elmBytesTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmBytesTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
 elmBytesTypes =
     FastDict.fromList
-        [ ( [ "Bytes" ]
+        [ ( "Bytes"
           , { signatures =
                 FastDict.fromList
                     [ ( "getHostEndianness"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Task" ]
+                                { moduleOrigin = "Task"
                                 , name = "Task"
                                 , arguments =
-                                    [ ElmSyntaxTypeInfer.TypeVariable "x"
+                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "x"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
                                     , ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -13618,7 +12993,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Bytes"
                                             , arguments = []
                                             }
@@ -13626,7 +13001,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -13650,7 +13025,7 @@ elmBytesTypes =
                     ]
             }
           )
-        , ( [ "Bytes", "Decode" ]
+        , ( "Bytes.Decode"
           , { signatures =
                 FastDict.fromList
                     [ ( "andThen"
@@ -13661,18 +13036,22 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13685,13 +13064,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13699,13 +13079,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13720,7 +13101,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -13728,14 +13109,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes" ]
+                                                            "Bytes"
                                                         , name = "Bytes"
                                                         , arguments = []
                                                         }
@@ -13752,12 +13132,14 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -13768,7 +13150,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes" ]
+                                                            "Bytes"
                                                         , name = "Bytes"
                                                         , arguments = []
                                                         }
@@ -13777,11 +13159,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Maybe" ]
+                                                            "Maybe"
                                                         , name = "Maybe"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13793,10 +13178,14 @@ elmBytesTypes =
                     , ( "fail"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                { moduleOrigin = "Bytes.Decode"
                                 , name = "Decoder"
                                 , arguments =
-                                    [ ElmSyntaxTypeInfer.TypeVariable "a" ]
+                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    ]
                                 }
                             )
                       )
@@ -13806,7 +13195,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -13814,14 +13203,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Float"
                                                         , arguments = []
                                                         }
@@ -13838,7 +13226,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -13846,14 +13234,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Float"
                                                         , arguments = []
                                                         }
@@ -13868,7 +13255,10 @@ elmBytesTypes =
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeFunction
                                 { input =
-                                    ElmSyntaxTypeInfer.TypeVariable "state"
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "state"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeFunction
@@ -13877,30 +13267,38 @@ elmBytesTypes =
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "state"
+                                                                { name =
+                                                                    "state"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Bytes"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Bytes.Decode"
                                                                                 , name =
                                                                                     "Step"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "state"
+                                                                                        { name =
+                                                                                            "state"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     , ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "a"
+                                                                                        { name =
+                                                                                            "a"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -13913,13 +13311,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13936,10 +13335,16 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "b"
+                                                    { name = "b"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             }
                                         )
                                 , output =
@@ -13949,13 +13354,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13963,13 +13369,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -13986,16 +13393,26 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "result"
+                                                                { name =
+                                                                    "result"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         }
                                                     )
                                             }
@@ -14007,13 +13424,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -14024,14 +13442,16 @@ elmBytesTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -14039,14 +13459,16 @@ elmBytesTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "result"
+                                                                            { name =
+                                                                                "result"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -14065,22 +13487,36 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "result"
+                                                                            { name =
+                                                                                "result"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     }
                                                                 )
                                                         }
@@ -14094,13 +13530,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -14111,14 +13548,16 @@ elmBytesTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -14129,14 +13568,16 @@ elmBytesTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Bytes"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Bytes.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -14144,14 +13585,16 @@ elmBytesTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Bytes"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Bytes.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "result"
+                                                                                        { name =
+                                                                                            "result"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -14172,28 +13615,46 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "result"
+                                                                                        { name =
+                                                                                            "result"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 }
                                                                             )
                                                                     }
@@ -14209,13 +13670,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -14226,14 +13688,16 @@ elmBytesTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -14244,14 +13708,16 @@ elmBytesTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Bytes"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Bytes.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -14262,14 +13728,16 @@ elmBytesTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Bytes"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Bytes.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -14277,14 +13745,16 @@ elmBytesTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Bytes"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Bytes.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "result"
+                                                                                                    { name =
+                                                                                                        "result"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -14307,34 +13777,56 @@ elmBytesTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeFunction
                                                                                             { input =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "e"
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             , output =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "result"
+                                                                                                    { name =
+                                                                                                        "result"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             }
                                                                                         )
                                                                                 }
@@ -14352,13 +13844,14 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Decode"
-                                                            ]
+                                                            "Bytes.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -14369,14 +13862,16 @@ elmBytesTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Bytes"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Bytes.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -14387,14 +13882,16 @@ elmBytesTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Bytes"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Bytes.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -14405,14 +13902,16 @@ elmBytesTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Bytes"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Bytes.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -14423,14 +13922,16 @@ elmBytesTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Bytes"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Bytes.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "e"
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -14438,14 +13939,16 @@ elmBytesTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Bytes"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Bytes.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "result"
+                                                                                                                { name =
+                                                                                                                    "result"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -14468,7 +13971,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14476,14 +13979,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14500,7 +14002,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14508,14 +14010,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14529,12 +14030,12 @@ elmBytesTypes =
                     , ( "signedInt8"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                { moduleOrigin = "Bytes.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -14549,7 +14050,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -14557,14 +14058,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -14578,16 +14078,22 @@ elmBytesTypes =
                     , ( "succeed"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeFunction
-                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -14600,7 +14106,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14608,14 +14114,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14632,7 +14137,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14640,14 +14145,13 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Decode" ]
+                                            { moduleOrigin = "Bytes.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14661,12 +14165,12 @@ elmBytesTypes =
                     , ( "unsignedInt8"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Bytes", "Decode" ]
+                                { moduleOrigin = "Bytes.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -14689,10 +14193,18 @@ elmBytesTypes =
                         , variants =
                             FastDict.fromList
                                 [ ( "Loop"
-                                  , [ ElmSyntaxTypeInfer.TypeVariable "state" ]
+                                  , [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "state"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    ]
                                   )
                                 , ( "Done"
-                                  , [ ElmSyntaxTypeInfer.TypeVariable "a" ]
+                                  , [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    ]
                                   )
                                 ]
                         }
@@ -14700,7 +14212,7 @@ elmBytesTypes =
                     ]
             }
           )
-        , ( [ "Bytes", "Encode" ]
+        , ( "Bytes.Encode"
           , { signatures =
                 FastDict.fromList
                     [ ( "bytes"
@@ -14709,7 +14221,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Bytes"
                                             , arguments = []
                                             }
@@ -14717,8 +14229,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -14732,8 +14243,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -14741,7 +14251,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Bytes"
                                             , arguments = []
                                             }
@@ -14755,7 +14265,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14767,7 +14277,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Float"
                                                         , arguments = []
                                                         }
@@ -14776,9 +14286,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -14794,7 +14302,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14806,7 +14314,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Float"
                                                         , arguments = []
                                                         }
@@ -14815,9 +14323,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -14833,7 +14339,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -14841,7 +14347,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -14855,15 +14361,13 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "List" ]
+                                            { moduleOrigin = "List"
                                             , name = "List"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -14874,8 +14378,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -14889,7 +14392,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14901,7 +14404,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14910,9 +14413,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -14928,7 +14429,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -14940,7 +14441,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -14949,9 +14450,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -14967,7 +14466,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -14975,8 +14474,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -14990,7 +14488,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -14998,8 +14496,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -15013,7 +14510,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -15025,7 +14522,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -15034,9 +14531,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -15052,7 +14547,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Bytes" ]
+                                            { moduleOrigin = "Bytes"
                                             , name = "Endianness"
                                             , arguments = []
                                             }
@@ -15064,7 +14559,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Int"
                                                         , arguments = []
                                                         }
@@ -15073,9 +14568,7 @@ elmBytesTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Bytes"
-                                                            , "Encode"
-                                                            ]
+                                                            "Bytes.Encode"
                                                         , name = "Encoder"
                                                         , arguments = []
                                                         }
@@ -15091,7 +14584,7 @@ elmBytesTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -15099,8 +14592,7 @@ elmBytesTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Bytes", "Encode" ]
+                                            { moduleOrigin = "Bytes.Encode"
                                             , name = "Encoder"
                                             , arguments = []
                                             }
@@ -15121,10 +14613,10 @@ elmBytesTypes =
         ]
 
 
-elmJsonTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmJsonTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
 elmJsonTypes =
     FastDict.fromList
-        [ ( [ "Json", "Decode" ]
+        [ ( "Json.Decode"
           , { signatures =
                 FastDict.fromList
                     [ ( "andThen"
@@ -15135,18 +14627,22 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15159,13 +14655,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15173,13 +14670,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15194,30 +14692,34 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Array" ]
+                                                            "Array"
                                                         , name = "Array"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15233,13 +14735,13 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "List" ]
+                                            { moduleOrigin = "List"
                                             , name = "List"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -15254,13 +14756,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15268,13 +14771,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15286,12 +14790,12 @@ elmJsonTypes =
                     , ( "bool"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Decode" ]
+                                { moduleOrigin = "Json.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Bool"
                                             , arguments = []
                                             }
@@ -15306,12 +14810,14 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -15322,7 +14828,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -15331,15 +14837,13 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Result" ]
+                                                            "Result"
                                                         , name = "Result"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Error"
                                                                     , arguments =
@@ -15347,7 +14851,10 @@ elmJsonTypes =
                                                                     }
                                                                 )
                                                             , ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15362,12 +14869,14 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -15378,9 +14887,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -15389,15 +14896,13 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Result" ]
+                                                            "Result"
                                                         , name = "Result"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Error"
                                                                     , arguments =
@@ -15405,7 +14910,10 @@ elmJsonTypes =
                                                                     }
                                                                 )
                                                             , ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15420,33 +14928,32 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
-                                                        { moduleOrigin =
-                                                            [ "Dict" ]
+                                                        { moduleOrigin = "Dict"
                                                         , name = "Dict"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -15454,7 +14961,10 @@ elmJsonTypes =
                                                                     }
                                                                 )
                                                             , ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15470,8 +14980,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Error"
                                             , arguments = []
                                             }
@@ -15479,7 +14988,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -15493,7 +15002,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -15501,12 +15010,14 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -15519,7 +15030,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -15531,13 +15042,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15545,13 +15057,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15563,12 +15076,12 @@ elmJsonTypes =
                     , ( "float"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Decode" ]
+                                { moduleOrigin = "Json.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Float"
                                             , arguments = []
                                             }
@@ -15583,7 +15096,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -15595,13 +15108,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15609,13 +15123,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15627,12 +15142,12 @@ elmJsonTypes =
                     , ( "int"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Decode" ]
+                                { moduleOrigin = "Json.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -15647,26 +15162,26 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
-                                                        { moduleOrigin =
-                                                            [ "List" ]
+                                                        { moduleOrigin = "List"
                                                         , name = "List"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
@@ -15675,8 +15190,7 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "String"
-                                                                                    ]
+                                                                                    "String"
                                                                                 , name =
                                                                                     "String"
                                                                                 , arguments =
@@ -15685,7 +15199,11 @@ elmJsonTypes =
                                                                             )
                                                                     , part1 =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "a"
+                                                                            { name =
+                                                                                "a"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     }
                                                                 )
                                                             ]
@@ -15710,13 +15228,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15725,12 +15244,14 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -15743,30 +15264,33 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
-                                                        { moduleOrigin =
-                                                            [ "List" ]
+                                                        { moduleOrigin = "List"
                                                         , name = "List"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15784,10 +15308,16 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "value"
+                                                    { name = "value"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             }
                                         )
                                 , output =
@@ -15797,13 +15327,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15811,13 +15342,15 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "value"
+                                                                { name =
+                                                                    "value"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15834,16 +15367,26 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "value"
+                                                                { name =
+                                                                    "value"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         }
                                                     )
                                             }
@@ -15855,13 +15398,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15872,14 +15416,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -15887,14 +15433,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "value"
+                                                                            { name =
+                                                                                "value"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -15913,22 +15461,36 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "value"
+                                                                            { name =
+                                                                                "value"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     }
                                                                 )
                                                         }
@@ -15942,13 +15504,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -15959,14 +15522,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -15977,14 +15542,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -15992,14 +15559,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "value"
+                                                                                        { name =
+                                                                                            "value"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16020,28 +15589,46 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "value"
+                                                                                        { name =
+                                                                                            "value"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 }
                                                                             )
                                                                     }
@@ -16057,13 +15644,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -16074,14 +15662,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -16092,14 +15682,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16110,14 +15702,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16125,14 +15719,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "value"
+                                                                                                    { name =
+                                                                                                        "value"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16155,34 +15751,56 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeFunction
                                                                                             { input =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "e"
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             , output =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "value"
+                                                                                                    { name =
+                                                                                                        "value"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             }
                                                                                         )
                                                                                 }
@@ -16200,13 +15818,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -16217,14 +15836,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -16235,14 +15856,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16253,14 +15876,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16271,14 +15896,16 @@ elmJsonTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Json"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Json.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "e"
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -16286,14 +15913,16 @@ elmJsonTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Json"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Json.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "value"
+                                                                                                                { name =
+                                                                                                                    "value"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -16318,40 +15947,66 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeFunction
                                                                                             { input =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "e"
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             , output =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                                                                         { input =
                                                                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "f"
+                                                                                                                { name =
+                                                                                                                    "f"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                         , output =
                                                                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "value"
+                                                                                                                { name =
+                                                                                                                    "value"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                         }
                                                                                                     )
                                                                                             }
@@ -16371,13 +16026,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -16388,14 +16044,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -16406,14 +16064,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16424,14 +16084,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16442,14 +16104,16 @@ elmJsonTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Json"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Json.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "e"
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -16460,14 +16124,16 @@ elmJsonTypes =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                     { moduleOrigin =
-                                                                                                                        [ "Json"
-                                                                                                                        , "Decode"
-                                                                                                                        ]
+                                                                                                                        "Json.Decode"
                                                                                                                     , name =
                                                                                                                         "Decoder"
                                                                                                                     , arguments =
                                                                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "f"
+                                                                                                                            { name =
+                                                                                                                                "f"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                         ]
                                                                                                                     }
                                                                                                                 )
@@ -16475,14 +16141,16 @@ elmJsonTypes =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                     { moduleOrigin =
-                                                                                                                        [ "Json"
-                                                                                                                        , "Decode"
-                                                                                                                        ]
+                                                                                                                        "Json.Decode"
                                                                                                                     , name =
                                                                                                                         "Decoder"
                                                                                                                     , arguments =
                                                                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "value"
+                                                                                                                            { name =
+                                                                                                                                "value"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                         ]
                                                                                                                     }
                                                                                                                 )
@@ -16509,46 +16177,76 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeFunction
                                                                                             { input =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "e"
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             , output =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                                                                         { input =
                                                                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "f"
+                                                                                                                { name =
+                                                                                                                    "f"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                         , output =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                                                                     { input =
                                                                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "g"
+                                                                                                                            { name =
+                                                                                                                                "g"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                     , output =
                                                                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "value"
+                                                                                                                            { name =
+                                                                                                                                "value"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                     }
                                                                                                                 )
                                                                                                         }
@@ -16570,13 +16268,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -16587,14 +16286,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -16605,14 +16306,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16623,14 +16326,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16641,14 +16346,16 @@ elmJsonTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Json"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Json.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "e"
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -16659,14 +16366,16 @@ elmJsonTypes =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                     { moduleOrigin =
-                                                                                                                        [ "Json"
-                                                                                                                        , "Decode"
-                                                                                                                        ]
+                                                                                                                        "Json.Decode"
                                                                                                                     , name =
                                                                                                                         "Decoder"
                                                                                                                     , arguments =
                                                                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "f"
+                                                                                                                            { name =
+                                                                                                                                "f"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                         ]
                                                                                                                     }
                                                                                                                 )
@@ -16677,14 +16386,16 @@ elmJsonTypes =
                                                                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                                 { moduleOrigin =
-                                                                                                                                    [ "Json"
-                                                                                                                                    , "Decode"
-                                                                                                                                    ]
+                                                                                                                                    "Json.Decode"
                                                                                                                                 , name =
                                                                                                                                     "Decoder"
                                                                                                                                 , arguments =
                                                                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                        "g"
+                                                                                                                                        { name =
+                                                                                                                                            "g"
+                                                                                                                                        , useRange =
+                                                                                                                                            Elm.Syntax.Range.empty
+                                                                                                                                        }
                                                                                                                                     ]
                                                                                                                                 }
                                                                                                                             )
@@ -16692,14 +16403,16 @@ elmJsonTypes =
                                                                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                                 { moduleOrigin =
-                                                                                                                                    [ "Json"
-                                                                                                                                    , "Decode"
-                                                                                                                                    ]
+                                                                                                                                    "Json.Decode"
                                                                                                                                 , name =
                                                                                                                                     "Decoder"
                                                                                                                                 , arguments =
                                                                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                        "value"
+                                                                                                                                        { name =
+                                                                                                                                            "value"
+                                                                                                                                        , useRange =
+                                                                                                                                            Elm.Syntax.Range.empty
+                                                                                                                                        }
                                                                                                                                     ]
                                                                                                                                 }
                                                                                                                             )
@@ -16728,52 +16441,86 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "b"
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                     { input =
                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                            "c"
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                     , output =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                 { input =
                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "d"
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                 , output =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeFunction
                                                                                             { input =
                                                                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "e"
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                             , output =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                                                                         { input =
                                                                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "f"
+                                                                                                                { name =
+                                                                                                                    "f"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                         , output =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeFunction
                                                                                                                     { input =
                                                                                                                         ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "g"
+                                                                                                                            { name =
+                                                                                                                                "g"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                     , output =
                                                                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                             (ElmSyntaxTypeInfer.TypeFunction
                                                                                                                                 { input =
                                                                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                        "h"
+                                                                                                                                        { name =
+                                                                                                                                            "h"
+                                                                                                                                        , useRange =
+                                                                                                                                            Elm.Syntax.Range.empty
+                                                                                                                                        }
                                                                                                                                 , output =
                                                                                                                                     ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                        "value"
+                                                                                                                                        { name =
+                                                                                                                                            "value"
+                                                                                                                                        , useRange =
+                                                                                                                                            Elm.Syntax.Range.empty
+                                                                                                                                        }
                                                                                                                                 }
                                                                                                                             )
                                                                                                                     }
@@ -16797,13 +16544,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -16814,14 +16562,16 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Decode"
-                                                                        ]
+                                                                        "Json.Decode"
                                                                     , name =
                                                                         "Decoder"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "b"
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -16832,14 +16582,16 @@ elmJsonTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Json"
-                                                                                    , "Decode"
-                                                                                    ]
+                                                                                    "Json.Decode"
                                                                                 , name =
                                                                                     "Decoder"
                                                                                 , arguments =
                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                        "c"
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
                                                                                     ]
                                                                                 }
                                                                             )
@@ -16850,14 +16602,16 @@ elmJsonTypes =
                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                             { moduleOrigin =
-                                                                                                [ "Json"
-                                                                                                , "Decode"
-                                                                                                ]
+                                                                                                "Json.Decode"
                                                                                             , name =
                                                                                                 "Decoder"
                                                                                             , arguments =
                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                    "d"
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
                                                                                                 ]
                                                                                             }
                                                                                         )
@@ -16868,14 +16622,16 @@ elmJsonTypes =
                                                                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                         { moduleOrigin =
-                                                                                                            [ "Json"
-                                                                                                            , "Decode"
-                                                                                                            ]
+                                                                                                            "Json.Decode"
                                                                                                         , name =
                                                                                                             "Decoder"
                                                                                                         , arguments =
                                                                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                "e"
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
                                                                                                             ]
                                                                                                         }
                                                                                                     )
@@ -16886,14 +16642,16 @@ elmJsonTypes =
                                                                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                     { moduleOrigin =
-                                                                                                                        [ "Json"
-                                                                                                                        , "Decode"
-                                                                                                                        ]
+                                                                                                                        "Json.Decode"
                                                                                                                     , name =
                                                                                                                         "Decoder"
                                                                                                                     , arguments =
                                                                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                            "f"
+                                                                                                                            { name =
+                                                                                                                                "f"
+                                                                                                                            , useRange =
+                                                                                                                                Elm.Syntax.Range.empty
+                                                                                                                            }
                                                                                                                         ]
                                                                                                                     }
                                                                                                                 )
@@ -16904,14 +16662,16 @@ elmJsonTypes =
                                                                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                                 { moduleOrigin =
-                                                                                                                                    [ "Json"
-                                                                                                                                    , "Decode"
-                                                                                                                                    ]
+                                                                                                                                    "Json.Decode"
                                                                                                                                 , name =
                                                                                                                                     "Decoder"
                                                                                                                                 , arguments =
                                                                                                                                     [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                        "g"
+                                                                                                                                        { name =
+                                                                                                                                            "g"
+                                                                                                                                        , useRange =
+                                                                                                                                            Elm.Syntax.Range.empty
+                                                                                                                                        }
                                                                                                                                     ]
                                                                                                                                 }
                                                                                                                             )
@@ -16922,14 +16682,16 @@ elmJsonTypes =
                                                                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                                             { moduleOrigin =
-                                                                                                                                                [ "Json"
-                                                                                                                                                , "Decode"
-                                                                                                                                                ]
+                                                                                                                                                "Json.Decode"
                                                                                                                                             , name =
                                                                                                                                                 "Decoder"
                                                                                                                                             , arguments =
                                                                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                                    "h"
+                                                                                                                                                    { name =
+                                                                                                                                                        "h"
+                                                                                                                                                    , useRange =
+                                                                                                                                                        Elm.Syntax.Range.empty
+                                                                                                                                                    }
                                                                                                                                                 ]
                                                                                                                                             }
                                                                                                                                         )
@@ -16937,14 +16699,16 @@ elmJsonTypes =
                                                                                                                                     ElmSyntaxTypeInfer.TypeNotVariable
                                                                                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                                                                                             { moduleOrigin =
-                                                                                                                                                [ "Json"
-                                                                                                                                                , "Decode"
-                                                                                                                                                ]
+                                                                                                                                                "Json.Decode"
                                                                                                                                             , name =
                                                                                                                                                 "Decoder"
                                                                                                                                             , arguments =
                                                                                                                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                                                                                                                    "value"
+                                                                                                                                                    { name =
+                                                                                                                                                        "value"
+                                                                                                                                                    , useRange =
+                                                                                                                                                        Elm.Syntax.Range.empty
+                                                                                                                                                    }
                                                                                                                                                 ]
                                                                                                                                             }
                                                                                                                                         )
@@ -16973,30 +16737,34 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Maybe" ]
+                                                            "Maybe"
                                                         , name = "Maybe"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17009,16 +16777,22 @@ elmJsonTypes =
                     , ( "null"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeFunction
-                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -17031,30 +16805,34 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Maybe" ]
+                                                            "Maybe"
                                                         , name = "Maybe"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17070,19 +16848,20 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "List" ]
+                                            { moduleOrigin = "List"
                                             , name = "List"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17092,12 +16871,14 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -17112,7 +16893,10 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeFunction
@@ -17120,19 +16904,26 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "List"
-                                                                        ]
+                                                                        "List"
                                                                     , name =
                                                                         "List"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "a"
+                                                                            { name =
+                                                                                "a"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "value"
+                                                                { name =
+                                                                    "value"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         }
                                                     )
                                             }
@@ -17144,13 +16935,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17158,13 +16950,15 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Decode"
-                                                            ]
+                                                            "Json.Decode"
                                                         , name = "Decoder"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "value"
+                                                                { name =
+                                                                    "value"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17176,12 +16970,12 @@ elmJsonTypes =
                     , ( "string"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Decode" ]
+                                { moduleOrigin = "Json.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -17193,16 +16987,22 @@ elmJsonTypes =
                     , ( "succeed"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeFunction
-                                { input = ElmSyntaxTypeInfer.TypeVariable "a"
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Decoder"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                                 ]
                                             }
                                         )
@@ -17212,13 +17012,12 @@ elmJsonTypes =
                     , ( "value"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Decode" ]
+                                { moduleOrigin = "Json.Decode"
                                 , name = "Decoder"
                                 , arguments =
                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17235,7 +17034,7 @@ elmJsonTypes =
                         , type_ =
                             ElmSyntaxTypeInfer.TypeNotVariable
                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                    { moduleOrigin = [ "Json", "Encode" ]
+                                    { moduleOrigin = "Json.Encode"
                                     , name = "Value"
                                     , arguments = []
                                     }
@@ -17258,14 +17057,14 @@ elmJsonTypes =
                                 [ ( "Field"
                                   , [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
                                         )
                                     , ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Error"
                                             , arguments = []
                                             }
@@ -17275,14 +17074,14 @@ elmJsonTypes =
                                 , ( "Index"
                                   , [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
                                         )
                                     , ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Error"
                                             , arguments = []
                                             }
@@ -17292,13 +17091,13 @@ elmJsonTypes =
                                 , ( "OneOf"
                                   , [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "List" ]
+                                            { moduleOrigin = "List"
                                             , name = "List"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json", "Decode" ]
+                                                            "Json.Decode"
                                                         , name = "Error"
                                                         , arguments = []
                                                         }
@@ -17311,14 +17110,14 @@ elmJsonTypes =
                                 , ( "Failure"
                                   , [ ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
                                         )
                                     , ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Json", "Decode" ]
+                                            { moduleOrigin = "Json.Decode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17331,7 +17130,7 @@ elmJsonTypes =
                     ]
             }
           )
-        , ( [ "Json", "Encode" ]
+        , ( "Json.Encode"
           , { signatures =
                 FastDict.fromList
                     [ ( "array"
@@ -17342,14 +17141,15 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17363,11 +17163,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Array" ]
+                                                            "Array"
                                                         , name = "Array"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17375,9 +17178,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17393,7 +17194,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Bool"
                                             , arguments = []
                                             }
@@ -17401,8 +17202,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Encode" ]
+                                            { moduleOrigin = "Json.Encode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17418,12 +17218,15 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "k"
+                                                    { name = "k"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -17438,14 +17241,15 @@ elmJsonTypes =
                                                     (ElmSyntaxTypeInfer.TypeFunction
                                                         { input =
                                                             ElmSyntaxTypeInfer.TypeVariable
-                                                                "v"
+                                                                { name = "v"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                         , output =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Encode"
-                                                                        ]
+                                                                        "Json.Encode"
                                                                     , name =
                                                                         "Value"
                                                                     , arguments =
@@ -17461,15 +17265,22 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Dict"
-                                                                        ]
+                                                                        "Dict"
                                                                     , name =
                                                                         "Dict"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeVariable
-                                                                            "k"
+                                                                            { name =
+                                                                                "k"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         , ElmSyntaxTypeInfer.TypeVariable
-                                                                            "v"
+                                                                            { name =
+                                                                                "v"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
                                                                         ]
                                                                     }
                                                                 )
@@ -17477,9 +17288,7 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Encode"
-                                                                        ]
+                                                                        "Json.Encode"
                                                                     , name =
                                                                         "Value"
                                                                     , arguments =
@@ -17499,7 +17308,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -17511,9 +17320,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17522,7 +17329,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -17538,7 +17345,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Float"
                                             , arguments = []
                                             }
@@ -17546,8 +17353,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Encode" ]
+                                            { moduleOrigin = "Json.Encode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17561,7 +17367,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -17569,8 +17375,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Encode" ]
+                                            { moduleOrigin = "Json.Encode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17586,14 +17391,15 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17607,11 +17413,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "List" ]
+                                                            "List"
                                                         , name = "List"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17619,9 +17428,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17634,7 +17441,7 @@ elmJsonTypes =
                     , ( "null"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Json", "Encode" ]
+                                { moduleOrigin = "Json.Encode"
                                 , name = "Value"
                                 , arguments = []
                                 }
@@ -17646,7 +17453,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "List" ]
+                                            { moduleOrigin = "List"
                                             , name = "List"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
@@ -17655,8 +17462,7 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -17667,9 +17473,7 @@ elmJsonTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Json"
-                                                                        , "Encode"
-                                                                        ]
+                                                                        "Json.Encode"
                                                                     , name =
                                                                         "Value"
                                                                     , arguments =
@@ -17684,8 +17488,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Encode" ]
+                                            { moduleOrigin = "Json.Encode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17701,14 +17504,15 @@ elmJsonTypes =
                                         (ElmSyntaxTypeInfer.TypeFunction
                                             { input =
                                                 ElmSyntaxTypeInfer.TypeVariable
-                                                    "a"
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
                                             , output =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17722,11 +17526,14 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Set" ]
+                                                            "Set"
                                                         , name = "Set"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeVariable
-                                                                "a"
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
                                                             ]
                                                         }
                                                     )
@@ -17734,9 +17541,7 @@ elmJsonTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Json"
-                                                            , "Encode"
-                                                            ]
+                                                            "Json.Encode"
                                                         , name = "Value"
                                                         , arguments = []
                                                         }
@@ -17752,7 +17557,7 @@ elmJsonTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -17760,8 +17565,7 @@ elmJsonTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin =
-                                                [ "Json", "Encode" ]
+                                            { moduleOrigin = "Json.Encode"
                                             , name = "Value"
                                             , arguments = []
                                             }
@@ -17782,10 +17586,10 @@ elmJsonTypes =
         ]
 
 
-elmRegexTypes : FastDict.Dict Elm.Syntax.ModuleName.ModuleName ElmSyntaxTypeInfer.ModuleTypes
+elmRegexTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
 elmRegexTypes =
     FastDict.fromList
-        [ ( [ "Regex" ]
+        [ ( "Regex"
           , { signatures =
                 FastDict.fromList
                     [ ( "contains"
@@ -17794,7 +17598,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Regex" ]
+                                            { moduleOrigin = "Regex"
                                             , name = "Regex"
                                             , arguments = []
                                             }
@@ -17806,7 +17610,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -17815,7 +17619,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Basics" ]
+                                                            "Basics"
                                                         , name = "Bool"
                                                         , arguments = []
                                                         }
@@ -17831,7 +17635,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Regex" ]
+                                            { moduleOrigin = "Regex"
                                             , name = "Regex"
                                             , arguments = []
                                             }
@@ -17843,7 +17647,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -17852,14 +17656,13 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "List" ]
+                                                            "List"
                                                         , name = "List"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Regex"
-                                                                        ]
+                                                                        "Regex"
                                                                     , name =
                                                                         "Match"
                                                                     , arguments =
@@ -17880,7 +17683,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -17892,7 +17695,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Regex" ]
+                                                            "Regex"
                                                         , name = "Regex"
                                                         , arguments = []
                                                         }
@@ -17904,8 +17707,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -17916,16 +17718,14 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "List"
-                                                                        ]
+                                                                        "List"
                                                                     , name =
                                                                         "List"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Regex"
-                                                                                    ]
+                                                                                    "Regex"
                                                                                 , name =
                                                                                     "Match"
                                                                                 , arguments =
@@ -17948,7 +17748,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "String" ]
+                                            { moduleOrigin = "String"
                                             , name = "String"
                                             , arguments = []
                                             }
@@ -17956,13 +17756,13 @@ elmRegexTypes =
                                 , output =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Maybe" ]
+                                            { moduleOrigin = "Maybe"
                                             , name = "Maybe"
                                             , arguments =
                                                 [ ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Regex" ]
+                                                            "Regex"
                                                         , name = "Regex"
                                                         , arguments = []
                                                         }
@@ -17979,7 +17779,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Regex" ]
+                                            { moduleOrigin = "Regex"
                                             , name = "Options"
                                             , arguments = []
                                             }
@@ -17991,7 +17791,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -18000,14 +17800,13 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Maybe" ]
+                                                            "Maybe"
                                                         , name = "Maybe"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Regex"
-                                                                        ]
+                                                                        "Regex"
                                                                     , name =
                                                                         "Regex"
                                                                     , arguments =
@@ -18025,7 +17824,7 @@ elmRegexTypes =
                     , ( "never"
                       , ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
-                                { moduleOrigin = [ "Regex" ]
+                                { moduleOrigin = "Regex"
                                 , name = "Regex"
                                 , arguments = []
                                 }
@@ -18037,7 +17836,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Regex" ]
+                                            { moduleOrigin = "Regex"
                                             , name = "Regex"
                                             , arguments = []
                                             }
@@ -18052,8 +17851,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "Regex"
-                                                                        ]
+                                                                        "Regex"
                                                                     , name =
                                                                         "Match"
                                                                     , arguments =
@@ -18064,8 +17862,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -18081,8 +17878,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -18093,8 +17889,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -18114,7 +17909,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -18126,7 +17921,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Regex" ]
+                                                            "Regex"
                                                         , name = "Regex"
                                                         , arguments = []
                                                         }
@@ -18141,8 +17936,7 @@ elmRegexTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "Regex"
-                                                                                    ]
+                                                                                    "Regex"
                                                                                 , name =
                                                                                     "Match"
                                                                                 , arguments =
@@ -18153,8 +17947,7 @@ elmRegexTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "String"
-                                                                                    ]
+                                                                                    "String"
                                                                                 , name =
                                                                                     "String"
                                                                                 , arguments =
@@ -18170,8 +17963,7 @@ elmRegexTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "String"
-                                                                                    ]
+                                                                                    "String"
                                                                                 , name =
                                                                                     "String"
                                                                                 , arguments =
@@ -18182,8 +17974,7 @@ elmRegexTypes =
                                                                         ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "String"
-                                                                                    ]
+                                                                                    "String"
                                                                                 , name =
                                                                                     "String"
                                                                                 , arguments =
@@ -18205,7 +17996,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Regex" ]
+                                            { moduleOrigin = "Regex"
                                             , name = "Regex"
                                             , arguments = []
                                             }
@@ -18217,7 +18008,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "String" ]
+                                                            "String"
                                                         , name = "String"
                                                         , arguments = []
                                                         }
@@ -18226,14 +18017,13 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "List" ]
+                                                            "List"
                                                         , name = "List"
                                                         , arguments =
                                                             [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -18254,7 +18044,7 @@ elmRegexTypes =
                                 { input =
                                     ElmSyntaxTypeInfer.TypeNotVariable
                                         (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = [ "Basics" ]
+                                            { moduleOrigin = "Basics"
                                             , name = "Int"
                                             , arguments = []
                                             }
@@ -18266,7 +18056,7 @@ elmRegexTypes =
                                                 ElmSyntaxTypeInfer.TypeNotVariable
                                                     (ElmSyntaxTypeInfer.TypeConstruct
                                                         { moduleOrigin =
-                                                            [ "Regex" ]
+                                                            "Regex"
                                                         , name = "Regex"
                                                         , arguments = []
                                                         }
@@ -18278,8 +18068,7 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "String"
-                                                                        ]
+                                                                        "String"
                                                                     , name =
                                                                         "String"
                                                                     , arguments =
@@ -18290,16 +18079,14 @@ elmRegexTypes =
                                                             ElmSyntaxTypeInfer.TypeNotVariable
                                                                 (ElmSyntaxTypeInfer.TypeConstruct
                                                                     { moduleOrigin =
-                                                                        [ "List"
-                                                                        ]
+                                                                        "List"
                                                                     , name =
                                                                         "List"
                                                                     , arguments =
                                                                         [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                                 { moduleOrigin =
-                                                                                    [ "String"
-                                                                                    ]
+                                                                                    "String"
                                                                                 , name =
                                                                                     "String"
                                                                                 , arguments =
@@ -18328,8 +18115,7 @@ elmRegexTypes =
                                         [ ( "index"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "Basics" ]
+                                                    { moduleOrigin = "Basics"
                                                     , name = "Int"
                                                     , arguments = []
                                                     }
@@ -18338,8 +18124,7 @@ elmRegexTypes =
                                         , ( "match"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "String" ]
+                                                    { moduleOrigin = "String"
                                                     , name = "String"
                                                     , arguments = []
                                                     }
@@ -18348,8 +18133,7 @@ elmRegexTypes =
                                         , ( "number"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "Basics" ]
+                                                    { moduleOrigin = "Basics"
                                                     , name = "Int"
                                                     , arguments = []
                                                     }
@@ -18358,23 +18142,20 @@ elmRegexTypes =
                                         , ( "submatches"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "List" ]
+                                                    { moduleOrigin = "List"
                                                     , name = "List"
                                                     , arguments =
                                                         [ ElmSyntaxTypeInfer.TypeNotVariable
                                                             (ElmSyntaxTypeInfer.TypeConstruct
                                                                 { moduleOrigin =
-                                                                    [ "Maybe"
-                                                                    ]
+                                                                    "Maybe"
                                                                 , name =
                                                                     "Maybe"
                                                                 , arguments =
                                                                     [ ElmSyntaxTypeInfer.TypeNotVariable
                                                                         (ElmSyntaxTypeInfer.TypeConstruct
                                                                             { moduleOrigin =
-                                                                                [ "String"
-                                                                                ]
+                                                                                "String"
                                                                             , name =
                                                                                 "String"
                                                                             , arguments =
@@ -18404,8 +18185,7 @@ elmRegexTypes =
                                         [ ( "caseInsensitive"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "Basics" ]
+                                                    { moduleOrigin = "Basics"
                                                     , name = "Bool"
                                                     , arguments = []
                                                     }
@@ -18414,8 +18194,7 @@ elmRegexTypes =
                                         , ( "multiline"
                                           , ElmSyntaxTypeInfer.TypeNotVariable
                                                 (ElmSyntaxTypeInfer.TypeConstruct
-                                                    { moduleOrigin =
-                                                        [ "Basics" ]
+                                                    { moduleOrigin = "Basics"
                                                     , name = "Bool"
                                                     , arguments = []
                                                     }

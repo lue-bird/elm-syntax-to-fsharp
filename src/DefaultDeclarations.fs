@@ -1282,6 +1282,17 @@ module Elm =
     let JsonDecode_value: JsonDecode_Decoder<System.Text.Json.Nodes.JsonNode> =
         fun json -> Ok json
 
+    let JsonDecode_stringRaw: JsonDecode_Decoder<string> =
+        fun json ->
+            try
+                Ok(json.AsValue().GetValue<string>())
+            with _ ->
+                Error(
+                    JsonDecode_Failure(
+                        struct (StringRopeOne "Expecting a STRING", json)
+                    )
+                )
+
     let JsonDecode_string: JsonDecode_Decoder<StringRope> =
         fun json ->
             try
@@ -1328,14 +1339,17 @@ module Elm =
 
     let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
         fun json ->
-            match json.GetValueKind() with
-            | System.Text.Json.JsonValueKind.Null -> Ok value
-            | _ ->
-                Error(
-                    JsonDecode_Failure(
-                        struct (StringRopeOne "Expecting NULL", json)
+            if json = JsonEncode_null then
+                Ok value
+            else
+                match json.GetValueKind() with
+                | System.Text.Json.JsonValueKind.Null -> Ok value
+                | _ ->
+                    Error(
+                        JsonDecode_Failure(
+                            struct (StringRopeOne "Expecting NULL", json)
+                        )
                     )
-                )
 
     let JsonDecode_index
         (index: int64)
@@ -1427,12 +1441,10 @@ module Elm =
         // can be optimized
         JsonDecode_map Array.ofList (JsonDecode_list elementDecoder)
 
-    let JsonDecode_field
-        (fieldNameStringRope: StringRope)
+    let JsonDecode_fieldRaw
+        (fieldNameString: string)
         (valueDecoder: JsonDecode_Decoder<'value>)
         : JsonDecode_Decoder<'value> =
-        let fieldNameString = StringRope.toString fieldNameStringRope
-
         fun json ->
             try
                 let jsonObject: System.Text.Json.Nodes.JsonObject = json.AsObject()
@@ -1453,7 +1465,11 @@ module Elm =
                     match valueDecoder fieldValueJson with
                     | Ok fieldValue -> Ok fieldValue
                     | Error error ->
-                        Error(JsonDecode_Field(struct (fieldNameStringRope, error)))
+                        Error(
+                            JsonDecode_Field(
+                                struct (StringRopeOne fieldNameString, error)
+                            )
+                        )
             with _ ->
                 Error(
                     JsonDecode_Failure(
@@ -1465,6 +1481,12 @@ module Elm =
                                 json)
                     )
                 )
+
+    let inline JsonDecode_field
+        (fieldNameStringRope: StringRope)
+        (valueDecoder: JsonDecode_Decoder<'value>)
+        : JsonDecode_Decoder<'value> =
+        JsonDecode_fieldRaw (StringRope.toString fieldNameStringRope) valueDecoder
 
     let JsonDecode_at
         (fieldNames: List<StringRope>)

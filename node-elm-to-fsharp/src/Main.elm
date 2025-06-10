@@ -331,7 +331,16 @@ bytesToElmSyntaxModule sourceBytes =
             Err "source bytes couldn't be decoded into UTF-8"
 
         Just source ->
-            case source |> Elm.Parser.parseToFile of
+            case
+                source
+                    |> -- hacky way to make elm-syntax' ParserFast compile
+                       -- as it uses `number` which is generally assumed to mean `Float`
+                       -- by the transpiler
+                       String.replace
+                        "errorAsBaseOffsetAndInt : { base : Base, offsetAndInt : { int : number, offset : number } }"
+                        "errorAsBaseOffsetAndInt : { base : Base, offsetAndInt : { int : Int, offset : Int } }"
+                    |> Elm.Parser.parseToFile
+            of
                 Err _ ->
                     Err "source couldn't be parsed. Check for compiler errors."
 
