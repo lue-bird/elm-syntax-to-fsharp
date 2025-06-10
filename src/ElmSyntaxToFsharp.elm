@@ -1923,15 +1923,16 @@ typeIsSpaceSeparated fsharpType =
 
 printFsharpTypeParenthesizedIfSpaceSeparated : FsharpType -> Print
 printFsharpTypeParenthesizedIfSpaceSeparated fsharpType =
+    let
+        notParenthesizedPrint : Print
+        notParenthesizedPrint =
+            fsharpType |> printFsharpTypeNotParenthesized
+    in
     if fsharpType |> typeIsSpaceSeparated then
-        printParenthesized
-            { opening = "("
-            , closing = ")"
-            , inner = fsharpType |> printFsharpTypeNotParenthesized
-            }
+        printParenthesized notParenthesizedPrint
 
     else
-        fsharpType |> printFsharpTypeNotParenthesized
+        notParenthesizedPrint
 
 
 floatLiteral : Float -> String
@@ -2594,11 +2595,16 @@ printFsharpPatternListCons syntaxCons =
     printFsharpPatternParenthesizedIfSpaceSeparated
         syntaxCons.head
         |> Print.followedBy
-            (Print.exactly " :: ")
+            printExactlySpaceColonColonSpace
         |> Print.followedBy
             (printFsharpPatternParenthesizedIfSpaceSeparated
                 syntaxCons.tail
             )
+
+
+printExactlySpaceColonColonSpace : Print
+printExactlySpaceColonColonSpace =
+    Print.exactly " :: "
 
 
 typeConstructReferenceToCoreFsharp :
@@ -4455,24 +4461,22 @@ printFsharpPatternNotParenthesized fsharpPattern =
             printFsharpPatternListExact elements
 
         FsharpPatternRecordInexhaustive recordInexhaustiveFieldNames ->
-            Print.exactly "{ "
+            printExactlyCurlyOpeningSpace
                 |> Print.followedBy
                     (recordInexhaustiveFieldNames
                         |> FastDict.toList
                         |> Print.listMapAndIntersperseAndFlatten
                             (\( fieldName, fieldValuePattern ) ->
                                 Print.exactly
-                                    (fieldName
-                                        ++ " = "
-                                    )
+                                    (fieldName ++ " = ")
                                     |> Print.followedBy
                                         (printFsharpPatternNotParenthesized
                                             fieldValuePattern
                                         )
                             )
-                            (Print.exactly "; ")
+                            printExactlySemicolonSpace
                     )
-                |> Print.followedBy (Print.exactly " }")
+                |> Print.followedBy printExactlySpaceCurlyClosing
 
         FsharpPatternVariant patternVariant ->
             Print.exactly
@@ -4487,38 +4491,53 @@ printFsharpPatternNotParenthesized fsharpPattern =
                             Print.empty
 
                         variantValue0 :: variantValue1Up ->
-                            Print.exactly "("
+                            printExactlyParenOpening
                                 |> Print.followedBy
                                     ((variantValue0 :: variantValue1Up)
                                         |> Print.listMapAndIntersperseAndFlatten
                                             printFsharpPatternNotParenthesized
-                                            (Print.exactly ", ")
+                                            printExactlyCommaSpace
                                     )
-                                |> Print.followedBy (Print.exactly ")")
+                                |> Print.followedBy printExactlyParenClosing
                     )
 
         FsharpPatternAs patternAs ->
             printFsharpPatternAs patternAs
 
         FsharpPatternTuple parts ->
-            Print.exactly "(struct( "
+            printExactlyParenOpeningStructParenOpeningSpace
                 |> Print.followedBy
                     ((parts.part0 :: parts.part1 :: parts.part2Up)
                         |> Print.listMapAndIntersperseAndFlatten
                             printFsharpPatternNotParenthesized
-                            (Print.exactly ", ")
+                            printExactlyCommaSpace
                     )
-                |> Print.followedBy (Print.exactly " ))")
+                |> Print.followedBy printExactlySpaceParenClosingParenClosing
+
+
+printExactlySpaceCurlyClosing : Print
+printExactlySpaceCurlyClosing =
+    Print.exactly " }"
+
+
+printExactlySpaceParenClosingParenClosing : Print
+printExactlySpaceParenClosingParenClosing =
+    Print.exactly " ))"
+
+
+printExactlyParenOpeningStructParenOpeningSpace : Print
+printExactlyParenOpeningStructParenOpeningSpace =
+    Print.exactly "(struct( "
 
 
 printFsharpPatternListExact : List FsharpPattern -> Print
 printFsharpPatternListExact elements =
     case elements of
         [] ->
-            Print.exactly "[]"
+            printFsharpPatternListEmpty
 
         element0 :: element1Up ->
-            Print.exactly "[ "
+            printExactlyAngledOpeningSpace
                 |> Print.followedBy
                     ((element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
@@ -4526,9 +4545,24 @@ printFsharpPatternListExact elements =
                                 Print.withIndentIncreasedBy 2
                                     (printFsharpPatternNotParenthesized elementNode)
                             )
-                            (Print.exactly "; ")
+                            printExactlySemicolonSpace
                     )
-                |> Print.followedBy (Print.exactly " ]")
+                |> Print.followedBy printExactlySpaceAngledClosing
+
+
+printExactlySpaceAngledClosing : Print
+printExactlySpaceAngledClosing =
+    Print.exactly " ]"
+
+
+printExactlySemicolonSpace : Print
+printExactlySemicolonSpace =
+    Print.exactly "; "
+
+
+printFsharpPatternListEmpty : Print
+printFsharpPatternListEmpty =
+    Print.exactly "[]"
 
 
 printFsharpPatternAs :
@@ -4546,7 +4580,7 @@ printFsharpPatternAs syntaxAs =
 printFsharpExpressionRecord : FastDict.Dict String FsharpExpression -> Print
 printFsharpExpressionRecord syntaxRecordFields =
     if syntaxRecordFields |> FastDict.isEmpty then
-        Print.exactly "{}"
+        printExactlyFsharpExpressionRecordEmpty
 
     else
         let
@@ -4573,32 +4607,51 @@ printFsharpExpressionRecord syntaxRecordFields =
                                         )
                                 )
                         )
-                        (Print.linebreakIndented
-                            |> Print.followedBy
-                                (Print.exactly "; ")
-                        )
+                        printLinebreakIndentedSemicolonSpace
         in
-        Print.exactly "{ "
+        printExactlyCurlyOpeningSpace
             |> Print.followedBy fieldsPrint
             |> Print.followedBy
                 (Print.spaceOrLinebreakIndented
                     (fieldsPrint |> Print.lineSpread)
                 )
-            |> Print.followedBy (Print.exactly "}")
+            |> Print.followedBy printExactlyCurlyClosing
 
 
-printParenthesized : { opening : String, closing : String, inner : Print } -> Print
-printParenthesized config =
-    Print.exactly config.opening
+printExactlyFsharpExpressionRecordEmpty : Print
+printExactlyFsharpExpressionRecordEmpty =
+    Print.exactly "{}"
+
+
+printExactlyCurlyClosing : Print
+printExactlyCurlyClosing =
+    Print.exactly "}"
+
+
+{-| (Wrap in parens)
+-}
+printParenthesized : Print -> Print
+printParenthesized inner =
+    printExactlyParenOpening
         |> Print.followedBy
             (Print.withIndentIncreasedBy 1
-                config.inner
+                inner
             )
         |> Print.followedBy
             (Print.emptyOrLinebreakIndented
-                (config.inner |> Print.lineSpread)
+                (inner |> Print.lineSpread)
             )
-        |> Print.followedBy (Print.exactly config.closing)
+        |> Print.followedBy printExactlyParenClosing
+
+
+printExactlyParenOpening : Print
+printExactlyParenOpening =
+    Print.exactly "("
+
+
+printExactlyParenClosing : Print
+printExactlyParenClosing =
+    Print.exactly ")"
 
 
 {-| Transpile a list of [`Elm.Syntax.Declaration.Declaration`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Declaration#Declaration)s
@@ -6288,16 +6341,7 @@ expression context expressionTypedNode =
                 "++" ->
                     Result.map2
                         (\left right ->
-                            if
-                                infixOperation.left.type_
-                                    == ElmSyntaxTypeInfer.TypeNotVariable
-                                        (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = "String"
-                                            , name = "String"
-                                            , arguments = []
-                                            }
-                                        )
-                            then
+                            if infixOperation.left.type_ == inferredTypeString then
                                 if left |> fsharpExpressionIsEmptyString then
                                     right
 
@@ -6306,22 +6350,13 @@ expression context expressionTypedNode =
 
                                 else
                                     FsharpExpressionCall
-                                        { called =
-                                            FsharpExpressionReference
-                                                { moduleOrigin = Nothing
-                                                , name = "String_append"
-                                                }
-                                        , arguments =
-                                            [ left, right ]
+                                        { called = fsharpExpressionReferenceStringAppend
+                                        , arguments = [ left, right ]
                                         }
 
                             else
                                 FsharpExpressionCall
-                                    { called =
-                                        FsharpExpressionReference
-                                            { moduleOrigin = Just "List"
-                                            , name = "append"
-                                            }
+                                    { called = fsharpExpressionReferenceListAppend
                                     , arguments = [ left, right ]
                                     }
                         )
@@ -6475,7 +6510,10 @@ expression context expressionTypedNode =
                                 (expressionTypedNode.type_ |> type_)
 
                 Nothing ->
-                    Err ""
+                    Err
+                        ("could not find declaration for the record type alias constructor "
+                            ++ inferredReferenceToInfoString reference
+                        )
 
         ElmSyntaxTypeInfer.ExpressionReference reference ->
             let
@@ -6809,15 +6847,49 @@ expression context expressionTypedNode =
                 )
 
 
+fsharpExpressionReferenceListAppend : FsharpExpression
+fsharpExpressionReferenceListAppend =
+    FsharpExpressionReference
+        { moduleOrigin = Just "List"
+        , name = "append"
+        }
+
+
+fsharpExpressionReferenceStringAppend : FsharpExpression
+fsharpExpressionReferenceStringAppend =
+    FsharpExpressionReference
+        { moduleOrigin = Nothing
+        , name = "String_append"
+        }
+
+
+inferredReferenceToInfoString :
+    { qualification : String, moduleOrigin : String, name : String }
+    -> String
+inferredReferenceToInfoString reference =
+    case reference.moduleOrigin of
+        "" ->
+            reference.name
+
+        moduleOriginNotEmpty ->
+            moduleOriginNotEmpty
+                ++ "."
+                ++ reference.name
+
+
 createFsharpExpressionCalStringRopeOne : FsharpExpression -> FsharpExpression
 createFsharpExpressionCalStringRopeOne argument =
     FsharpExpressionCall
-        { called =
-            FsharpExpressionReference
-                { moduleOrigin = Nothing
-                , name = "StringRopeOne"
-                }
+        { called = fsharpExpressionReferenceStringRopeOne
         , arguments = [ argument ]
+        }
+
+
+fsharpExpressionReferenceStringRopeOne : FsharpExpression
+fsharpExpressionReferenceStringRopeOne =
+    FsharpExpressionReference
+        { moduleOrigin = Nothing
+        , name = "StringRopeOne"
         }
 
 
@@ -7374,16 +7446,7 @@ expressionOperatorToFsharpFunctionReference operator =
         "++" ->
             case operator.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                    if
-                        typeFunction.input
-                            == ElmSyntaxTypeInfer.TypeNotVariable
-                                (ElmSyntaxTypeInfer.TypeConstruct
-                                    { moduleOrigin = "String"
-                                    , name = "String"
-                                    , arguments = []
-                                    }
-                                )
-                    then
+                    if typeFunction.input == inferredTypeString then
                         Ok { moduleOrigin = Nothing, name = "String_append" }
 
                     else
@@ -7422,6 +7485,17 @@ expressionOperatorToFsharpFunctionReference operator =
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
 
 
+inferredTypeString : ElmSyntaxTypeInfer.Type
+inferredTypeString =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = "String"
+            , name = "String"
+            , arguments = []
+            }
+        )
+
+
 {-| Print a fsharp value/function declaration
 -}
 printFsharpValueOrFunctionDeclaration :
@@ -7453,24 +7527,21 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                             parameter.type_
                                 in
                                 printParenthesized
-                                    { opening = "("
-                                    , closing = ")"
-                                    , inner =
-                                        (parameter.pattern
-                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
-                                        )
-                                            |> Print.followedBy (Print.exactly ":")
-                                            |> Print.followedBy
-                                                (Print.withIndentIncreasedBy 1
-                                                    (Print.withIndentAtNextMultipleOf4
-                                                        (Print.spaceOrLinebreakIndented
-                                                            (parameterTypePrint |> Print.lineSpread)
-                                                            |> Print.followedBy
-                                                                parameterTypePrint
-                                                        )
+                                    ((parameter.pattern
+                                        |> printFsharpPatternParenthesizedIfSpaceSeparated
+                                     )
+                                        |> Print.followedBy printExactlyColon
+                                        |> Print.followedBy
+                                            (Print.withIndentIncreasedBy 1
+                                                (Print.withIndentAtNextMultipleOf4
+                                                    (Print.spaceOrLinebreakIndented
+                                                        (parameterTypePrint |> Print.lineSpread)
+                                                        |> Print.followedBy
+                                                            parameterTypePrint
                                                     )
                                                 )
-                                    }
+                                            )
+                                    )
                             )
 
                 headerLineSpread : Print.LineSpread
@@ -7497,12 +7568,12 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 Print.empty
                             |> Print.followedBy
                                 (Print.spaceOrLinebreakIndented headerLineSpread)
-                            |> Print.followedBy (Print.exactly ": ")
+                            |> Print.followedBy printExactlyColonSpace
                             |> Print.followedBy
                                 (Print.withIndentIncreasedBy 2
                                     resultTypePrint
                                 )
-                            |> Print.followedBy (Print.exactly " =")
+                            |> Print.followedBy printExactlySpaceEquals
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
@@ -7543,7 +7614,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                             fullLineSpread =
                                 resultTypePrint |> Print.lineSpread
                           in
-                          Print.exactly ":"
+                          printExactlyColon
                             |> Print.followedBy
                                 (Print.withIndentAtNextMultipleOf4
                                     (Print.spaceOrLinebreakIndented fullLineSpread
@@ -7552,7 +7623,7 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 )
                          )
                             |> Print.followedBy
-                                (Print.exactly " =")
+                                printExactlySpaceEquals
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
@@ -7621,24 +7692,21 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                             parameter.type_
                                 in
                                 printParenthesized
-                                    { opening = "("
-                                    , closing = ")"
-                                    , inner =
-                                        (parameter.pattern
-                                            |> printFsharpPatternParenthesizedIfSpaceSeparated
-                                        )
-                                            |> Print.followedBy (Print.exactly ":")
-                                            |> Print.followedBy
-                                                (Print.withIndentIncreasedBy 1
-                                                    (Print.withIndentAtNextMultipleOf4
-                                                        (Print.spaceOrLinebreakIndented
-                                                            (parameterTypePrint |> Print.lineSpread)
-                                                            |> Print.followedBy
-                                                                parameterTypePrint
-                                                        )
+                                    ((parameter.pattern
+                                        |> printFsharpPatternParenthesizedIfSpaceSeparated
+                                     )
+                                        |> Print.followedBy printExactlyColon
+                                        |> Print.followedBy
+                                            (Print.withIndentIncreasedBy 1
+                                                (Print.withIndentAtNextMultipleOf4
+                                                    (Print.spaceOrLinebreakIndented
+                                                        (parameterTypePrint |> Print.lineSpread)
+                                                        |> Print.followedBy
+                                                            parameterTypePrint
                                                     )
                                                 )
-                                    }
+                                            )
+                                    )
                             )
 
                 headerLineSpread : Print.LineSpread
@@ -7665,12 +7733,12 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 Print.empty
                             |> Print.followedBy
                                 (Print.spaceOrLinebreakIndented headerLineSpread)
-                            |> Print.followedBy (Print.exactly ": ")
+                            |> Print.followedBy printExactlyColonSpace
                             |> Print.followedBy
                                 (Print.withIndentIncreasedBy 2
                                     resultTypePrint
                                 )
-                            |> Print.followedBy (Print.exactly " =")
+                            |> Print.followedBy printExactlySpaceEquals
                             |> Print.followedBy
                                 (Print.linebreakIndented
                                     |> Print.followedBy
@@ -7691,7 +7759,7 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                             fullLineSpread =
                                 resultTypePrint |> Print.lineSpread
                           in
-                          Print.exactly ":"
+                          printExactlyColon
                             |> Print.followedBy
                                 (Print.withIndentAtNextMultipleOf4
                                     (Print.spaceOrLinebreakIndented fullLineSpread
@@ -7699,17 +7767,24 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                     )
                                 )
                          )
+                            |> Print.followedBy printExactlySpaceEqualsLinebreakIndented
                             |> Print.followedBy
-                                (Print.exactly " =")
-                            |> Print.followedBy
-                                (Print.linebreakIndented
-                                    |> Print.followedBy
-                                        (printFsharpExpressionParenthesizedIfWithLetDeclarations
-                                            fsharpValueOrFunctionDeclaration.result
-                                        )
+                                (printFsharpExpressionParenthesizedIfWithLetDeclarations
+                                    fsharpValueOrFunctionDeclaration.result
                                 )
                         )
                     )
+
+
+printExactlySpaceEqualsLinebreakIndented : Print
+printExactlySpaceEqualsLinebreakIndented =
+    printExactlySpaceEquals
+        |> Print.followedBy Print.linebreakIndented
+
+
+printExactlyColonSpace : Print
+printExactlyColonSpace =
+    Print.exactly ": "
 
 
 type FsharpValueOrFunctionDependencyBucket element
@@ -7900,31 +7975,31 @@ qualifiedReferenceToFsharpName reference =
 
 printFsharpExpressionParenthesizedIfSpaceSeparated : FsharpExpression -> Print
 printFsharpExpressionParenthesizedIfSpaceSeparated fsharpExpression =
+    let
+        notParenthesizedPrint : Print
+        notParenthesizedPrint =
+            printFsharpExpressionNotParenthesized fsharpExpression
+    in
     if fsharpExpression |> fsharpExpressionIsSpaceSeparated then
-        printParenthesized
-            { opening = "("
-            , closing = ")"
-            , inner = printFsharpExpressionNotParenthesized fsharpExpression
-            }
+        printParenthesized notParenthesizedPrint
 
     else
-        printFsharpExpressionNotParenthesized fsharpExpression
+        notParenthesizedPrint
 
 
 printFsharpExpressionParenthesizedIfWithLetDeclarations : FsharpExpression -> Print
 printFsharpExpressionParenthesizedIfWithLetDeclarations fsharpExpression =
+    let
+        notParenthesizedPrint : Print
+        notParenthesizedPrint =
+            printFsharpExpressionNotParenthesized fsharpExpression
+    in
     case fsharpExpression of
         FsharpExpressionWithLetDeclarations fsharpExpressionWithLetDeclarations ->
-            printParenthesized
-                { opening = "("
-                , closing = ")"
-                , inner =
-                    printFsharpExpressionWithLetDeclarations
-                        fsharpExpressionWithLetDeclarations
-                }
+            printParenthesized notParenthesizedPrint
 
-        fsharpExpressionNotWithLetDeclarations ->
-            printFsharpExpressionNotParenthesized fsharpExpressionNotWithLetDeclarations
+        _ ->
+            notParenthesizedPrint
 
 
 fsharpExpressionIsSpaceSeparated : FsharpExpression -> Bool
@@ -7989,7 +8064,7 @@ printFsharpExpressionNotParenthesized fsharpExpression =
     -- IGNORE TCO
     case fsharpExpression of
         FsharpExpressionUnit ->
-            Print.exactly "()"
+            printFsharpExpressionUnit
 
         FsharpExpressionCall call ->
             printFsharpExpressionCall call
@@ -8046,6 +8121,11 @@ printFsharpExpressionNotParenthesized fsharpExpression =
             printFsharpExpressionRecordUpdate syntaxRecordUpdate
 
 
+printFsharpExpressionUnit : Print
+printFsharpExpressionUnit =
+    Print.exactly "()"
+
+
 printFsharpExpressionTuple :
     { part0 : FsharpExpression
     , part1 : FsharpExpression
@@ -8082,7 +8162,7 @@ printFsharpExpressionTuple parts =
                                 Print.lineSpread
                     )
     in
-    Print.exactly "(struct("
+    printExactlyParenOpeningStructParenOpening
         |> Print.followedBy
             (Print.withIndentIncreasedBy 2
                 (Print.spaceOrLinebreakIndented lineSpread)
@@ -8095,12 +8175,28 @@ printFsharpExpressionTuple parts =
                     )
                     (Print.emptyOrLinebreakIndented lineSpread
                         |> Print.followedBy
-                            (Print.exactly ", ")
+                            printExactlyCommaSpace
                     )
             )
         |> Print.followedBy
             (Print.spaceOrLinebreakIndented lineSpread)
-        |> Print.followedBy (Print.exactly "))")
+        |> Print.followedBy
+            printExactlyParenClosingParenClosing
+
+
+printExactlyParenOpeningStructParenOpening : Print
+printExactlyParenOpeningStructParenOpening =
+    Print.exactly "(struct("
+
+
+printExactlyCommaSpace : Print
+printExactlyCommaSpace =
+    Print.exactly ", "
+
+
+printExactlyParenClosingParenClosing : Print
+printExactlyParenClosingParenClosing =
+    Print.exactly "))"
 
 
 printFsharpExpressionCall :
@@ -8145,7 +8241,7 @@ printFsharpExpressionListLiteral : List FsharpExpression -> Print
 printFsharpExpressionListLiteral listElements =
     case listElements of
         [] ->
-            Print.exactly "[]"
+            printFsharpExpressionListLiteralEmpty
 
         element0 :: element1Up ->
             let
@@ -8153,14 +8249,10 @@ printFsharpExpressionListLiteral listElements =
                 elementsPrint =
                     (element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
-                            (\element ->
-                                printFsharpExpressionNotParenthesized element
-                            )
-                            (Print.exactly ";"
-                                |> Print.followedBy Print.linebreakIndented
-                            )
+                            printFsharpExpressionNotParenthesized
+                            printExactlySemicolonLinebreakIndented
             in
-            Print.exactly "[ "
+            printExactlyAngledOpeningSpace
                 |> Print.followedBy
                     (Print.withIndentIncreasedBy 2
                         elementsPrint
@@ -8169,15 +8261,35 @@ printFsharpExpressionListLiteral listElements =
                     (Print.spaceOrLinebreakIndented
                         (elementsPrint |> Print.lineSpread)
                     )
-                |> Print.followedBy
-                    (Print.exactly "]")
+                |> Print.followedBy printExactlyAngledClosing
+
+
+printExactlySemicolonLinebreakIndented : Print
+printExactlySemicolonLinebreakIndented =
+    Print.exactly ";"
+        |> Print.followedBy Print.linebreakIndented
+
+
+printFsharpExpressionListLiteralEmpty : Print
+printFsharpExpressionListLiteralEmpty =
+    Print.exactly "[]"
+
+
+printExactlyAngledOpeningSpace : Print
+printExactlyAngledOpeningSpace =
+    Print.exactly "[ "
+
+
+printExactlyAngledClosing : Print
+printExactlyAngledClosing =
+    Print.exactly "]"
 
 
 printFsharpExpressionArrayLiteral : List FsharpExpression -> Print
 printFsharpExpressionArrayLiteral elements =
     case elements of
         [] ->
-            Print.exactly "[||]"
+            printFsharpExpressionArrayLiteralEmpty
 
         element0 :: element1Up ->
             let
@@ -8185,14 +8297,10 @@ printFsharpExpressionArrayLiteral elements =
                 elementsPrint =
                     (element0 :: element1Up)
                         |> Print.listMapAndIntersperseAndFlatten
-                            (\element ->
-                                printFsharpExpressionNotParenthesized element
-                            )
-                            (Print.exactly ";"
-                                |> Print.followedBy Print.linebreakIndented
-                            )
+                            printFsharpExpressionNotParenthesized
+                            printExactlySemicolonLinebreakIndented
             in
-            Print.exactly "[| "
+            printExactlyAngledOpeningVerticalBarSpace
                 |> Print.followedBy
                     (Print.withIndentIncreasedBy 2
                         elementsPrint
@@ -8202,7 +8310,22 @@ printFsharpExpressionArrayLiteral elements =
                         (elementsPrint |> Print.lineSpread)
                     )
                 |> Print.followedBy
-                    (Print.exactly "|]")
+                    printExactlyVerticalBarAngledClosing
+
+
+printFsharpExpressionArrayLiteralEmpty : Print
+printFsharpExpressionArrayLiteralEmpty =
+    Print.exactly "[||]"
+
+
+printExactlyAngledOpeningVerticalBarSpace : Print
+printExactlyAngledOpeningVerticalBarSpace =
+    Print.exactly "[| "
+
+
+printExactlyVerticalBarAngledClosing : Print
+printExactlyVerticalBarAngledClosing =
+    Print.exactly "|]"
 
 
 printFsharpExpressionRecordUpdate :
@@ -8211,15 +8334,14 @@ printFsharpExpressionRecordUpdate :
     }
     -> Print
 printFsharpExpressionRecordUpdate syntaxRecordUpdate =
-    Print.exactly "{ "
+    printExactlyCurlyOpeningSpace
         |> Print.followedBy
             (Print.withIndentIncreasedBy 2
                 (Print.exactly syntaxRecordUpdate.originalRecordVariable)
             )
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
-                (Print.linebreakIndented
-                    |> Print.followedBy (Print.exactly " with")
+                (printLinebreakIndentedExactlySpaceWith
                     |> Print.followedBy
                         (Print.withIndentAtNextMultipleOf4
                             (Print.linebreakIndented
@@ -8237,17 +8359,39 @@ printFsharpExpressionRecordUpdate syntaxRecordUpdate =
                                                             )
                                                         )
                                             )
-                                            (Print.linebreakIndented
-                                                |> Print.followedBy
-                                                    (Print.exactly "; ")
-                                            )
+                                            printLinebreakIndentedSemicolonSpace
                                     )
                             )
                         )
                 )
             )
-        |> Print.followedBy Print.linebreakIndented
-        |> Print.followedBy (Print.exactly "}")
+        |> Print.followedBy printLinebreakIndentedExactlyCurlyClosing
+
+
+printExactlyCurlyOpeningSpace : Print
+printExactlyCurlyOpeningSpace =
+    Print.exactly "{ "
+
+
+printLinebreakIndentedExactlySpaceWith : Print
+printLinebreakIndentedExactlySpaceWith =
+    Print.linebreakIndented
+        |> Print.followedBy
+            (Print.exactly " with")
+
+
+printLinebreakIndentedSemicolonSpace : Print
+printLinebreakIndentedSemicolonSpace =
+    Print.linebreakIndented
+        |> Print.followedBy
+            (Print.exactly "; ")
+
+
+printLinebreakIndentedExactlyCurlyClosing : Print
+printLinebreakIndentedExactlyCurlyClosing =
+    Print.linebreakIndented
+        |> Print.followedBy
+            (Print.exactly "}")
 
 
 patternIsSpaceSeparated : FsharpPattern -> Bool
@@ -8289,15 +8433,16 @@ patternIsSpaceSeparated fsharpPattern =
 
 printFsharpPatternParenthesizedIfSpaceSeparated : FsharpPattern -> Print
 printFsharpPatternParenthesizedIfSpaceSeparated fsharpPattern =
+    let
+        notParenthesizedPrint : Print
+        notParenthesizedPrint =
+            fsharpPattern |> printFsharpPatternNotParenthesized
+    in
     if fsharpPattern |> patternIsSpaceSeparated then
-        printParenthesized
-            { opening = "("
-            , closing = ")"
-            , inner = fsharpPattern |> printFsharpPatternNotParenthesized
-            }
+        printParenthesized notParenthesizedPrint
 
     else
-        fsharpPattern |> printFsharpPatternNotParenthesized
+        notParenthesizedPrint
 
 
 printFsharpExpressionLambda :
@@ -8319,24 +8464,21 @@ printFsharpExpressionLambda syntaxLambda =
                                     parameter.type_
                         in
                         printParenthesized
-                            { opening = "("
-                            , closing = ")"
-                            , inner =
-                                (parameter.pattern
-                                    |> printFsharpPatternParenthesizedIfSpaceSeparated
-                                )
-                                    |> Print.followedBy (Print.exactly ":")
-                                    |> Print.followedBy
-                                        (Print.withIndentIncreasedBy 1
-                                            (Print.withIndentAtNextMultipleOf4
-                                                (Print.spaceOrLinebreakIndented
-                                                    (parameterTypePrint |> Print.lineSpread)
-                                                    |> Print.followedBy
-                                                        parameterTypePrint
-                                                )
+                            ((parameter.pattern
+                                |> printFsharpPatternParenthesizedIfSpaceSeparated
+                             )
+                                |> Print.followedBy printExactlyColon
+                                |> Print.followedBy
+                                    (Print.withIndentIncreasedBy 1
+                                        (Print.withIndentAtNextMultipleOf4
+                                            (Print.spaceOrLinebreakIndented
+                                                (parameterTypePrint |> Print.lineSpread)
+                                                |> Print.followedBy
+                                                    parameterTypePrint
                                             )
                                         )
-                            }
+                                    )
+                            )
                     )
 
         parametersLineSpread : Print.LineSpread
@@ -8345,16 +8487,15 @@ printFsharpExpressionLambda syntaxLambda =
                 |> Print.lineSpreadListMapAndCombine
                     Print.lineSpread
     in
-    Print.exactly "fun "
+    printExactlyFunSpace
         |> Print.followedBy
             (Print.withIndentIncreasedBy 4
                 (parameterPrints
-                    |> Print.listMapAndIntersperseAndFlatten
-                        (\parameterPrint -> parameterPrint)
+                    |> Print.listIntersperseAndFlatten
                         (Print.spaceOrLinebreakIndented parametersLineSpread)
                 )
             )
-        |> Print.followedBy (Print.exactly " ->")
+        |> Print.followedBy printExactlySpaceMinusGreaterThan
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
@@ -8364,6 +8505,16 @@ printFsharpExpressionLambda syntaxLambda =
                         )
                 )
             )
+
+
+printExactlySpaceMinusGreaterThan : Print
+printExactlySpaceMinusGreaterThan =
+    Print.exactly " ->"
+
+
+printExactlyFunSpace : Print
+printExactlyFunSpace =
+    Print.exactly "fun "
 
 
 printFsharpExpressionIfElse :
@@ -8382,7 +8533,7 @@ printFsharpExpressionIfElse syntaxIfElse =
         conditionLineSpread =
             conditionPrint |> Print.lineSpread
     in
-    Print.exactly "if"
+    printExactlyIf
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.spaceOrLinebreakIndented conditionLineSpread
@@ -8391,7 +8542,7 @@ printFsharpExpressionIfElse syntaxIfElse =
             )
         |> Print.followedBy
             (Print.spaceOrLinebreakIndented conditionLineSpread)
-        |> Print.followedBy (Print.exactly "then")
+        |> Print.followedBy printExactlyThen
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
@@ -8401,7 +8552,7 @@ printFsharpExpressionIfElse syntaxIfElse =
                 )
             )
         |> Print.followedBy Print.linebreakIndented
-        |> Print.followedBy (Print.exactly "else")
+        |> Print.followedBy printExactlyElse
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
@@ -8409,6 +8560,21 @@ printFsharpExpressionIfElse syntaxIfElse =
                         (printFsharpExpressionNotParenthesized syntaxIfElse.onFalse)
                 )
             )
+
+
+printExactlyIf : Print
+printExactlyIf =
+    Print.exactly "if"
+
+
+printExactlyThen : Print
+printExactlyThen =
+    Print.exactly "then"
+
+
+printExactlyElse : Print
+printExactlyElse =
+    Print.exactly "else"
 
 
 printFsharpExpressionMatchWith :
@@ -8436,7 +8602,7 @@ printFsharpExpressionMatchWith matchWith =
         matchedPrintLineSpread =
             matchedPrint |> Print.lineSpread
     in
-    Print.exactly "match"
+    printExactlyMatch
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.spaceOrLinebreakIndented matchedPrintLineSpread
@@ -8445,16 +8611,26 @@ printFsharpExpressionMatchWith matchWith =
             )
         |> Print.followedBy
             (Print.spaceOrLinebreakIndented matchedPrintLineSpread)
-        |> Print.followedBy (Print.exactly "with")
+        |> Print.followedBy printExactlyWith
         |> Print.followedBy
             (Print.linebreakIndented
                 |> Print.followedBy
                     ((matchWith.case0 :: matchWith.case1Up)
                         |> Print.listMapAndIntersperseAndFlatten
-                            (\syntaxCase -> syntaxCase |> printFsharpExpressionMatchWithCase)
+                            printFsharpExpressionMatchWithCase
                             printLinebreakLinebreakIndented
                     )
             )
+
+
+printExactlyMatch : Print
+printExactlyMatch =
+    Print.exactly "match"
+
+
+printExactlyWith : Print
+printExactlyWith =
+    Print.exactly "with"
 
 
 printFsharpExpressionMatchWithCase :
@@ -8469,7 +8645,7 @@ printFsharpExpressionMatchWithCase branch =
         patternPrint =
             printFsharpPatternNotParenthesized branch.pattern
     in
-    Print.exactly "| "
+    printExactlyVerticalBarSpace
         |> Print.followedBy
             (Print.withIndentIncreasedBy 2
                 patternPrint
@@ -8478,7 +8654,7 @@ printFsharpExpressionMatchWithCase branch =
             (Print.spaceOrLinebreakIndented
                 (patternPrint |> Print.lineSpread)
             )
-        |> Print.followedBy (Print.exactly "->")
+        |> Print.followedBy printExactlyMinusGreaterThan
         |> Print.followedBy
             (Print.withIndentAtNextMultipleOf4
                 (Print.linebreakIndented
@@ -8486,6 +8662,16 @@ printFsharpExpressionMatchWithCase branch =
                         (printFsharpExpressionNotParenthesized branch.result)
                 )
             )
+
+
+printExactlyVerticalBarSpace : Print
+printExactlyVerticalBarSpace =
+    Print.exactly "| "
+
+
+printExactlyMinusGreaterThan : Print
+printExactlyMinusGreaterThan =
+    Print.exactly "->"
 
 
 printFsharpExpressionWithLetDeclarations :
@@ -8564,43 +8750,45 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
             (\dependencyGroup ->
                 case dependencyGroup of
                     FsharpValueOrFunctionDependencySingle fsharpLetDeclaration ->
-                        case fsharpLetDeclaration of
-                            FsharpLetDestructuring letDestructuring ->
-                                Print.exactly "let "
-                                    |> Print.followedBy
-                                        (letDestructuring |> printFsharpLetDestructuring)
-                                    |> Print.followedBy Print.linebreakIndented
-                                    |> Print.followedBy Print.linebreakIndented
+                        printExactlyLetSpace
+                            |> Print.followedBy
+                                (case fsharpLetDeclaration of
+                                    FsharpLetDestructuring letDestructuring ->
+                                        letDestructuring |> printFsharpLetDestructuring
 
-                            FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                                Print.exactly "let "
-                                    |> Print.followedBy
-                                        (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
-                                    |> Print.followedBy Print.linebreakIndented
-                                    |> Print.followedBy Print.linebreakIndented
+                                    FsharpLetDeclarationValueOrFunction letValueOrFunction ->
+                                        letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration
+                                )
+                            |> Print.followedBy printLinebreakIndentedLinebreakIndented
 
                     FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
-                        Print.exactly "let rec "
+                        printExactlyLetSpaceRecSpace
                             |> Print.followedBy
                                 (recursiveGroup
                                     |> Print.listMapAndIntersperseAndFlatten
                                         (\fsharpLetDeclaration ->
-                                            case fsharpLetDeclaration of
+                                            (case fsharpLetDeclaration of
                                                 FsharpLetDestructuring letDestructuring ->
-                                                    (letDestructuring |> printFsharpLetDestructuring)
-                                                        |> Print.followedBy Print.linebreakIndented
+                                                    letDestructuring |> printFsharpLetDestructuring
 
                                                 FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                                                    (letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration)
-                                                        |> Print.followedBy Print.linebreakIndented
+                                                    letValueOrFunction |> printFsharpLocalLetValueOrFunctionDeclaration
+                                            )
+                                                |> Print.followedBy Print.linebreakIndented
                                         )
-                                        (Print.exactly "and ")
+                                        printExactlyAndSpace
                                 )
             )
             Print.empty
     )
         |> Print.followedBy
             (printFsharpExpressionNotParenthesized syntaxLetIn.result)
+
+
+printLinebreakIndentedLinebreakIndented : Print
+printLinebreakIndentedLinebreakIndented =
+    Print.linebreakIndented
+        |> Print.followedBy Print.linebreakIndented
 
 
 fsharpLetDeclarationsInsertFsharpLetDestructurings :
@@ -8722,13 +8910,9 @@ fastSetsIntersect aSet bSet =
 fastSetAny : (a -> Bool) -> FastSet.Set a -> Bool
 fastSetAny isFound fastSet =
     fastSet
-        |> FastSet.stoppableFoldl
-            (\element _ ->
-                if element |> isFound then
-                    FastDict.Stop True
-
-                else
-                    FastDict.Continue False
+        |> FastSet.foldl
+            (\element soFar ->
+                soFar || (element |> isFound)
             )
             False
 
@@ -8812,28 +8996,35 @@ printFsharpLetDestructuring letDestructuring =
     in
     Print.withIndentAtNextMultipleOf4
         (printParenthesized
-            { opening = "("
-            , closing = ")"
-            , inner =
-                letDestructuring.pattern
-                    |> printFsharpPatternNotParenthesized
-                    |> Print.followedBy
-                        (Print.exactly ":")
-                    |> Print.followedBy
-                        (Print.withIndentAtNextMultipleOf4
-                            (Print.spaceOrLinebreakIndented
-                                (patternTypePrint |> Print.lineSpread)
-                                |> Print.followedBy patternTypePrint
-                            )
+            (letDestructuring.pattern
+                |> printFsharpPatternNotParenthesized
+                |> Print.followedBy
+                    printExactlyColon
+                |> Print.followedBy
+                    (Print.withIndentAtNextMultipleOf4
+                        (Print.spaceOrLinebreakIndented
+                            (patternTypePrint |> Print.lineSpread)
+                            |> Print.followedBy patternTypePrint
                         )
-            }
-            |> Print.followedBy (Print.exactly " =")
+                    )
+            )
+            |> Print.followedBy printExactlySpaceEquals
             |> Print.followedBy
                 (Print.linebreakIndented
                     |> Print.followedBy
                         (printFsharpExpressionNotParenthesized letDestructuring.expression)
                 )
         )
+
+
+printExactlyColon : Print
+printExactlyColon =
+    Print.exactly ":"
+
+
+printExactlySpaceEquals : Print
+printExactlySpaceEquals =
+    Print.exactly " ="
 
 
 fsharpTypeUnit : FsharpType
@@ -8946,9 +9137,7 @@ module Elm =
                         )
                         []
                     |> Print.listIntersperseAndFlatten
-                        (Print.linebreak
-                            |> Print.followedBy Print.linebreakIndented
-                        )
+                        printLinebreakLinebreakIndented
                 )
                 |> Print.toString
            )
@@ -8963,16 +9152,14 @@ module Elm =
                                 FsharpValueOrFunctionDependencySingle single ->
                                     case single of
                                         FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
-                                            Print.exactly "[<Struct>]"
-                                                |> Print.followedBy Print.linebreakIndented
-                                                |> Print.followedBy (Print.exactly "type ")
+                                            structLinebreakIndentedTypeSpace
                                                 |> Print.followedBy
                                                     (printFsharpChoiceTypeDeclaration
                                                         fsharpChoiceTypeDeclaration
                                                     )
 
                                         FsharpTypeAliasDeclaration aliasDeclaration ->
-                                            Print.exactly "type "
+                                            printExactlyTypeSpace
                                                 |> Print.followedBy
                                                     (printFsharpTypeAliasDeclaration aliasDeclaration)
 
@@ -8982,44 +9169,34 @@ module Elm =
                                             Print.empty
 
                                         recursiveBucketMember0 :: recursiveBucketMember1Up ->
-                                            (case recursiveBucketMember0 of
-                                                FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
-                                                    Print.exactly "type "
-                                                        |> Print.followedBy
-                                                            (printFsharpChoiceTypeDeclaration
+                                            printExactlyTypeSpace
+                                                |> Print.followedBy
+                                                    (case recursiveBucketMember0 of
+                                                        FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
+                                                            printFsharpChoiceTypeDeclaration
                                                                 fsharpChoiceTypeDeclaration
-                                                            )
 
-                                                FsharpTypeAliasDeclaration aliasDeclaration ->
-                                                    Print.exactly "type "
-                                                        |> Print.followedBy
-                                                            (printFsharpTypeAliasDeclaration aliasDeclaration)
-                                            )
+                                                        FsharpTypeAliasDeclaration aliasDeclaration ->
+                                                            printFsharpTypeAliasDeclaration aliasDeclaration
+                                                    )
                                                 |> Print.followedBy
                                                     (recursiveBucketMember1Up
                                                         |> Print.listMapAndIntersperseAndFlatten
                                                             (\typeDeclaration ->
-                                                                Print.linebreak
-                                                                    |> Print.followedBy Print.linebreakIndented
+                                                                printLinebreakLinebreakIndentedExactlyAndSpace
                                                                     |> Print.followedBy
                                                                         (case typeDeclaration of
                                                                             FsharpChoiceTypeDeclaration enumDeclaration ->
-                                                                                Print.exactly "and "
-                                                                                    |> Print.followedBy
-                                                                                        (printFsharpChoiceTypeDeclaration enumDeclaration)
+                                                                                printFsharpChoiceTypeDeclaration enumDeclaration
 
                                                                             FsharpTypeAliasDeclaration aliasDeclaration ->
-                                                                                Print.exactly "and "
-                                                                                    |> Print.followedBy
-                                                                                        (printFsharpTypeAliasDeclaration aliasDeclaration)
+                                                                                printFsharpTypeAliasDeclaration aliasDeclaration
                                                                         )
                                                             )
                                                             Print.empty
                                                     )
                         )
-                        (Print.linebreak
-                            |> Print.followedBy Print.linebreakIndented
-                        )
+                        printLinebreakLinebreakIndented
                 )
                 |> Print.toString
            )
@@ -9033,11 +9210,10 @@ module Elm =
                         (\dependencyGroup ->
                             case dependencyGroup of
                                 FsharpValueOrFunctionDependencySingle fsharpValueOrFunction ->
-                                    Print.exactly "let "
+                                    printExactlyLetSpace
                                         |> Print.followedBy
                                             (fsharpValueOrFunction |> printFsharpValueOrFunctionDeclaration)
-                                        |> Print.followedBy Print.linebreak
-                                        |> Print.followedBy Print.linebreakIndented
+                                        |> Print.followedBy printLinebreakLinebreakIndented
 
                                 FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
                                     case recursiveGroup of
@@ -9045,21 +9221,19 @@ module Elm =
                                             Print.empty
 
                                         fsharpValueOrFunctionDeclaration0 :: fsharpValueOrFunctionDeclaration1Up ->
-                                            Print.exactly "let rec "
+                                            printExactlyLetSpaceRecSpace
                                                 |> Print.followedBy
                                                     ((fsharpValueOrFunctionDeclaration0 |> printFsharpValueOrFunctionDeclaration)
-                                                        |> Print.followedBy Print.linebreak
-                                                        |> Print.followedBy Print.linebreakIndented
+                                                        |> Print.followedBy printLinebreakLinebreakIndented
                                                     )
                                                 |> Print.followedBy
                                                     (fsharpValueOrFunctionDeclaration1Up
                                                         |> Print.listMapAndIntersperseAndFlatten
                                                             (\letValueOrFunction ->
-                                                                Print.exactly "and "
+                                                                printExactlyAndSpace
                                                                     |> Print.followedBy
                                                                         (letValueOrFunction |> printFsharpValueOrFunctionDeclaration)
-                                                                    |> Print.followedBy Print.linebreak
-                                                                    |> Print.followedBy Print.linebreakIndented
+                                                                    |> Print.followedBy printLinebreakLinebreakIndented
                                                             )
                                                             Print.empty
                                                     )
@@ -9070,6 +9244,39 @@ module Elm =
            )
         ++ """
 """
+
+
+printLinebreakLinebreakIndentedExactlyAndSpace : Print
+printLinebreakLinebreakIndentedExactlyAndSpace =
+    printLinebreakLinebreakIndented
+        |> Print.followedBy printExactlyAndSpace
+
+
+structLinebreakIndentedTypeSpace : Print
+structLinebreakIndentedTypeSpace =
+    Print.exactly "[<Struct>]"
+        |> Print.followedBy Print.linebreakIndented
+        |> Print.followedBy printExactlyTypeSpace
+
+
+printExactlyTypeSpace : Print
+printExactlyTypeSpace =
+    Print.exactly "type "
+
+
+printExactlyLetSpace : Print
+printExactlyLetSpace =
+    Print.exactly "let "
+
+
+printExactlyLetSpaceRecSpace : Print
+printExactlyLetSpaceRecSpace =
+    Print.exactly "let rec "
+
+
+printExactlyAndSpace : Print
+printExactlyAndSpace =
+    Print.exactly "and "
 
 
 defaultDeclarations : String
