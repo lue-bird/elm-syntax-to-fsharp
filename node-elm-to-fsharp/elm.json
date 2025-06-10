@@ -16,7 +16,7 @@
             "lue-bird/elm-syntax-type-infer": "2.0.0",
             "miniBill/elm-fast-dict": "1.2.3",
             "miniBill/elm-unicode": "1.1.1",
-            "stil4m/elm-syntax": "7.3.8",
+            "stil4m/elm-syntax": "7.3.9",
             "wolfadex/elm-ansi": "3.0.0"
         },
         "indirect": {
