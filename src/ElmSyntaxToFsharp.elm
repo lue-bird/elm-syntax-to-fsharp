@@ -2926,14 +2926,6 @@ inferredTypeBasicsFloat =
         )
 
 
-inferredTypeBasicsInt : ElmSyntaxTypeInfer.Type
-inferredTypeBasicsInt =
-    ElmSyntaxTypeInfer.TypeNotVariable
-        (ElmSyntaxTypeInfer.TypeConstruct
-            { moduleOrigin = "Basics", name = "Int", arguments = [] }
-        )
-
-
 {-| Use `typeConstructReferenceToCoreFsharp` for types
 -}
 referenceToCoreFsharp :
@@ -8200,10 +8192,55 @@ printFsharpExpressionParenthesizedIfWithLetDeclarations fsharpExpression =
             printFsharpExpressionNotParenthesized fsharpExpression
     in
     case fsharpExpression of
-        FsharpExpressionWithLetDeclarations fsharpExpressionWithLetDeclarations ->
+        FsharpExpressionWithLetDeclarations _ ->
             printParenthesized notParenthesizedPrint
 
-        _ ->
+        FsharpExpressionUnit ->
+            notParenthesizedPrint
+
+        FsharpExpressionFloat _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionInt64 _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionChar _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionStringLiteral _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionReference _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionRecordAccess _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionTuple _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionIfElse _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionListLiteral _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionArrayLiteral _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionRecord _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionRecordUpdate _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionCall _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionLambda _ ->
+            notParenthesizedPrint
+
+        FsharpExpressionMatchWith _ ->
             notParenthesizedPrint
 
 
