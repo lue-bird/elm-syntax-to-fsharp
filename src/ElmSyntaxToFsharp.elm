@@ -3032,28 +3032,23 @@ referenceToCoreFsharp reference =
                 "abs" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            case typeFunction.input of
-                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
-                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( "Basics", "Float" ) ->
+                            if typeFunction.input == inferredTypeBasicsFloat then
+                                Just { moduleOrigin = Nothing, name = "Basics_fabs" }
+
+                            else
+                                case typeFunction.input of
+                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                        if typeVariable.name |> String.startsWith "number" then
+                                            -- assume Float
                                             Just { moduleOrigin = Nothing, name = "Basics_fabs" }
 
-                                        _ ->
+                                        else
                                             -- assume Int
                                             Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
-                                ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                    if typeVariable.name |> String.startsWith "number" then
-                                        -- assume Float
-                                        Just { moduleOrigin = Nothing, name = "Basics_fabs" }
-
-                                    else
+                                    _ ->
                                         -- assume Int
                                         Just { moduleOrigin = Nothing, name = "Basics_iabs" }
-
-                                _ ->
-                                    -- assume Int
-                                    Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
                         _ ->
                             -- assume Int
@@ -3359,34 +3354,26 @@ referenceToCoreFsharp reference =
                 "product" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            case typeFunction.input of
-                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
-                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( "List", "List" ) ->
-                                            case typeFunction.input of
-                                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputListElementTypeConstruct) ->
-                                                    case ( inputListElementTypeConstruct.moduleOrigin, inputListElementTypeConstruct.name ) of
-                                                        ( "Basics", "Float" ) ->
-                                                            Just { moduleOrigin = Nothing, name = "List_fproduct" }
+                            if typeFunction.output == inferredTypeBasicsFloat then
+                                Just { moduleOrigin = Nothing, name = "List_fproduct" }
 
-                                                        _ ->
-                                                            -- assume List Int
-                                                            Just { moduleOrigin = Nothing, name = "List_iproduct" }
+                            else
+                                case typeFunction.output of
+                                    ElmSyntaxTypeInfer.TypeVariable outputTypeVariable ->
+                                        if outputTypeVariable.name |> String.startsWith "number" then
+                                            -- assume Float
+                                            Just { moduleOrigin = Nothing, name = "List_fproduct" }
 
-                                                _ ->
-                                                    -- assume List Int
-                                                    Just { moduleOrigin = Nothing, name = "List_iproduct" }
-
-                                        _ ->
-                                            -- assume List Int
+                                        else
+                                            -- assume Int
                                             Just { moduleOrigin = Nothing, name = "List_iproduct" }
 
-                                _ ->
-                                    -- assume List Int
-                                    Just { moduleOrigin = Nothing, name = "List_iproduct" }
+                                    _ ->
+                                        -- assume Int
+                                        Just { moduleOrigin = Nothing, name = "List_iproduct" }
 
                         _ ->
-                            -- assume List Int
+                            -- assume Int
                             Just { moduleOrigin = Nothing, name = "List_iproduct" }
 
                 "append" ->
@@ -6292,28 +6279,23 @@ expression context expressionTypedNode =
             Ok FsharpExpressionUnit
 
         ElmSyntaxTypeInfer.ExpressionInteger intValue ->
-            case expressionTypedNode.type_ of
-                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct typeConstruct) ->
-                    case ( typeConstruct.moduleOrigin, typeConstruct.name ) of
-                        ( "Basics", "Float" ) ->
+            if expressionTypedNode.type_ == inferredTypeBasicsFloat then
+                Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
+
+            else
+                case expressionTypedNode.type_ of
+                    ElmSyntaxTypeInfer.TypeVariable variable ->
+                        if variable.name |> String.startsWith "number" then
+                            -- assume Float
                             Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
 
-                        _ ->
+                        else
                             -- assume Int
                             Ok (FsharpExpressionInt intValue.value)
 
-                ElmSyntaxTypeInfer.TypeVariable variable ->
-                    if variable.name |> String.startsWith "number" then
-                        -- assume Float
-                        Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
-
-                    else
+                    _ ->
                         -- assume Int
                         Ok (FsharpExpressionInt intValue.value)
-
-                _ ->
-                    -- assume Int
-                    Ok (FsharpExpressionInt intValue.value)
 
         ElmSyntaxTypeInfer.ExpressionFloat floatValue ->
             Ok (FsharpExpressionFloat floatValue)
@@ -7492,19 +7474,23 @@ expressionOperatorToFsharpFunctionReference operator =
         "^" ->
             case operator.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                    case typeFunction.input of
-                        ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
-                            case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                ( "Basics", "Float" ) ->
+                    if typeFunction.input == inferredTypeBasicsFloat then
+                        okReferenceFpow
+
+                    else
+                        case typeFunction.input of
+                            ElmSyntaxTypeInfer.TypeVariable inputTypeVariable ->
+                                if inputTypeVariable.name |> String.startsWith "number" then
+                                    -- assume Float
                                     okReferenceFpow
 
-                                _ ->
+                                else
                                     -- assume Int
                                     okReferenceIpow
 
-                        _ ->
-                            -- assume Int
-                            okReferenceIpow
+                            _ ->
+                                -- assume Int
+                                okReferenceIpow
 
                 _ ->
                     -- assume Int
