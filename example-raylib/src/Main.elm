@@ -5,6 +5,7 @@ import Duration exposing (Duration)
 import Json.Decode
 import Json.Encode
 import Quantity
+import Random
 import Time
 
 
@@ -67,6 +68,12 @@ colorToJson color =
         , ( "blue", components.blue |> Json.Encode.float )
         , ( "alpha", components.alpha |> Json.Encode.float )
         ]
+
+
+colorOpaqueRandom : Random.Generator Color
+colorOpaqueRandom =
+    Random.map (\h -> Color.hsl h 0.9 0.3)
+        (Random.float 0 1)
 
 
 type ElementToRender
@@ -213,10 +220,10 @@ main =
                                 (newDurationSinceWindowInit
                                     |> Duration.inMilliseconds
                                     |> Basics.round
-                                    |> Basics.remainderBy 6000
+                                    |> Basics.remainderBy 20000
                                     |> Basics.toFloat
                                 )
-                                    / 6000
+                                    / 20000
 
                             durationPreviousToCurrentFrame : Duration
                             durationPreviousToCurrentFrame =
@@ -305,31 +312,30 @@ main =
                           }
                         , render
                             { backgroundColor =
-                                Color.fromRgba
-                                    { red =
-                                        (1
-                                            - (animationProgress
-                                                |> Basics.turns
-                                                |> Basics.sin
-                                              )
-                                        )
-                                            * 0.5
-                                    , green = 0
-                                    , blue =
-                                        (animationProgress
-                                            |> Basics.turns
-                                            |> Basics.sin
-                                        )
-                                            * 0.3
-                                    , alpha = 0
-                                    }
+                                Color.hsl
+                                    animationProgress
+                                    1
+                                    0.2
                             , elements =
-                                [ RectangleToRender
+                                [ TextToRender
+                                    { content =
+                                        "Elm running on the big screen!\nRendered "
+                                            ++ (state.frameCount // 1000 |> String.fromInt)
+                                            ++ "k times."
+                                    , fontSize = 29
+                                    , color = Color.white
+                                    , left = 50
+                                    , top = 100
+                                    }
+                                , RectangleToRender
                                     { width = bouncingLogoWidth
                                     , height = bouncingLogoHeight
                                     , left = bouncingLogoNewTopLeftPosition.x |> Basics.round
                                     , top = bouncingLogoNewTopLeftPosition.y |> Basics.round
-                                    , color = Color.black
+                                    , color =
+                                        Random.step colorOpaqueRandom
+                                            (Random.initialSeed bouncingLogoNewBounceCount)
+                                            |> Tuple.first
                                     }
                                 , let
                                     bounceCountFontSize : Int
@@ -365,16 +371,6 @@ main =
                                             - ((bounceCountFontSize |> Basics.toFloat) / 2)
                                             |> Basics.round
                                     , color = Color.white
-                                    }
-                                , TextToRender
-                                    { content =
-                                        "Elm running on the big screen! Rendered "
-                                            ++ (state.frameCount // 1000 |> String.fromInt)
-                                            ++ "k times."
-                                    , fontSize = 20
-                                    , color = Color.white
-                                    , left = 50
-                                    , top = 12
                                     }
                                 ]
                             }
