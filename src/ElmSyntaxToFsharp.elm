@@ -426,9 +426,14 @@ importsToModuleContext moduleExposes imports =
                                 , portsIncoming = moduleExposedNames.portsIncoming
                                 , portsOutgoing = moduleExposedNames.portsOutgoing
                                 }
+
+                    moduleNameOrAlias : String
+                    moduleNameOrAlias =
+                        syntaxImport.alias
+                            |> Maybe.withDefault syntaxImport.moduleName
                 in
-                moduleContextMerge
-                    (moduleContextMerge
+                soFar
+                    |> moduleContextMerge
                         { variantLookup =
                             syntaxImport.exposedVariants
                                 |> FastDict.foldl
@@ -465,97 +470,58 @@ importsToModuleContext moduleExposes imports =
                             syntaxImport.exposedPortsOutgoing
                                 |> FastSet.map (\portName -> ( "", portName ))
                         }
-                        (case syntaxImport.alias of
-                            Nothing ->
-                                { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
-                                        |> FastSet.foldl
-                                            (\exposeFromImportedModule dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert
-                                                        ( syntaxImport.moduleName, exposeFromImportedModule )
-                                                        syntaxImport.moduleName
-                                            )
-                                            FastDict.empty
-                                , variantLookup =
-                                    importedModuleMembers.variants
-                                        |> FastDict.foldl
-                                            (\exposeFromImportedModule variantInfo dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert
-                                                        ( syntaxImport.moduleName, exposeFromImportedModule )
-                                                        { moduleOrigin = syntaxImport.moduleName
-                                                        , valueCount = variantInfo.valueCount
-                                                        }
-                                            )
-                                            FastDict.empty
-                                , recordTypeAliasLookup =
-                                    syntaxImport.exposedRecordTypeAliases
-                                        |> FastDict.foldl
-                                            (\typeAliasName fieldOrder dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert ( syntaxImport.moduleName, typeAliasName )
-                                                        fieldOrder
-                                            )
-                                            FastDict.empty
-                                , portIncomingLookup =
-                                    syntaxImport.exposedPortsIncoming
-                                        |> FastSet.map (\portName -> ( syntaxImport.moduleName, portName ))
-                                , portOutgoingLookup =
-                                    syntaxImport.exposedPortsOutgoing
-                                        |> FastSet.map (\portName -> ( syntaxImport.moduleName, portName ))
-                                }
-
-                            Just importAlias ->
-                                { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                                    importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
-                                        |> FastSet.foldl
-                                            (\exposeFromImportedModule dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert
-                                                        ( importAlias, exposeFromImportedModule )
-                                                        syntaxImport.moduleName
-                                            )
-                                            FastDict.empty
-                                , variantLookup =
-                                    importedModuleMembers.variants
-                                        |> FastDict.foldl
-                                            (\exposeFromImportedModule variantInfo dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert
-                                                        ( importAlias, exposeFromImportedModule )
-                                                        { moduleOrigin = syntaxImport.moduleName
-                                                        , valueCount = variantInfo.valueCount
-                                                        }
-                                            )
-                                            FastDict.empty
-                                , recordTypeAliasLookup =
-                                    syntaxImport.exposedRecordTypeAliases
-                                        |> FastDict.foldl
-                                            (\typeAliasName fieldOrder dictSoFar ->
-                                                dictSoFar
-                                                    |> FastDict.insert ( importAlias, typeAliasName )
-                                                        fieldOrder
-                                            )
-                                            FastDict.empty
-                                , portIncomingLookup =
-                                    syntaxImport.exposedPortsIncoming
-                                        |> FastSet.map (\portName -> ( importAlias, portName ))
-                                , portOutgoingLookup =
-                                    syntaxImport.exposedPortsOutgoing
-                                        |> FastSet.map (\portName -> ( importAlias, portName ))
-                                }
-                        )
-                    )
-                    soFar
+                    |> moduleContextMerge
+                        { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+                            importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                |> FastSet.foldl
+                                    (\exposeFromImportedModule dictSoFar ->
+                                        dictSoFar
+                                            |> FastDict.insert
+                                                ( moduleNameOrAlias, exposeFromImportedModule )
+                                                syntaxImport.moduleName
+                                    )
+                                    FastDict.empty
+                        , variantLookup =
+                            importedModuleMembers.variants
+                                |> FastDict.foldl
+                                    (\exposeFromImportedModule variantInfo dictSoFar ->
+                                        dictSoFar
+                                            |> FastDict.insert
+                                                ( moduleNameOrAlias, exposeFromImportedModule )
+                                                { moduleOrigin = syntaxImport.moduleName
+                                                , valueCount = variantInfo.valueCount
+                                                }
+                                    )
+                                    FastDict.empty
+                        , recordTypeAliasLookup =
+                            syntaxImport.exposedRecordTypeAliases
+                                |> FastDict.foldl
+                                    (\typeAliasName fieldOrder dictSoFar ->
+                                        dictSoFar
+                                            |> FastDict.insert ( moduleNameOrAlias, typeAliasName )
+                                                fieldOrder
+                                    )
+                                    FastDict.empty
+                        , portIncomingLookup =
+                            syntaxImport.exposedPortsIncoming
+                                |> FastSet.map (\portName -> ( moduleNameOrAlias, portName ))
+                        , portOutgoingLookup =
+                            syntaxImport.exposedPortsOutgoing
+                                |> FastSet.map (\portName -> ( moduleNameOrAlias, portName ))
+                        }
             )
-            { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                FastDict.empty
-            , variantLookup = FastDict.empty
-            , recordTypeAliasLookup = FastDict.empty
-            , portIncomingLookup = FastSet.empty
-            , portOutgoingLookup = FastSet.empty
-            }
+            moduleContextEmpty
+
+
+moduleContextEmpty : ModuleContext
+moduleContextEmpty =
+    { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
+        FastDict.empty
+    , variantLookup = FastDict.empty
+    , recordTypeAliasLookup = FastDict.empty
+    , portIncomingLookup = FastSet.empty
+    , portOutgoingLookup = FastSet.empty
+    }
 
 
 exposesEmpty :
@@ -852,7 +818,7 @@ importsCombineFrom soFar syntaxImports =
         import0 :: import1 :: import2Up ->
             if import0.moduleName == import1.moduleName then
                 importsCombineFrom soFar
-                    (importsMerge import0 import1
+                    (importMerge import0 import1
                         :: import2Up
                     )
 
@@ -862,7 +828,7 @@ importsCombineFrom soFar syntaxImports =
                     (import1 :: import2Up)
 
 
-importsMerge :
+importMerge :
     { moduleName : String
     , alias : Maybe String
     , exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes :
@@ -898,7 +864,7 @@ importsMerge :
         , exposedPortsOutgoing : FastSet.Set String
         , exposedPortsIncoming : FastSet.Set String
         }
-importsMerge earlier later =
+importMerge earlier later =
     { moduleName = earlier.moduleName
     , alias =
         case earlier.alias of
@@ -5144,29 +5110,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         |> Elm.Syntax.Node.value
                                         |> moduleHeaderName
                                 of
-                                    "Array" ->
-                                        False
-
                                     -- https://github.com/elm/core/blob/1.0.5/src/Elm/JsArray.elm
                                     "Elm.JsArray" ->
-                                        False
-
-                                    "Bitwise" ->
-                                        False
-
-                                    "Debug" ->
-                                        False
-
-                                    "Set" ->
-                                        False
-
-                                    "Platform" ->
-                                        False
-
-                                    "Platform.Cmd" ->
-                                        False
-
-                                    "Platform.Sub" ->
                                         False
 
                                     "Process" ->
@@ -5176,15 +5121,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         False
 
                                     "File" ->
-                                        False
-
-                                    "Bytes" ->
-                                        False
-
-                                    "Bytes.Encode" ->
-                                        False
-
-                                    "Bytes.Decode" ->
                                         False
 
                                     "Http" ->
@@ -5258,12 +5194,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     "Svg.Lazy" ->
                                         False
 
-                                    "Time" ->
-                                        False
-
-                                    "Random" ->
-                                        False
-
                                     "Markdown" ->
                                         False
 
@@ -5286,18 +5216,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         False
 
                                     "WebGL.Texture" ->
-                                        False
-
-                                    "Math.Matrix4" ->
-                                        False
-
-                                    "Math.Vector2" ->
-                                        False
-
-                                    "Math.Vector3" ->
-                                        False
-
-                                    "Math.Vector4" ->
                                         False
 
                                     _ ->
