@@ -930,10 +930,15 @@ module Elm =
     let inline JsonEncode_bool (bool: bool) : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonValue.Create(bool)
 
+    let inline JsonEncode_stringRaw
+        (string: string)
+        : System.Text.Json.Nodes.JsonNode =
+        System.Text.Json.Nodes.JsonValue.Create(string)
+
     let inline JsonEncode_string
         (string: StringRope)
         : System.Text.Json.Nodes.JsonNode =
-        System.Text.Json.Nodes.JsonValue.Create(StringRope.toString string)
+        JsonEncode_stringRaw(StringRope.toString string)
 
     let inline JsonEncode_int (int: int64) : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonValue.Create(int)
@@ -980,14 +985,17 @@ module Elm =
         )
 
     let inline JsonEncode_dict
-        ([<InlineIfLambda>] keyToString: 'key -> string)
+        ([<InlineIfLambda>] keyToString: 'key -> StringRope)
         ([<InlineIfLambda>] valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
         (dict: Map<'key, 'value>)
         : System.Text.Json.Nodes.JsonNode =
         System.Text.Json.Nodes.JsonObject(
             Map.fold
                 (fun soFar key value ->
-                    Map.add (keyToString key) (valueToJson value) soFar)
+                    Map.add
+                        (StringRope.toString (keyToString key))
+                        (valueToJson value)
+                        soFar)
                 Map.empty
                 dict
         )
