@@ -183,8 +183,9 @@ keysPressed onReadLine =
 type alias State =
     { frameCount : Int
     , durationSinceWindowInit : Duration
-    , bouncingLogoTopLeftPosition : { x : Float, y : Float }
-    , bouncingLogoMovementPerSecond : { x : Float, y : Float }
+    , bouncingLogoTopLeftPosition : Position
+    , bouncingLogoMovementPerSecond : Offsets
+    , bouncingLogoBounceCount : Int
     }
 
 
@@ -233,28 +234,36 @@ main =
                                                 )
                                         )
 
+                            logoBounceLeftOrRight : Bool
+                            logoBounceLeftOrRight =
+                                ((bouncingLogoFutureTopLeftPosition.x |> Basics.round) < 0)
+                                    || ((bouncingLogoFutureTopLeftPosition.x |> Basics.round)
+                                            + bouncingLogoWidth
+                                            > windowWidth
+                                       )
+
+                            logoBounceTopOrBottom : Bool
+                            logoBounceTopOrBottom =
+                                ((bouncingLogoFutureTopLeftPosition.y |> Basics.round) < 0)
+                                    || ((bouncingLogoFutureTopLeftPosition.y |> Basics.round)
+                                            + bouncingLogoHeight
+                                            > windowHeight
+                                       )
+
+                            logoBounceOnAnyWall : Bool
+                            logoBounceOnAnyWall =
+                                logoBounceLeftOrRight || logoBounceTopOrBottom
+
                             bouncingLogoNewMovementPerSecond : Offsets
                             bouncingLogoNewMovementPerSecond =
                                 { x =
-                                    if
-                                        ((bouncingLogoFutureTopLeftPosition.x |> Basics.round) < 0)
-                                            || ((bouncingLogoFutureTopLeftPosition.x |> Basics.round)
-                                                    + bouncingLogoWidth
-                                                    > windowWidth
-                                               )
-                                    then
+                                    if logoBounceLeftOrRight then
                                         -state.bouncingLogoMovementPerSecond.x
 
                                     else
                                         state.bouncingLogoMovementPerSecond.x
                                 , y =
-                                    if
-                                        ((bouncingLogoFutureTopLeftPosition.y |> Basics.round) < 0)
-                                            || ((bouncingLogoFutureTopLeftPosition.y |> Basics.round)
-                                                    + bouncingLogoHeight
-                                                    > windowHeight
-                                               )
-                                    then
+                                    if logoBounceTopOrBottom then
                                         -state.bouncingLogoMovementPerSecond.y
 
                                     else
@@ -263,10 +272,7 @@ main =
 
                             bouncingLogoNewTopLeftPosition : Position
                             bouncingLogoNewTopLeftPosition =
-                                if state.bouncingLogoMovementPerSecond == bouncingLogoNewMovementPerSecond then
-                                    bouncingLogoFutureTopLeftPosition
-
-                                else
+                                if logoBounceOnAnyWall then
                                     state.bouncingLogoTopLeftPosition
                                         |> positionTranslateBy
                                             (bouncingLogoNewMovementPerSecond
@@ -275,6 +281,17 @@ main =
                                                         |> Duration.inSeconds
                                                     )
                                             )
+
+                                else
+                                    bouncingLogoFutureTopLeftPosition
+
+                            bouncingLogoNewBounceCount : Int
+                            bouncingLogoNewBounceCount =
+                                if logoBounceOnAnyWall then
+                                    state.bouncingLogoBounceCount + 1
+
+                                else
+                                    state.bouncingLogoBounceCount
                         in
                         ( { state
                             | frameCount = state.frameCount + 1
@@ -283,6 +300,8 @@ main =
                                 bouncingLogoNewTopLeftPosition
                             , bouncingLogoMovementPerSecond =
                                 bouncingLogoNewMovementPerSecond
+                            , bouncingLogoBounceCount =
+                                bouncingLogoNewBounceCount
                           }
                         , render
                             { backgroundColor =
@@ -311,6 +330,41 @@ main =
                                     , left = bouncingLogoNewTopLeftPosition.x |> Basics.round
                                     , top = bouncingLogoNewTopLeftPosition.y |> Basics.round
                                     , color = Color.black
+                                    }
+                                , let
+                                    bounceCountFontSize : Int
+                                    bounceCountFontSize =
+                                        Basics.min
+                                            ((bouncingLogoHeight |> Basics.toFloat) * 0.75)
+                                            (((bouncingLogoWidth |> Basics.toFloat)
+                                                / (bounceCountContent |> String.length |> Basics.toFloat)
+                                                * 2
+                                             )
+                                                * 0.75
+                                            )
+                                            |> Basics.round
+
+                                    bounceCountContent : String
+                                    bounceCountContent =
+                                        bouncingLogoNewBounceCount |> String.fromInt
+                                  in
+                                  TextToRender
+                                    { content = bounceCountContent
+                                    , fontSize = bounceCountFontSize
+                                    , left =
+                                        bouncingLogoNewTopLeftPosition.x
+                                            + ((bouncingLogoWidth |> Basics.toFloat) / 2)
+                                            - (((bounceCountFontSize |> Basics.toFloat) / 2)
+                                                * (bounceCountContent |> String.length |> Basics.toFloat)
+                                                / 2
+                                              )
+                                            |> Basics.round
+                                    , top =
+                                        bouncingLogoNewTopLeftPosition.y
+                                            + ((bouncingLogoHeight |> Basics.toFloat) / 2)
+                                            - ((bounceCountFontSize |> Basics.toFloat) / 2)
+                                            |> Basics.round
+                                    , color = Color.white
                                     }
                                 , TextToRender
                                     { content =
@@ -371,6 +425,7 @@ init _ =
             { x = 0.0, y = 0.0 }
       , bouncingLogoMovementPerSecond =
             { x = 150, y = 150 }
+      , bouncingLogoBounceCount = 0
       }
     , Cmd.batch
         [ stdOutWrite "Hello from elm which just got initialized!\n"
