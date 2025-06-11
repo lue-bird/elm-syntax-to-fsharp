@@ -1994,6 +1994,9 @@ floatLiteral float =
     if asString |> String.contains "." then
         asString
 
+    else if asString |> String.contains "e" then
+        asString
+
     else
         asString ++ ".0"
 
@@ -2915,6 +2918,22 @@ typeConstructReferenceToCoreFsharp reference =
             Nothing
 
 
+inferredTypeBasicsFloat : ElmSyntaxTypeInfer.Type
+inferredTypeBasicsFloat =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = "Basics", name = "Float", arguments = [] }
+        )
+
+
+inferredTypeBasicsInt : ElmSyntaxTypeInfer.Type
+inferredTypeBasicsInt =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        (ElmSyntaxTypeInfer.TypeConstruct
+            { moduleOrigin = "Basics", name = "Int", arguments = [] }
+        )
+
+
 {-| Use `typeConstructReferenceToCoreFsharp` for types
 -}
 referenceToCoreFsharp :
@@ -2968,10 +2987,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "Basics_neq" }
 
                 "e" ->
-                    Just { moduleOrigin = Just "System.Math", name = "E" }
+                    Just { moduleOrigin = Just "System.Double", name = "E" }
 
                 "pi" ->
-                    Just { moduleOrigin = Just "System.Math", name = "Pi" }
+                    Just { moduleOrigin = Just "System.Double", name = "Pi" }
 
                 "ceiling" ->
                     Just { moduleOrigin = Nothing, name = "Basics_ceiling" }
@@ -2983,33 +3002,28 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "Basics_round" }
 
                 "truncate" ->
-                    Just { moduleOrigin = Nothing, name = "truncate" }
+                    Just { moduleOrigin = Nothing, name = "int64" }
 
                 "negate" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            case typeFunction.input of
-                                ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
-                                    case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                        ( "Basics", "Float" ) ->
-                                            Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
-
-                                        _ ->
-                                            -- assume Int
-                                            Just { moduleOrigin = Nothing, name = "Basics_inegate" }
-
-                                _ ->
-                                    -- assume Int
-                                    Just { moduleOrigin = Nothing, name = "Basics_inegate" }
-
-                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                            if typeVariable.name |> String.startsWith "number" then
-                                -- assume Float
+                            if typeFunction.input == inferredTypeBasicsFloat then
                                 Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
 
                             else
-                                -- assume Int
-                                Just { moduleOrigin = Nothing, name = "Basics_inegate" }
+                                case typeFunction.input of
+                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                        if typeVariable.name |> String.startsWith "number" then
+                                            -- assume Float
+                                            Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
+
+                                        else
+                                            -- assume Int
+                                            Just { moduleOrigin = Nothing, name = "Basics_inegate" }
+
+                                    _ ->
+                                        -- assume Int
+                                        Just { moduleOrigin = Nothing, name = "Basics_inegate" }
 
                         _ ->
                             -- assume Int
@@ -3028,18 +3042,18 @@ referenceToCoreFsharp reference =
                                             -- assume Int
                                             Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
+                                ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                    if typeVariable.name |> String.startsWith "number" then
+                                        -- assume Float
+                                        Just { moduleOrigin = Nothing, name = "Basics_fabs" }
+
+                                    else
+                                        -- assume Int
+                                        Just { moduleOrigin = Nothing, name = "Basics_iabs" }
+
                                 _ ->
                                     -- assume Int
                                     Just { moduleOrigin = Nothing, name = "Basics_iabs" }
-
-                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                            if typeVariable.name |> String.startsWith "number" then
-                                -- assume Float
-                                Just { moduleOrigin = Nothing, name = "Basics_fabs" }
-
-                            else
-                                -- assume Int
-                                Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
                         _ ->
                             -- assume Int
@@ -3105,18 +3119,23 @@ referenceToCoreFsharp reference =
                 "clamp" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            if
-                                typeFunction.input
-                                    == ElmSyntaxTypeInfer.TypeNotVariable
-                                        (ElmSyntaxTypeInfer.TypeConstruct
-                                            { moduleOrigin = "Basics", name = "Float", arguments = [] }
-                                        )
-                            then
+                            if typeFunction.input == inferredTypeBasicsFloat then
                                 Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
 
                             else
-                                -- assume Int
-                                Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
+                                case typeFunction.input of
+                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                        if typeVariable.name |> String.startsWith "number" then
+                                            -- assume Float
+                                            Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
+
+                                        else
+                                            -- assume Int
+                                            Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
+
+                                    _ ->
+                                        -- assume Int
+                                        Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
 
                         _ ->
                             -- assume Int
@@ -5762,6 +5781,7 @@ baseElmDeclarationTypes =
         |> FastDict.union elmJsonTypes
         |> FastDict.union elmBytesTypes
         |> FastDict.union elmRegexTypes
+        |> FastDict.union elmTimeTypes
         |> FastDict.union elmKernelParserTypes
         |> FastDict.union elmKernelUrlTypes
 
@@ -6680,19 +6700,23 @@ expression context expressionTypedNode =
                     FsharpExpressionCall
                         { called =
                             FsharpExpressionReference
-                                (case inNegationNode.type_ of
-                                    ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeConstruct inputTypeConstruct) ->
-                                        case ( inputTypeConstruct.moduleOrigin, inputTypeConstruct.name ) of
-                                            ( "Basics", "Float" ) ->
+                                (if inNegationNode.type_ == inferredTypeBasicsFloat then
+                                    referenceBasicsFnegate
+
+                                 else
+                                    case inNegationNode.type_ of
+                                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                            if typeVariable.name |> String.startsWith "number" then
+                                                -- assume Float
                                                 referenceBasicsFnegate
 
-                                            _ ->
+                                            else
                                                 -- assume Int
                                                 referenceBasicsInegate
 
-                                    _ ->
-                                        -- assume Int
-                                        referenceBasicsInegate
+                                        _ ->
+                                            -- assume Int
+                                            referenceBasicsInegate
                                 )
                         , arguments = [ inNegation ]
                         }
@@ -18123,6 +18147,626 @@ elmJsonTypes =
                 FastDict.fromList
                     [ ( "Value"
                       , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        ]
+
+
+elmTimeTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
+elmTimeTypes =
+    FastDict.fromList
+        [ ( "Time"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "customZone"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "List"
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeRecord
+                                                                    (FastDict.fromList
+                                                                        [ ( "offset"
+                                                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                    { moduleOrigin =
+                                                                                        "Basics"
+                                                                                    , name =
+                                                                                        "Int"
+                                                                                    , arguments =
+                                                                                        []
+                                                                                    }
+                                                                                )
+                                                                          )
+                                                                        , ( "start"
+                                                                          , ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                    { moduleOrigin =
+                                                                                        "Basics"
+                                                                                    , name =
+                                                                                        "Int"
+                                                                                    , arguments =
+                                                                                        []
+                                                                                    }
+                                                                                )
+                                                                          )
+                                                                        ]
+                                                                    )
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Zone"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "every"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Time"
+                                                                    , name =
+                                                                        "Posix"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name =
+                                                                    "msg"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Platform.Sub"
+                                                        , name = "Sub"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name =
+                                                                    "msg"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getZoneName"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Task"
+                                , name = "Task"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "x"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "ZoneName"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "here"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Task"
+                                , name = "Task"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "x"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "millisToPosix"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Posix"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "now"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Task"
+                                , name = "Task"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "x"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                    , ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Posix"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "posixToMillis"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Posix"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toDay"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toHour"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toMillis"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toMinute"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toMonth"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Month"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toSecond"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toWeekday"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Weekday"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toYear"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Time"
+                                            , name = "Zone"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Time"
+                                                        , name = "Posix"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "utc"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Time"
+                                , name = "Zone"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Month"
+                      , { parameters = []
+                        , variants =
+                            FastDict.fromList
+                                [ ( "Jan", [] )
+                                , ( "Feb", [] )
+                                , ( "Mar", [] )
+                                , ( "Apr", [] )
+                                , ( "May", [] )
+                                , ( "Jun", [] )
+                                , ( "Jul", [] )
+                                , ( "Aug", [] )
+                                , ( "Sep", [] )
+                                , ( "Oct", [] )
+                                , ( "Nov", [] )
+                                , ( "Dec", [] )
+                                ]
+                        }
+                      )
+                    , ( "Posix"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    , ( "Weekday"
+                      , { parameters = []
+                        , variants =
+                            FastDict.fromList
+                                [ ( "Mon", [] )
+                                , ( "Tue", [] )
+                                , ( "Wed", [] )
+                                , ( "Thu", [] )
+                                , ( "Fri", [] )
+                                , ( "Sat", [] )
+                                , ( "Sun", [] )
+                                ]
+                        }
+                      )
+                    , ( "Zone"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    , ( "ZoneName"
+                      , { parameters = []
+                        , variants =
+                            FastDict.fromList
+                                [ ( "Name"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "String"
+                                            , name = "String"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                  )
+                                , ( "Offset"
+                                  , [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                  )
+                                ]
+                        }
                       )
                     ]
             }
