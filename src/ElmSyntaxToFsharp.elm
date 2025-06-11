@@ -5767,6 +5767,7 @@ baseElmDeclarationTypes =
     ElmSyntaxTypeInfer.elmCoreTypes
         |> FastDict.union elmJsonTypes
         |> FastDict.union elmBytesTypes
+        |> FastDict.union elmRandomTypes
         |> FastDict.union elmRegexTypes
         |> FastDict.union elmTimeTypes
         |> FastDict.union elmKernelParserTypes
@@ -13520,6 +13521,1322 @@ typeChar =
             , arguments = []
             }
         )
+
+
+elmRandomTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
+elmRandomTypes =
+    FastDict.fromList
+        [ ( "Random"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "andThen"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "constant"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Generator"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "float"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "generate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "msg"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Platform.Cmd"
+                                                        , name = "Cmd"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name =
+                                                                    "msg"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "independentSeed"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Random"
+                                , name = "Generator"
+                                , arguments =
+                                    [ ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Seed"
+                                            , arguments = []
+                                            }
+                                        )
+                                    ]
+                                }
+                            )
+                      )
+                    , ( "initialSeed"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Seed"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "int"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Int"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Int"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "lazy"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    ElmSyntaxTypeInfer.TypeUnit
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Generator"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "list"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Int"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "List"
+                                                                    , name =
+                                                                        "List"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "a"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "b"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map2"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "c"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Generator"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Generator"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "d"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Generator"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Random"
+                                                                                , name =
+                                                                                    "Generator"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Random"
+                                                                                , name =
+                                                                                    "Generator"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map4"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "e"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Generator"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Random"
+                                                                                , name =
+                                                                                    "Generator"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                "Random"
+                                                                                            , name =
+                                                                                                "Generator"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                "Random"
+                                                                                            , name =
+                                                                                                "Generator"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "map5"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "c"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "d"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    { name =
+                                                                                                        "e"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    { name =
+                                                                                                        "f"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Generator"
+                                                                    , arguments =
+                                                                        [ ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Random"
+                                                                                , name =
+                                                                                    "Generator"
+                                                                                , arguments =
+                                                                                    [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                        { name =
+                                                                                            "c"
+                                                                                        , useRange =
+                                                                                            Elm.Syntax.Range.empty
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                "Random"
+                                                                                            , name =
+                                                                                                "Generator"
+                                                                                            , arguments =
+                                                                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                    { name =
+                                                                                                        "d"
+                                                                                                    , useRange =
+                                                                                                        Elm.Syntax.Range.empty
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Random"
+                                                                                                        , name =
+                                                                                                            "Generator"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                { name =
+                                                                                                                    "e"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Random"
+                                                                                                        , name =
+                                                                                                            "Generator"
+                                                                                                        , arguments =
+                                                                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                                                                { name =
+                                                                                                                    "f"
+                                                                                                                , useRange =
+                                                                                                                    Elm.Syntax.Range.empty
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "maxInt"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Basics"
+                                , name = "Int"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "minInt"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Basics"
+                                , name = "Int"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "pair"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Generator"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "b"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeTuple
+                                                                    { part0 =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "a"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    , part1 =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "b"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "step"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Random"
+                                            , name = "Generator"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                                ]
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Seed"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeTuple
+                                                        { part0 =
+                                                            ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                        , part1 =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Random"
+                                                                    , name =
+                                                                        "Seed"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "uniform"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeVariable
+                                        { name = "a"
+                                        , useRange = Elm.Syntax.Range.empty
+                                        }
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "List"
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "weighted"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeTuple
+                                            { part0 =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , part1 =
+                                                ElmSyntaxTypeInfer.TypeVariable
+                                                    { name = "a"
+                                                    , useRange =
+                                                        Elm.Syntax.Range.empty
+                                                    }
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "List"
+                                                        , name = "List"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeTuple
+                                                                    { part0 =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , part1 =
+                                                                        ElmSyntaxTypeInfer.TypeVariable
+                                                                            { name =
+                                                                                "a"
+                                                                            , useRange =
+                                                                                Elm.Syntax.Range.empty
+                                                                            }
+                                                                    }
+                                                                )
+                                                            ]
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Random"
+                                                        , name = "Generator"
+                                                        , arguments =
+                                                            [ ElmSyntaxTypeInfer.TypeVariable
+                                                                { name = "a"
+                                                                , useRange =
+                                                                    Elm.Syntax.Range.empty
+                                                                }
+                                                            ]
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Generator"
+                      , { parameters = [ "a" ]
+                        , variants = FastDict.fromList []
+                        }
+                      )
+                    , ( "Seed"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        ]
 
 
 elmBytesTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
