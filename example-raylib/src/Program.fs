@@ -191,7 +191,6 @@ let performElmCommandSingle
                                           textToRender.Color
                                       )
                                   | RectangleToRender rectangleToRender ->
-
                                       Raylib.DrawRectangle(
                                           rectangleToRender.Left,
                                           rectangleToRender.Top,
@@ -260,7 +259,11 @@ let main args =
             | Elm.PlatformSub_PortIncoming portIncoming ->
                 match portIncoming.Name with
                 | "portFramePassed" ->
-                    onEvent (portIncoming.OnValue Elm.JsonEncode_null)
+                    onEvent (
+                        portIncoming.OnValue(
+                            Elm.JsonEncode_float(Raylib.GetTime())
+                        )
+                    )
                 | "portKeysPressed" ->
                     onEvent (
                         portIncoming.OnValue(

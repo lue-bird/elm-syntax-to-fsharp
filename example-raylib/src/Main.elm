@@ -1,8 +1,10 @@
 port module Main exposing (main)
 
 import Color exposing (Color)
+import Duration exposing (Duration)
 import Json.Decode
 import Json.Encode
+import Time
 
 
 port portStdOutWrite : Json.Encode.Value -> Cmd event_
@@ -139,13 +141,19 @@ render toRender =
         )
 
 
-framePassed : (() -> Event) -> Sub Event
+durationJsonDecoderFromSeconds : Json.Decode.Decoder Duration
+durationJsonDecoderFromSeconds =
+    Json.Decode.map Duration.seconds
+        Json.Decode.float
+
+
+framePassed : (Duration -> Event) -> Sub Event
 framePassed onReadLine =
     portFramePassed
         (\value ->
-            case value |> Json.Decode.decodeValue (Json.Decode.null ()) of
-                Ok readLine ->
-                    onReadLine readLine
+            case value |> Json.Decode.decodeValue durationJsonDecoderFromSeconds of
+                Ok duration ->
+                    onReadLine duration
 
                 Err error ->
                     PortEventFailedToDecode
@@ -177,7 +185,7 @@ type alias State =
 
 
 type Event
-    = FramePassed
+    = FramePassed Duration
     | PortEventFailedToDecode { name : String, error : Json.Decode.Error }
 
 
@@ -201,7 +209,7 @@ main =
         , update =
             \event state ->
                 case event of
-                    FramePassed ->
+                    FramePassed secondsSinceWindowInit ->
                         let
                             animationProgress : Float
                             animationProgress =
@@ -234,7 +242,14 @@ main =
                                     , alpha = 0
                                     }
                             , elements =
-                                [ TextToRender
+                                [ RectangleToRender
+                                    { width = 200
+                                    , height = 100
+                                    , left = 80
+                                    , top = 300
+                                    , color = Color.black
+                                    }
+                                , TextToRender
                                     { content =
                                         "Elm running on the big screen! Rendered "
                                             ++ (state.frameCount // 1000 |> String.fromInt)
@@ -243,13 +258,6 @@ main =
                                     , color = Color.white
                                     , left = 50
                                     , top = 12
-                                    }
-                                , RectangleToRender
-                                    { width = 200
-                                    , height = 100
-                                    , left = 80
-                                    , top = 300
-                                    , color = Color.black
                                     }
                                 ]
                             }
@@ -270,7 +278,7 @@ main =
                         )
         , subscriptions =
             \state ->
-                framePassed (\() -> FramePassed)
+                framePassed FramePassed
         }
 
 
