@@ -4,6 +4,7 @@ import Color exposing (Color)
 import Duration exposing (Duration)
 import Json.Decode
 import Json.Encode
+import Quantity
 import Time
 
 
@@ -182,6 +183,8 @@ keysPressed onReadLine =
 type alias State =
     { frameCount : Int
     , durationSinceWindowInit : Duration
+    , bouncingLogoTopLeftPosition : { x : Float, y : Float }
+    , bouncingLogoMovementPerSecond : { x : Float, y : Float }
     }
 
 
@@ -198,17 +201,7 @@ type alias Flags =
 main : Program Flags State Event
 main =
     Platform.worker
-        { init =
-            \_ ->
-                ( { frameCount = 0
-                  , durationSinceWindowInit = Duration.seconds 0
-                  }
-                , Cmd.batch
-                    [ stdOutWrite "Hello from elm which just got initialized!\n"
-                    , windowTitleSet "Yay raylib!"
-                    , windowDimensionsSet { width = 800, height = 480 }
-                    ]
-                )
+        { init = init
         , update =
             \event state ->
                 case event of
@@ -223,10 +216,73 @@ main =
                                     |> Basics.toFloat
                                 )
                                     / 6000
+
+                            durationPreviousToCurrentFrame : Duration
+                            durationPreviousToCurrentFrame =
+                                newDurationSinceWindowInit
+                                    |> Quantity.minus state.durationSinceWindowInit
+
+                            bouncingLogoFutureTopLeftPosition : Position
+                            bouncingLogoFutureTopLeftPosition =
+                                state.bouncingLogoTopLeftPosition
+                                    |> positionTranslateBy
+                                        (state.bouncingLogoMovementPerSecond
+                                            |> offsetsScaleBy
+                                                (durationPreviousToCurrentFrame
+                                                    |> Duration.inSeconds
+                                                )
+                                        )
+
+                            bouncingLogoNewMovementPerSecond : Offsets
+                            bouncingLogoNewMovementPerSecond =
+                                { x =
+                                    if
+                                        ((bouncingLogoFutureTopLeftPosition.x |> Basics.round) < 0)
+                                            || ((bouncingLogoFutureTopLeftPosition.x |> Basics.round)
+                                                    + bouncingLogoWidth
+                                                    > windowWidth
+                                               )
+                                    then
+                                        -state.bouncingLogoMovementPerSecond.x
+
+                                    else
+                                        state.bouncingLogoMovementPerSecond.x
+                                , y =
+                                    if
+                                        ((bouncingLogoFutureTopLeftPosition.y |> Basics.round) < 0)
+                                            || ((bouncingLogoFutureTopLeftPosition.y |> Basics.round)
+                                                    + bouncingLogoHeight
+                                                    > windowHeight
+                                               )
+                                    then
+                                        -state.bouncingLogoMovementPerSecond.y
+
+                                    else
+                                        state.bouncingLogoMovementPerSecond.y
+                                }
+
+                            bouncingLogoNewTopLeftPosition : Position
+                            bouncingLogoNewTopLeftPosition =
+                                if state.bouncingLogoMovementPerSecond == bouncingLogoNewMovementPerSecond then
+                                    bouncingLogoFutureTopLeftPosition
+
+                                else
+                                    state.bouncingLogoTopLeftPosition
+                                        |> positionTranslateBy
+                                            (bouncingLogoNewMovementPerSecond
+                                                |> offsetsScaleBy
+                                                    (durationPreviousToCurrentFrame
+                                                        |> Duration.inSeconds
+                                                    )
+                                            )
                         in
                         ( { state
                             | frameCount = state.frameCount + 1
                             , durationSinceWindowInit = newDurationSinceWindowInit
+                            , bouncingLogoTopLeftPosition =
+                                bouncingLogoNewTopLeftPosition
+                            , bouncingLogoMovementPerSecond =
+                                bouncingLogoNewMovementPerSecond
                           }
                         , render
                             { backgroundColor =
@@ -250,10 +306,10 @@ main =
                                     }
                             , elements =
                                 [ RectangleToRender
-                                    { width = 200
-                                    , height = 100
-                                    , left = 80
-                                    , top = 300
+                                    { width = bouncingLogoWidth
+                                    , height = bouncingLogoHeight
+                                    , left = bouncingLogoNewTopLeftPosition.x |> Basics.round
+                                    , top = bouncingLogoNewTopLeftPosition.y |> Basics.round
                                     , color = Color.black
                                     }
                                 , TextToRender
@@ -283,10 +339,72 @@ main =
                             , processExit 1
                             ]
                         )
-        , subscriptions =
-            \state ->
-                framePassed FramePassed
+        , subscriptions = subscriptions
         }
+
+
+bouncingLogoWidth : Int
+bouncingLogoWidth =
+    200
+
+
+bouncingLogoHeight : Int
+bouncingLogoHeight =
+    100
+
+
+windowWidth : Int
+windowWidth =
+    800
+
+
+windowHeight : Int
+windowHeight =
+    480
+
+
+init : Flags -> ( State, Cmd Event )
+init _ =
+    ( { frameCount = 0
+      , durationSinceWindowInit = Duration.seconds 0
+      , bouncingLogoTopLeftPosition =
+            { x = 0.0, y = 0.0 }
+      , bouncingLogoMovementPerSecond =
+            { x = 150, y = 150 }
+      }
+    , Cmd.batch
+        [ stdOutWrite "Hello from elm which just got initialized!\n"
+        , windowTitleSet "Yay raylib!"
+        , windowDimensionsSet { width = windowWidth, height = windowHeight }
+        ]
+    )
+
+
+subscriptions : State -> Sub Event
+subscriptions state =
+    framePassed FramePassed
+
+
+type alias Position =
+    { x : Float, y : Float }
+
+
+type alias Offsets =
+    { x : Float, y : Float }
+
+
+positionTranslateBy : Offsets -> Position -> Position
+positionTranslateBy offsets position =
+    { x = position.x + offsets.x
+    , y = position.y + offsets.y
+    }
+
+
+offsetsScaleBy : Float -> Offsets -> Offsets
+offsetsScaleBy factor offsets =
+    { x = offsets.x * factor
+    , y = offsets.y * factor
+    }
 
 
 {-| https://dark.elm.dmy.fr/packages/lue-bird/elm-no-record-type-alias-constructor-function/latest/RecordWithoutConstructorFunction#RecordWithoutConstructorFunction
