@@ -3338,7 +3338,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Just "List", name = "append" }
 
                 "concat" ->
-                    Just { moduleOrigin = Just "List", name = "join" }
+                    Just { moduleOrigin = Just "List", name = "concat" }
 
                 "reverse" ->
                     Just { moduleOrigin = Just "List", name = "rev" }
