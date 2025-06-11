@@ -89,7 +89,7 @@ type FsharpPattern
 type FsharpExpression
     = FsharpExpressionUnit
     | FsharpExpressionFloat Float
-    | FsharpExpressionInt Int
+    | FsharpExpressionInt64 Int
     | FsharpExpressionChar Char
     | FsharpExpressionStringLiteral String
     | FsharpExpressionReference
@@ -1006,7 +1006,7 @@ fsharpExpressionContainedConstructedRecords syntaxExpression =
             FsharpExpressionFloat _ ->
                 FastSet.empty
 
-            FsharpExpressionInt _ ->
+            FsharpExpressionInt64 _ ->
                 FastSet.empty
 
             FsharpExpressionChar _ ->
@@ -1083,7 +1083,7 @@ fsharpExpressionSubs fsharpExpression =
         FsharpExpressionUnit ->
             []
 
-        FsharpExpressionInt _ ->
+        FsharpExpressionInt64 _ ->
             []
 
         FsharpExpressionFloat _ ->
@@ -6291,11 +6291,11 @@ expression context expressionTypedNode =
 
                         else
                             -- assume Int
-                            Ok (FsharpExpressionInt intValue.value)
+                            Ok (FsharpExpressionInt64 intValue.value)
 
                     _ ->
                         -- assume Int
-                        Ok (FsharpExpressionInt intValue.value)
+                        Ok (FsharpExpressionInt64 intValue.value)
 
         ElmSyntaxTypeInfer.ExpressionFloat floatValue ->
             Ok (FsharpExpressionFloat floatValue)
@@ -6679,29 +6679,37 @@ expression context expressionTypedNode =
         ElmSyntaxTypeInfer.ExpressionNegation inNegationNode ->
             Result.map
                 (\inNegation ->
-                    FsharpExpressionCall
-                        { called =
-                            FsharpExpressionReference
-                                (if inNegationNode.type_ == inferredTypeBasicsFloat then
-                                    referenceBasicsFnegate
+                    case inNegation of
+                        FsharpExpressionInt64 int64 ->
+                            FsharpExpressionInt64 -int64
 
-                                 else
-                                    case inNegationNode.type_ of
-                                        ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                            if typeVariable.name |> String.startsWith "number" then
-                                                -- assume Float
-                                                referenceBasicsFnegate
+                        FsharpExpressionFloat float ->
+                            FsharpExpressionFloat -float
 
-                                            else
-                                                -- assume Int
-                                                referenceBasicsInegate
+                        nonLiteralNumberInNegation ->
+                            FsharpExpressionCall
+                                { called =
+                                    FsharpExpressionReference
+                                        (if inNegationNode.type_ == inferredTypeBasicsFloat then
+                                            referenceBasicsFnegate
 
-                                        _ ->
-                                            -- assume Int
-                                            referenceBasicsInegate
-                                )
-                        , arguments = [ inNegation ]
-                        }
+                                         else
+                                            case inNegationNode.type_ of
+                                                ElmSyntaxTypeInfer.TypeVariable typeVariable ->
+                                                    if typeVariable.name |> String.startsWith "number" then
+                                                        -- assume Float
+                                                        referenceBasicsFnegate
+
+                                                    else
+                                                        -- assume Int
+                                                        referenceBasicsInegate
+
+                                                _ ->
+                                                    -- assume Int
+                                                    referenceBasicsInegate
+                                        )
+                                , arguments = [ nonLiteralNumberInNegation ]
+                                }
                 )
                 (inNegationNode |> expression context)
 
@@ -7232,7 +7240,7 @@ callAsArrayFromList reference argument =
                                 FsharpExpressionFloat _ ->
                                     Nothing
 
-                                FsharpExpressionInt _ ->
+                                FsharpExpressionInt64 _ ->
                                     Nothing
 
                                 FsharpExpressionChar _ ->
@@ -8206,7 +8214,7 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
         FsharpExpressionChar _ ->
             False
 
-        FsharpExpressionInt _ ->
+        FsharpExpressionInt64 _ ->
             False
 
         FsharpExpressionFloat _ ->
@@ -8274,7 +8282,7 @@ printFsharpExpressionNotParenthesized fsharpExpression =
         FsharpExpressionChar charValue ->
             Print.exactly (charLiteral charValue)
 
-        FsharpExpressionInt int ->
+        FsharpExpressionInt64 int ->
             Print.exactly (int |> intLiteral)
 
         FsharpExpressionFloat float ->
