@@ -181,6 +181,7 @@ keysPressed onReadLine =
 
 type alias State =
     { frameCount : Int
+    , durationSinceWindowInit : Duration
     }
 
 
@@ -199,7 +200,9 @@ main =
     Platform.worker
         { init =
             \_ ->
-                ( { frameCount = 0 }
+                ( { frameCount = 0
+                  , durationSinceWindowInit = Duration.seconds 0
+                  }
                 , Cmd.batch
                     [ stdOutWrite "Hello from elm which just got initialized!\n"
                     , windowTitleSet "Yay raylib!"
@@ -209,18 +212,22 @@ main =
         , update =
             \event state ->
                 case event of
-                    FramePassed secondsSinceWindowInit ->
+                    FramePassed newDurationSinceWindowInit ->
                         let
                             animationProgress : Float
                             animationProgress =
-                                (state.frameCount
-                                    |> Basics.remainderBy 20000
+                                (newDurationSinceWindowInit
+                                    |> Duration.inMilliseconds
+                                    |> Basics.round
+                                    |> Basics.remainderBy 6000
                                     |> Basics.toFloat
                                 )
-                                    / 20000
-                                    / 2
+                                    / 6000
                         in
-                        ( { state | frameCount = state.frameCount + 1 }
+                        ( { state
+                            | frameCount = state.frameCount + 1
+                            , durationSinceWindowInit = newDurationSinceWindowInit
+                          }
                         , render
                             { backgroundColor =
                                 Color.fromRgba
@@ -282,5 +289,7 @@ main =
         }
 
 
+{-| https://dark.elm.dmy.fr/packages/lue-bird/elm-no-record-type-alias-constructor-function/latest/RecordWithoutConstructorFunction#RecordWithoutConstructorFunction
+-}
 type alias WithoutRecordConstructor recordType =
     recordType
