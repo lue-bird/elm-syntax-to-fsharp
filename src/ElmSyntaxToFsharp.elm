@@ -3463,6 +3463,141 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        "Maybe" ->
+            case reference.name of
+                "Nothing" ->
+                    Just { moduleOrigin = Nothing, name = "ValueNone" }
+
+                "Just" ->
+                    Just { moduleOrigin = Nothing, name = "ValueSome" }
+
+                "withDefault" ->
+                    Just { moduleOrigin = Just "ValueOption", name = "defaultValue" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "ValueOption", name = "map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Just "ValueOption", name = "map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Just "ValueOption", name = "map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "Maybe_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "Maybe_map5" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Just "ValueOption", name = "bind" }
+
+                _ ->
+                    Nothing
+
+        "Result" ->
+            case reference.name of
+                "Err" ->
+                    Just { moduleOrigin = Nothing, name = "Error" }
+
+                "Ok" ->
+                    Just { moduleOrigin = Nothing, name = "Ok" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "Result", name = "map" }
+
+                "map2" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map2" }
+
+                "map3" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map3" }
+
+                "map4" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map4" }
+
+                "map5" ->
+                    Just { moduleOrigin = Nothing, name = "Result_map5" }
+
+                "andThen" ->
+                    Just { moduleOrigin = Just "Result", name = "bind" }
+
+                "withDefault" ->
+                    Just { moduleOrigin = Just "Result", name = "defaultValue" }
+
+                "toMaybe" ->
+                    Just { moduleOrigin = Just "Result", name = "toValueOption" }
+
+                "fromMaybe" ->
+                    Just { moduleOrigin = Nothing, name = "Result_fromMaybe" }
+
+                "mapError" ->
+                    Just { moduleOrigin = Just "Result", name = "mapError" }
+
+                _ ->
+                    Nothing
+
+        "Array" ->
+            case reference.name of
+                "isEmpty" ->
+                    Just { moduleOrigin = Just "Array", name = "iEmpty" }
+
+                "length" ->
+                    Just { moduleOrigin = Nothing, name = "Array_length" }
+
+                "get" ->
+                    Just { moduleOrigin = Nothing, name = "Array_get" }
+
+                "empty" ->
+                    Just { moduleOrigin = Just "Array", name = "empty" }
+
+                "initialize" ->
+                    Just { moduleOrigin = Nothing, name = "Array_initialize" }
+
+                "repeat" ->
+                    Just { moduleOrigin = Nothing, name = "Array_repeat" }
+
+                "fromList" ->
+                    Just { moduleOrigin = Just "Array", name = "ofList" }
+
+                "reverse" ->
+                    Just { moduleOrigin = Just "Array", name = "rev" }
+
+                "filter" ->
+                    Just { moduleOrigin = Just "Array", name = "filter" }
+
+                "push" ->
+                    Just { moduleOrigin = Nothing, name = "Array_push" }
+
+                "set" ->
+                    Just { moduleOrigin = Nothing, name = "Array_set" }
+
+                "slice" ->
+                    Just { moduleOrigin = Nothing, name = "Array_slice" }
+
+                "map" ->
+                    Just { moduleOrigin = Just "Array", name = "map" }
+
+                "indexedMap" ->
+                    Just { moduleOrigin = Nothing, name = "Array_indexedMap" }
+
+                "append" ->
+                    Just { moduleOrigin = Just "Array", name = "append" }
+
+                "toList" ->
+                    Just { moduleOrigin = Just "Array", name = "toList" }
+
+                "toIndexedList" ->
+                    Just { moduleOrigin = Nothing, name = "Array_toIndexedList" }
+
+                "foldl" ->
+                    Just { moduleOrigin = Nothing, name = "Array_foldl" }
+
+                "foldr" ->
+                    Just { moduleOrigin = Nothing, name = "Array_foldr" }
+
+                _ ->
+                    Nothing
+
         "Dict" ->
             case reference.name of
                 "size" ->
@@ -3769,141 +3904,6 @@ referenceToCoreFsharp reference =
 
                 "replaceAtMost" ->
                     Just { moduleOrigin = Nothing, name = "Regex_replaceAtMost" }
-
-                _ ->
-                    Nothing
-
-        "Maybe" ->
-            case reference.name of
-                "Nothing" ->
-                    Just { moduleOrigin = Nothing, name = "ValueNone" }
-
-                "Just" ->
-                    Just { moduleOrigin = Nothing, name = "ValueSome" }
-
-                "withDefault" ->
-                    Just { moduleOrigin = Just "ValueOption", name = "defaultValue" }
-
-                "map" ->
-                    Just { moduleOrigin = Just "ValueOption", name = "map" }
-
-                "map2" ->
-                    Just { moduleOrigin = Just "ValueOption", name = "map2" }
-
-                "map3" ->
-                    Just { moduleOrigin = Just "ValueOption", name = "map3" }
-
-                "map4" ->
-                    Just { moduleOrigin = Nothing, name = "Maybe_map4" }
-
-                "map5" ->
-                    Just { moduleOrigin = Nothing, name = "Maybe_map5" }
-
-                "andThen" ->
-                    Just { moduleOrigin = Just "ValueOption", name = "bind" }
-
-                _ ->
-                    Nothing
-
-        "Result" ->
-            case reference.name of
-                "Err" ->
-                    Just { moduleOrigin = Nothing, name = "Error" }
-
-                "Ok" ->
-                    Just { moduleOrigin = Nothing, name = "Ok" }
-
-                "map" ->
-                    Just { moduleOrigin = Just "Result", name = "map" }
-
-                "map2" ->
-                    Just { moduleOrigin = Nothing, name = "Result_map2" }
-
-                "map3" ->
-                    Just { moduleOrigin = Nothing, name = "Result_map3" }
-
-                "map4" ->
-                    Just { moduleOrigin = Nothing, name = "Result_map4" }
-
-                "map5" ->
-                    Just { moduleOrigin = Nothing, name = "Result_map5" }
-
-                "andThen" ->
-                    Just { moduleOrigin = Just "Result", name = "bind" }
-
-                "withDefault" ->
-                    Just { moduleOrigin = Just "Result", name = "defaultValue" }
-
-                "toMaybe" ->
-                    Just { moduleOrigin = Just "Result", name = "toValueOption" }
-
-                "fromMaybe" ->
-                    Just { moduleOrigin = Nothing, name = "Result_fromMaybe" }
-
-                "mapError" ->
-                    Just { moduleOrigin = Just "Result", name = "mapError" }
-
-                _ ->
-                    Nothing
-
-        "Array" ->
-            case reference.name of
-                "isEmpty" ->
-                    Just { moduleOrigin = Just "Array", name = "iEmpty" }
-
-                "length" ->
-                    Just { moduleOrigin = Nothing, name = "Array_length" }
-
-                "get" ->
-                    Just { moduleOrigin = Nothing, name = "Array_get" }
-
-                "empty" ->
-                    Just { moduleOrigin = Just "Array", name = "empty" }
-
-                "initialize" ->
-                    Just { moduleOrigin = Nothing, name = "Array_initialize" }
-
-                "repeat" ->
-                    Just { moduleOrigin = Nothing, name = "Array_repeat" }
-
-                "fromList" ->
-                    Just { moduleOrigin = Just "Array", name = "ofList" }
-
-                "reverse" ->
-                    Just { moduleOrigin = Just "Array", name = "rev" }
-
-                "filter" ->
-                    Just { moduleOrigin = Just "Array", name = "filter" }
-
-                "push" ->
-                    Just { moduleOrigin = Nothing, name = "Array_push" }
-
-                "set" ->
-                    Just { moduleOrigin = Nothing, name = "Array_set" }
-
-                "slice" ->
-                    Just { moduleOrigin = Nothing, name = "Array_slice" }
-
-                "map" ->
-                    Just { moduleOrigin = Just "Array", name = "map" }
-
-                "indexedMap" ->
-                    Just { moduleOrigin = Nothing, name = "Array_indexedMap" }
-
-                "append" ->
-                    Just { moduleOrigin = Just "Array", name = "append" }
-
-                "toList" ->
-                    Just { moduleOrigin = Just "Array", name = "toList" }
-
-                "toIndexedList" ->
-                    Just { moduleOrigin = Nothing, name = "Array_toIndexedList" }
-
-                "foldl" ->
-                    Just { moduleOrigin = Nothing, name = "Array_foldl" }
-
-                "foldr" ->
-                    Just { moduleOrigin = Nothing, name = "Array_foldr" }
 
                 _ ->
                     Nothing
@@ -5770,6 +5770,7 @@ baseElmDeclarationTypes =
         |> FastDict.union elmRandomTypes
         |> FastDict.union elmRegexTypes
         |> FastDict.union elmTimeTypes
+        |> FastDict.union elmExplorationsLinearAlgebraTypes
         |> FastDict.union elmKernelParserTypes
         |> FastDict.union elmKernelUrlTypes
 
@@ -20078,6 +20079,3646 @@ elmTimeTypes =
                                   )
                                 ]
                         }
+                      )
+                    ]
+            }
+          )
+        ]
+
+
+elmExplorationsLinearAlgebraTypes : FastDict.Dict String ElmSyntaxTypeInfer.ModuleTypes
+elmExplorationsLinearAlgebraTypes =
+    FastDict.fromList
+        [ ( "Math.Matrix4"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "fromRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "m11"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m12"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m13"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m14"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m21"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m22"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m23"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m24"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m31"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m32"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m33"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m34"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m41"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m42"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m43"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m44"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "identity"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Math.Matrix4"
+                                , name = "Mat4"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "inverse"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Maybe"
+                                            , name = "Maybe"
+                                            , arguments =
+                                                [ ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                                ]
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "inverseOrthonormal"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeBasis"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Vector3"
+                                                                    , name =
+                                                                        "Vec3"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeFrustum"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                "Basics"
+                                                                                            , name =
+                                                                                                "Float"
+                                                                                            , arguments =
+                                                                                                []
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Basics"
+                                                                                                        , name =
+                                                                                                            "Float"
+                                                                                                        , arguments =
+                                                                                                            []
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Math.Matrix4"
+                                                                                                        , name =
+                                                                                                            "Mat4"
+                                                                                                        , arguments =
+                                                                                                            []
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeLookAt"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Vector3"
+                                                                    , name =
+                                                                        "Vec3"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeOrtho"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeFunction
+                                                                                { input =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                            { moduleOrigin =
+                                                                                                "Basics"
+                                                                                            , name =
+                                                                                                "Float"
+                                                                                            , arguments =
+                                                                                                []
+                                                                                            }
+                                                                                        )
+                                                                                , output =
+                                                                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                        (ElmSyntaxTypeInfer.TypeFunction
+                                                                                            { input =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Basics"
+                                                                                                        , name =
+                                                                                                            "Float"
+                                                                                                        , arguments =
+                                                                                                            []
+                                                                                                        }
+                                                                                                    )
+                                                                                            , output =
+                                                                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                                        { moduleOrigin =
+                                                                                                            "Math.Matrix4"
+                                                                                                        , name =
+                                                                                                            "Mat4"
+                                                                                                        , arguments =
+                                                                                                            []
+                                                                                                        }
+                                                                                                    )
+                                                                                            }
+                                                                                        )
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeOrtho2D"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makePerspective"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeRotate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeScale"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeScale3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeTranslate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "makeTranslate3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "mul"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "mulAffine"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "rotate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Matrix4"
+                                                                    , name =
+                                                                        "Mat4"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "scale"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "scale3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "m11"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m12"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m13"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m14"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m21"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m22"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m23"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m24"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m31"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m32"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m33"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m34"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m41"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m42"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m43"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "m44"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                }
+                            )
+                      )
+                    , ( "transform"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "translate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Matrix4"
+                                                        , name = "Mat4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "translate3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Matrix4"
+                                                                                , name =
+                                                                                    "Mat4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "transpose"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Matrix4"
+                                            , name = "Mat4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Mat4"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        , ( "Math.Vector2"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "add"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "direction"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distance"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distanceSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "dot"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fromRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "length"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "lengthSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "negate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "normalize"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "scale"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "sub"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector2"
+                                            , name = "Vec2"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                }
+                            )
+                      )
+                    , ( "vec2"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector2"
+                                                        , name = "Vec2"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Vec2"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        , ( "Math.Vector3"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "add"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "cross"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "direction"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distance"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distanceSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "dot"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fromRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "z"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getZ"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "i"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Math.Vector3"
+                                , name = "Vec3"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "j"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Math.Vector3"
+                                , name = "Vec3"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "k"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeConstruct
+                                { moduleOrigin = "Math.Vector3"
+                                , name = "Vec3"
+                                , arguments = []
+                                }
+                            )
+                      )
+                    , ( "length"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "lengthSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "negate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "normalize"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "scale"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setZ"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "sub"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector3"
+                                                        , name = "Vec3"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector3"
+                                            , name = "Vec3"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "z"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                }
+                            )
+                      )
+                    , ( "vec3"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Math.Vector3"
+                                                                    , name =
+                                                                        "Vec3"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Vec3"
+                      , { parameters = [], variants = FastDict.fromList [] }
+                      )
+                    ]
+            }
+          )
+        , ( "Math.Vector4"
+          , { signatures =
+                FastDict.fromList
+                    [ ( "add"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "direction"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distance"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "distanceSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "dot"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "fromRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "w"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "z"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getW"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "getZ"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "length"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "lengthSquared"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "negate"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "normalize"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "scale"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setW"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setX"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setY"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "setZ"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "sub"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Math.Vector4"
+                                                        , name = "Vec4"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    , ( "toRecord"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Math.Vector4"
+                                            , name = "Vec4"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeRecord
+                                            (FastDict.fromList
+                                                [ ( "w"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "x"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "y"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                , ( "z"
+                                                  , ElmSyntaxTypeInfer.TypeNotVariable
+                                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                                            { moduleOrigin =
+                                                                "Basics"
+                                                            , name = "Float"
+                                                            , arguments = []
+                                                            }
+                                                        )
+                                                  )
+                                                ]
+                                            )
+                                        )
+                                }
+                            )
+                      )
+                    , ( "vec4"
+                      , ElmSyntaxTypeInfer.TypeNotVariable
+                            (ElmSyntaxTypeInfer.TypeFunction
+                                { input =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeConstruct
+                                            { moduleOrigin = "Basics"
+                                            , name = "Float"
+                                            , arguments = []
+                                            }
+                                        )
+                                , output =
+                                    ElmSyntaxTypeInfer.TypeNotVariable
+                                        (ElmSyntaxTypeInfer.TypeFunction
+                                            { input =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeConstruct
+                                                        { moduleOrigin =
+                                                            "Basics"
+                                                        , name = "Float"
+                                                        , arguments = []
+                                                        }
+                                                    )
+                                            , output =
+                                                ElmSyntaxTypeInfer.TypeNotVariable
+                                                    (ElmSyntaxTypeInfer.TypeFunction
+                                                        { input =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeConstruct
+                                                                    { moduleOrigin =
+                                                                        "Basics"
+                                                                    , name =
+                                                                        "Float"
+                                                                    , arguments =
+                                                                        []
+                                                                    }
+                                                                )
+                                                        , output =
+                                                            ElmSyntaxTypeInfer.TypeNotVariable
+                                                                (ElmSyntaxTypeInfer.TypeFunction
+                                                                    { input =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Basics"
+                                                                                , name =
+                                                                                    "Float"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    , output =
+                                                                        ElmSyntaxTypeInfer.TypeNotVariable
+                                                                            (ElmSyntaxTypeInfer.TypeConstruct
+                                                                                { moduleOrigin =
+                                                                                    "Math.Vector4"
+                                                                                , name =
+                                                                                    "Vec4"
+                                                                                , arguments =
+                                                                                    []
+                                                                                }
+                                                                            )
+                                                                    }
+                                                                )
+                                                        }
+                                                    )
+                                            }
+                                        )
+                                }
+                            )
+                      )
+                    ]
+            , typeAliases = FastDict.fromList []
+            , choiceTypes =
+                FastDict.fromList
+                    [ ( "Vec4"
+                      , { parameters = [], variants = FastDict.fromList [] }
                       )
                     ]
             }
