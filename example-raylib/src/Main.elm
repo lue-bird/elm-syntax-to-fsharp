@@ -23,6 +23,9 @@ port portRender : Json.Encode.Value -> Cmd event_
 port portFramePassed : (Json.Encode.Value -> event) -> Sub event
 
 
+port portKeysPressed : (Json.Encode.Value -> event) -> Sub event
+
+
 stdOutWrite : String -> Cmd event_
 stdOutWrite output =
     portStdOutWrite (Json.Encode.string output)
@@ -63,34 +66,75 @@ colorToJson color =
         ]
 
 
+type ElementToRender
+    = TextToRender TextToRender
+    | RectangleToRender RectangleToRender
+
+
+elementToRenderToJson : ElementToRender -> Json.Encode.Value
+elementToRenderToJson elementToRender =
+    case elementToRender of
+        TextToRender textToRender ->
+            Json.Encode.object
+                [ ( "text", textToRender |> textToRenderToJson ) ]
+
+        RectangleToRender rectangleToRender ->
+            Json.Encode.object
+                [ ( "rectangle", rectangleToRender |> rectangleToRenderToJson ) ]
+
+
 type alias TextToRender =
-    { content : String
-    , left : Int
-    , top : Int
-    , color : Color
-    }
+    WithoutRecordConstructor
+        { content : String
+        , fontSize : Int
+        , left : Int
+        , top : Int
+        , color : Color
+        }
 
 
 textToRenderToJson : TextToRender -> Json.Encode.Value
 textToRenderToJson textToRender =
     Json.Encode.object
         [ ( "content", textToRender.content |> Json.Encode.string )
+        , ( "fontSize", textToRender.fontSize |> Json.Encode.int )
         , ( "left", textToRender.left |> Json.Encode.int )
         , ( "top", textToRender.top |> Json.Encode.int )
         , ( "color", textToRender.color |> colorToJson )
         ]
 
 
+type alias RectangleToRender =
+    WithoutRecordConstructor
+        { width : Int
+        , height : Int
+        , left : Int
+        , top : Int
+        , color : Color
+        }
+
+
+rectangleToRenderToJson : RectangleToRender -> Json.Encode.Value
+rectangleToRenderToJson rectangleToRender =
+    Json.Encode.object
+        [ ( "width", rectangleToRender.width |> Json.Encode.int )
+        , ( "height", rectangleToRender.height |> Json.Encode.int )
+        , ( "left", rectangleToRender.left |> Json.Encode.int )
+        , ( "top", rectangleToRender.top |> Json.Encode.int )
+        , ( "color", rectangleToRender.color |> colorToJson )
+        ]
+
+
 render :
     { backgroundColor : Color
-    , text : TextToRender
+    , elements : List ElementToRender
     }
     -> Cmd event_
 render toRender =
     portRender
         (Json.Encode.object
             [ ( "backgroundColor", toRender.backgroundColor |> colorToJson )
-            , ( "text", toRender.text |> textToRenderToJson )
+            , ( "elements", toRender.elements |> Json.Encode.list elementToRenderToJson )
             ]
         )
 
@@ -100,6 +144,22 @@ framePassed onReadLine =
     portFramePassed
         (\value ->
             case value |> Json.Decode.decodeValue (Json.Decode.null ()) of
+                Ok readLine ->
+                    onReadLine readLine
+
+                Err error ->
+                    PortEventFailedToDecode
+                        { name = "portFramePassed"
+                        , error = error
+                        }
+        )
+
+
+keysPressed : (List Int -> Event) -> Sub Event
+keysPressed onReadLine =
+    portFramePassed
+        (\value ->
+            case value |> Json.Decode.decodeValue (Json.Decode.list Json.Decode.int) of
                 Ok readLine ->
                     onReadLine readLine
 
@@ -173,15 +233,25 @@ main =
                                             * 0.3
                                     , alpha = 0
                                     }
-                            , text =
-                                { content =
-                                    "Elm running on the big screen! Rendered "
-                                        ++ (state.frameCount // 1000 |> String.fromInt)
-                                        ++ "k times."
-                                , color = Color.white
-                                , left = 50
-                                , top = 12
-                                }
+                            , elements =
+                                [ TextToRender
+                                    { content =
+                                        "Elm running on the big screen! Rendered "
+                                            ++ (state.frameCount // 1000 |> String.fromInt)
+                                            ++ "k times."
+                                    , fontSize = 20
+                                    , color = Color.white
+                                    , left = 50
+                                    , top = 12
+                                    }
+                                , RectangleToRender
+                                    { width = 200
+                                    , height = 100
+                                    , left = 80
+                                    , top = 300
+                                    , color = Color.black
+                                    }
+                                ]
                             }
                         )
 
@@ -202,3 +272,7 @@ main =
             \state ->
                 framePassed (\() -> FramePassed)
         }
+
+
+type alias WithoutRecordConstructor recordType =
+    recordType

@@ -58,24 +58,66 @@ let jsonDecodeWindowDimensions =
         (Elm.JsonDecode_fieldRaw "width" JsonDecodeInt32)
         (Elm.JsonDecode_fieldRaw "height" JsonDecodeInt32)
 
+
+
 [<Struct>]
 type TextToRender =
     { Content: string
+      FontSize: int
       Left: int
       Top: int
       Color: Color }
 
+[<Struct>]
+type RectangleToRender =
+    { Width: int
+      Height: int
+      Left: int
+      Top: int
+      Color: Color }
+
+type ElementToRender =
+    | TextToRender of TextToRender
+    | RectangleToRender of RectangleToRender
+
 let jsonDecodeTextToRender: Elm.JsonDecode_Decoder<TextToRender> =
-    Elm.JsonDecode_map4
-        (fun content left top color ->
+    Elm.JsonDecode_map5
+        (fun content fontSize left top color ->
             { Content = content
+              FontSize = fontSize
               Left = left
               Top = top
               Color = color })
         (Elm.JsonDecode_fieldRaw "content" Elm.JsonDecode_stringRaw)
+        (Elm.JsonDecode_fieldRaw "fontSize" JsonDecodeInt32)
         (Elm.JsonDecode_fieldRaw "left" JsonDecodeInt32)
         (Elm.JsonDecode_fieldRaw "top" JsonDecodeInt32)
         (Elm.JsonDecode_fieldRaw "color" jsonDecodeColor)
+
+let jsonDecodeRectangleToRender: Elm.JsonDecode_Decoder<RectangleToRender> =
+    Elm.JsonDecode_map5
+        (fun width height left top color ->
+            { Width = width
+              Height = height
+              Left = left
+              Top = top
+              Color = color })
+        (Elm.JsonDecode_fieldRaw "width" JsonDecodeInt32)
+        (Elm.JsonDecode_fieldRaw "height" JsonDecodeInt32)
+        (Elm.JsonDecode_fieldRaw "left" JsonDecodeInt32)
+        (Elm.JsonDecode_fieldRaw "top" JsonDecodeInt32)
+        (Elm.JsonDecode_fieldRaw "color" jsonDecodeColor)
+
+let jsonDecodeElementToRender =
+    Elm.JsonDecode_oneOf
+        [ Elm.JsonDecode_map
+              TextToRender
+              (Elm.JsonDecode_fieldRaw "text" jsonDecodeTextToRender)
+          Elm.JsonDecode_map
+              RectangleToRender
+              (Elm.JsonDecode_fieldRaw
+                  "rectangle"
+                  jsonDecodeRectangleToRender) ]
 
 let performElmCommandSingle
     (commandSingle: Elm.PlatformCmd_CmdSingle<'event>)
@@ -119,15 +161,16 @@ let performElmCommandSingle
                       { Name = "portRender"
                         ValueDecoder =
                           Elm.JsonDecode_map2
-                              (fun backgroundColor text ->
+                              (fun backgroundColor elements ->
                                   {| BackgroundColor = backgroundColor
-                                     Text = text |})
+                                     Elements = elements |})
                               (Elm.JsonDecode_fieldRaw
                                   "backgroundColor"
                                   jsonDecodeColor)
                               (Elm.JsonDecode_fieldRaw
-                                  "text"
-                                  jsonDecodeTextToRender)
+                                  "elements"
+                                  (Elm.JsonDecode_array
+                                      jsonDecodeElementToRender))
                         Act =
                           fun toRender ->
                               Raylib.BeginDrawing()
@@ -136,13 +179,26 @@ let performElmCommandSingle
                                   toRender.BackgroundColor
                               )
 
-                              Raylib.DrawText(
-                                  toRender.Text.Content,
-                                  toRender.Text.Left,
-                                  toRender.Text.Top,
-                                  20,
-                                  Color.White
-                              )
+                              toRender.Elements
+                              |> Array.iter (fun elementToRender ->
+                                  match elementToRender with
+                                  | TextToRender textToRender ->
+                                      Raylib.DrawText(
+                                          textToRender.Content,
+                                          textToRender.Left,
+                                          textToRender.Top,
+                                          textToRender.FontSize,
+                                          textToRender.Color
+                                      )
+                                  | RectangleToRender rectangleToRender ->
+
+                                      Raylib.DrawRectangle(
+                                          rectangleToRender.Left,
+                                          rectangleToRender.Top,
+                                          rectangleToRender.Width,
+                                          rectangleToRender.Height,
+                                          rectangleToRender.Color
+                                      ))
 
                               Raylib.EndDrawing() } ]
 
@@ -164,6 +220,22 @@ let cBoolTrue: CBool = new CBool(true)
 let cBoolToBool (cBool: CBool) : bool =
     Raylib.WindowShouldClose() = cBoolTrue
 
+let pressedKeys () : array<int> =
+    let mutable pressedKeysArray: System.Collections.Generic.List<int> =
+        new System.Collections.Generic.List<int>()
+
+    let mutable isDone: bool = false
+
+    while not isDone do
+        let nextPressedKey = Raylib.GetKeyPressed()
+
+        if nextPressedKey = 0 then
+            isDone <- true
+        else
+            pressedKeysArray.Add(nextPressedKey)
+
+    pressedKeysArray.ToArray()
+
 [<EntryPoint>]
 let main args =
     let struct (initialElmState, initialElmCommands) =
@@ -174,6 +246,13 @@ let main args =
     Raylib.InitWindow(1, 1, "")
     performElmCmd initialElmCommands
 
+    let onEvent event : unit =
+        let struct (nextElmState, elmCommands) =
+            Elm.Main_main.Update event currentElmState
+
+        currentElmState <- nextElmState
+        performElmCmd elmCommands
+
     while not (cBoolToBool (Raylib.WindowShouldClose())) do
         Elm.Main_main.Subscriptions currentElmState
         |> List.iter (fun subscriptionSingle ->
@@ -181,13 +260,16 @@ let main args =
             | Elm.PlatformSub_PortIncoming portIncoming ->
                 match portIncoming.Name with
                 | "portFramePassed" ->
-                    let event = portIncoming.OnValue Elm.JsonEncode_null
-
-                    let struct (nextElmState, elmCommands) =
-                        Elm.Main_main.Update event currentElmState
-
-                    currentElmState <- nextElmState
-                    performElmCmd elmCommands
+                    onEvent (portIncoming.OnValue Elm.JsonEncode_null)
+                | "portKeysPressed" ->
+                    onEvent (
+                        portIncoming.OnValue(
+                            Elm.JsonEncode_array
+                                (fun (code: int) ->
+                                    Elm.JsonEncode_int(int64 code))
+                                (pressedKeys ())
+                        )
+                    )
                 | unknownPortName ->
                     stdout.Write(
                         "Error: unknown port name "
