@@ -3033,6 +3033,28 @@ module Elm =
                 )
 
 
+    let VirtualDom_RE_js: System.Text.RegularExpressions.Regex =
+        System.Text.RegularExpressions.Regex(
+            "/^\s*j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:/i"
+        )
+
+    let VirtualDom_RE_js_html: System.Text.RegularExpressions.Regex =
+        System.Text.RegularExpressions.Regex(
+            "/^\s*(j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:|d\s*a\s*t\s*a\s*:\s*t\s*e\s*x\s*t\s*\/\s*h\s*t\s*m\s*l\s*(,|;))/i"
+        )
+
+    let VirtualDom_noJavaScriptUri (uri: StringRope) : StringRope =
+        if VirtualDom_RE_js.IsMatch(StringRope.toString uri) then
+            stringRopeEmpty
+        else
+            uri
+
+    let VirtualDom_noJavaScriptOrHtmlUri (uri: StringRope) : StringRope =
+        if VirtualDom_RE_js_html.IsMatch(StringRope.toString uri) then
+            stringRopeEmpty
+        else
+            uri
+
     [<Struct>]
     type VirtualDom_ModifierAttribute =
         { Namespace: ValueOption<string>
@@ -3048,10 +3070,15 @@ module Elm =
           Value: System.Text.Json.Nodes.JsonNode }
 
     [<Struct>]
+    type Generated_Message_PreventDefault_StopPropagation<'message, 'preventDefault, 'stopPropagation>
+        =
+        { Message: 'message
+          PreventDefault: 'preventDefault
+          StopPropagation: 'stopPropagation }
+
+    [<Struct>]
     type VirtualDom_CustomHandledEvent<'event> =
-        { Message: 'event
-          StopPropagation: bool
-          PreventDefault: bool }
+        Generated_Message_PreventDefault_StopPropagation<'event, bool, bool>
 
     [<Struct>]
     type VirtualDom_Handler<'event> =
@@ -3102,7 +3129,6 @@ module Elm =
                         VirtualDom_customHandledEventMap eventChange custom)
                     decoder
             )
-
 
     [<Struct>]
     type VirtualDom_ModifierEventListener<'event> =
