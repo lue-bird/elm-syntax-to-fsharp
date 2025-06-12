@@ -3033,6 +3033,351 @@ module Elm =
                 )
 
 
+    [<Struct>]
+    type VirtualDom_ModifierAttribute =
+        { Namespace: ValueOption<string>
+          Key: string
+          Value: string }
+
+    [<Struct>]
+    type VirtualDom_ModifierStyle = { Key: string; Value: string }
+
+    [<Struct>]
+    type VirtualDom_ModifierProperty =
+        { Key: string
+          Value: System.Text.Json.Nodes.JsonNode }
+
+    [<Struct>]
+    type VirtualDom_CustomHandledEvent<'event> =
+        { Message: 'event
+          StopPropagation: bool
+          PreventDefault: bool }
+
+    [<Struct>]
+    type VirtualDom_Handler<'event> =
+        | VirtualDom_Normal of VirtualDom_Normal: (JsonDecode_Decoder<'event>)
+        | VirtualDom_MayStopPropagation of
+            VirtualDom_MayStopPropagation:
+                (JsonDecode_Decoder<struct ('event * bool)>)
+        | VirtualDom_MayPreventDefault of
+            VirtualDom_MayPreventDefault:
+                (JsonDecode_Decoder<struct ('event * bool)>)
+        | VirtualDom_Custom of
+            VirtualDom_Custom:
+                (JsonDecode_Decoder<VirtualDom_CustomHandledEvent<'event>>)
+
+    let inline VirtualDom_customHandledEventMap
+        (eventChange: 'event -> 'eventMapped)
+        (handledEvent: VirtualDom_CustomHandledEvent<'event>)
+        : VirtualDom_CustomHandledEvent<'eventMapped> =
+        { Message = eventChange handledEvent.Message
+          StopPropagation = handledEvent.StopPropagation
+          PreventDefault = handledEvent.PreventDefault }
+
+    let VirtualDom_handlerMap
+        (eventChange: 'event -> 'eventMapped)
+        (handler: VirtualDom_Handler<'event>)
+        : VirtualDom_Handler<'eventMapped> =
+        match handler with
+        | VirtualDom_Normal decoder ->
+            VirtualDom_Normal(JsonDecode_map eventChange decoder)
+        | VirtualDom_MayStopPropagation decoder ->
+            VirtualDom_MayStopPropagation(
+                JsonDecode_map
+                    (fun (struct (event, stopPropagation)) ->
+                        struct (eventChange event, stopPropagation))
+                    decoder
+            )
+        | VirtualDom_MayPreventDefault decoder ->
+            VirtualDom_MayPreventDefault(
+                JsonDecode_map
+                    (fun (struct (event, preventDefault)) ->
+                        struct (eventChange event, preventDefault))
+                    decoder
+            )
+        | VirtualDom_Custom decoder ->
+            VirtualDom_Custom(
+                JsonDecode_map
+                    (fun custom ->
+                        VirtualDom_customHandledEventMap eventChange custom)
+                    decoder
+            )
+
+
+    [<Struct>]
+    type VirtualDom_ModifierEventListener<'event> =
+        { Name: string
+          Handler: VirtualDom_Handler<'event> }
+
+    type VirtualDom_Attribute<'event> =
+        | VirtualDom_ModifierAttribute of VirtualDom_ModifierAttribute
+        | VirtualDom_ModifierStyle of VirtualDom_ModifierStyle
+        | VirtualDom_ModifierProperty of VirtualDom_ModifierProperty
+        | VirtualDom_ModifierEventListener of
+            VirtualDom_ModifierEventListener<'event>
+
+    [<Struct>]
+    type VirtualDom_Element<'event> =
+        { Tag: string
+          Namespace: ValueOption<string>
+          Subs: List<VirtualDom_Node<'event>>
+          Modifiers: List<VirtualDom_Attribute<'event>> }
+
+    and [<Struct>] VirtualDom_ElementKeyed<'event> =
+        { Tag: string
+          Namespace: ValueOption<string>
+          Subs: List<VirtualDom_SubNodeKeyed<'event>>
+          Modifiers: List<VirtualDom_Attribute<'event>> }
+
+    and [<Struct>] VirtualDom_SubNodeKeyed<'event> =
+        { Key: string
+          Node: VirtualDom_Node<'event> }
+
+    and VirtualDom_Node<'event> =
+        | VirtualDomText of string
+        | VirtualDom_Element of VirtualDom_Element<'event>
+        | VirtualDom_ElementKeyed of VirtualDom_ElementKeyed<'event>
+
+    let inline VirtualDom_text (string: StringRope) : VirtualDom_Node<'event> =
+        VirtualDomText(StringRope.toString string)
+
+    let inline VirtualDom_node
+        (tag: StringRope)
+        (modifiers: List<VirtualDom_Attribute<'event>>)
+        (subs: List<VirtualDom_Node<'event>>)
+        : VirtualDom_Node<'event> =
+        VirtualDom_Element
+            { Tag = StringRope.toString tag
+              Namespace = ValueNone
+              Modifiers = modifiers
+              Subs = subs }
+
+    let inline VirtualDom_nodeNS
+        (namespace_: StringRope)
+        (tag: StringRope)
+        (modifiers: List<VirtualDom_Attribute<'event>>)
+        (subs: List<VirtualDom_Node<'event>>)
+        : VirtualDom_Node<'event> =
+        VirtualDom_Element
+            { Tag = StringRope.toString tag
+              Namespace = ValueSome(StringRope.toString namespace_)
+              Modifiers = modifiers
+              Subs = subs }
+
+    let inline VirtualDom_keyedNode
+        (tag: StringRope)
+        (modifiers: List<VirtualDom_Attribute<'event>>)
+        (subs: List<struct (StringRope * VirtualDom_Node<'event>)>)
+        : VirtualDom_Node<'event> =
+        VirtualDom_ElementKeyed
+            { Tag = StringRope.toString tag
+              Namespace = ValueNone
+              Modifiers = modifiers
+              Subs =
+                List.map
+                    (fun (struct (key, node)) ->
+                        { Key = StringRope.toString key
+                          Node = node })
+                    subs }
+
+    let inline VirtualDom_keyedNodeNS
+        (namespace_: StringRope)
+        (tag: StringRope)
+        (modifiers: List<VirtualDom_Attribute<'event>>)
+        (subs: List<struct (StringRope * VirtualDom_Node<'event>)>)
+        : VirtualDom_Node<'event> =
+        VirtualDom_ElementKeyed
+            { Tag = StringRope.toString tag
+              Namespace = ValueSome(StringRope.toString namespace_)
+              Modifiers = modifiers
+              Subs =
+                List.map
+                    (fun (struct (key, node)) ->
+                        { Key = StringRope.toString key
+                          Node = node })
+                    subs }
+
+    let inline VirtualDom_style
+        (key: StringRope)
+        (value: StringRope)
+        : VirtualDom_Attribute<'event> =
+        VirtualDom_ModifierStyle
+            { Key = StringRope.toString key
+              Value = StringRope.toString value }
+
+    let inline VirtualDom_property
+        (key: StringRope)
+        (value: System.Text.Json.Nodes.JsonNode)
+        : VirtualDom_Attribute<'event> =
+        VirtualDom_ModifierProperty
+            { Key = StringRope.toString key
+              Value = value }
+
+    let inline VirtualDom_attribute
+        (key: StringRope)
+        (value: StringRope)
+        : VirtualDom_Attribute<'event> =
+        VirtualDom_ModifierAttribute
+            { Namespace = ValueNone
+              Key = StringRope.toString key
+              Value = StringRope.toString value }
+
+    let inline VirtualDom_attributeNS
+        (namespace_: StringRope)
+        (key: StringRope)
+        (value: StringRope)
+        : VirtualDom_Attribute<'event> =
+        VirtualDom_ModifierAttribute
+            { Namespace = ValueSome(StringRope.toString namespace_)
+              Key = StringRope.toString key
+              Value = StringRope.toString value }
+
+    let inline VirtualDom_on
+        (name: StringRope)
+        (handler: VirtualDom_Handler<'event>)
+        : VirtualDom_Attribute<'event> =
+        VirtualDom_ModifierEventListener
+            { Name = StringRope.toString name
+              Handler = handler }
+
+    let VirtualDom_mapAttribute
+        (eventChange: 'event -> 'eventMapped)
+        (modifier: VirtualDom_Attribute<'event>)
+        : VirtualDom_Attribute<'eventMapped> =
+        match modifier with
+        | VirtualDom_ModifierAttribute virtualDomAttribute ->
+            VirtualDom_ModifierAttribute virtualDomAttribute
+        | VirtualDom_ModifierStyle virtualDomStyle ->
+            VirtualDom_ModifierStyle virtualDomStyle
+        | VirtualDom_ModifierProperty virtualDomProperty ->
+            VirtualDom_ModifierProperty virtualDomProperty
+        | VirtualDom_ModifierEventListener virtualDomEventListener ->
+            VirtualDom_ModifierEventListener
+                { Name = virtualDomEventListener.Name
+                  Handler =
+                    VirtualDom_handlerMap
+                        eventChange
+                        virtualDomEventListener.Handler }
+
+    let rec VirtualDom_elementMap
+        (eventChange: 'event -> 'eventMapped)
+        (element: VirtualDom_Element<'event>)
+        : VirtualDom_Element<'eventMapped> =
+        { Tag = element.Tag
+          Namespace = element.Namespace
+          Subs = List.map (fun sub -> VirtualDom_map eventChange sub) element.Subs
+          Modifiers =
+            List.map
+                (fun modifier -> VirtualDom_mapAttribute eventChange modifier)
+                element.Modifiers }
+
+    and VirtualDom_elementKeyedMap
+        (eventChange: 'event -> 'eventMapped)
+        (element: VirtualDom_ElementKeyed<'event>)
+        : VirtualDom_ElementKeyed<'eventMapped> =
+        { Tag = element.Tag
+          Namespace = element.Namespace
+          Subs =
+            List.map
+                (fun subKeyed ->
+                    { Key = subKeyed.Key
+                      Node = VirtualDom_map eventChange subKeyed.Node })
+                element.Subs
+          Modifiers =
+            List.map
+                (fun modifier -> VirtualDom_mapAttribute eventChange modifier)
+                element.Modifiers }
+
+    and VirtualDom_map
+        (eventChange: 'event -> 'eventMapped)
+        (node: VirtualDom_Node<'event>)
+        : VirtualDom_Node<'eventMapped> =
+        match node with
+        | VirtualDomText text -> VirtualDomText text
+        | VirtualDom_Element element ->
+            VirtualDom_Element(VirtualDom_elementMap eventChange element)
+        | VirtualDom_ElementKeyed element ->
+            VirtualDom_ElementKeyed(VirtualDom_elementKeyedMap eventChange element)
+
+    let inline VirtualDom_lazy
+        (construct: 'a -> VirtualDom_Node<'event>)
+        (a: 'a)
+        : VirtualDom_Node<'event> =
+        construct a
+
+    let inline VirtualDom_lazy2
+        (construct: 'a -> 'b -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        : VirtualDom_Node<'event> =
+        construct a b
+
+    let inline VirtualDom_lazy3
+        (construct: 'a -> 'b -> 'c -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        : VirtualDom_Node<'event> =
+        construct a b c
+
+    let inline VirtualDom_lazy4
+        (construct: 'a -> 'b -> 'c -> 'd -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        (d: 'd)
+        : VirtualDom_Node<'event> =
+        construct a b c d
+
+    let inline VirtualDom_lazy5
+        (construct: 'a -> 'b -> 'c -> 'd -> 'e -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        (d: 'd)
+        (e: 'e)
+        : VirtualDom_Node<'event> =
+        construct a b c d e
+
+    let inline VirtualDom_lazy6
+        (construct: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        (d: 'd)
+        (e: 'e)
+        (f: 'f)
+        : VirtualDom_Node<'event> =
+        construct a b c d e f
+
+    let inline VirtualDom_lazy7
+        (construct:
+            'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        (d: 'd)
+        (e: 'e)
+        (f: 'f)
+        (g: 'g)
+        : VirtualDom_Node<'event> =
+        construct a b c d e f g
+
+    let inline VirtualDom_lazy8
+        (construct:
+            'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> VirtualDom_Node<'event>)
+        (a: 'a)
+        (b: 'b)
+        (c: 'c)
+        (d: 'd)
+        (e: 'e)
+        (f: 'f)
+        (g: 'g)
+        (h: 'h)
+        : VirtualDom_Node<'event> =
+        construct a b c d e f g h
+
+
     let inline MathVector2_vec2 (x: float) (y: float) : System.Numerics.Vector2 =
         System.Numerics.Vector2.Create(float32 x, float32 y)
 
