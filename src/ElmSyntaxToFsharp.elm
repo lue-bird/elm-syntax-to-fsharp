@@ -12677,12 +12677,12 @@ defaultDeclarations =
           Node: VirtualDom_Node<'event> }
 
     and VirtualDom_Node<'event> =
-        | VirtualDomText of string
+        | VirtualDom_Text of string
         | VirtualDom_Element of VirtualDom_Element<'event>
         | VirtualDom_ElementKeyed of VirtualDom_ElementKeyed<'event>
 
     let inline VirtualDom_text (string: StringRope) : VirtualDom_Node<'event> =
-        VirtualDomText(StringRope.toString string)
+        VirtualDom_Text(StringRope.toString string)
 
     let inline VirtualDom_node
         (tag: StringRope)
@@ -12836,7 +12836,7 @@ defaultDeclarations =
         (node: VirtualDom_Node<'event>)
         : VirtualDom_Node<'eventMapped> =
         match node with
-        | VirtualDomText text -> VirtualDomText text
+        | VirtualDom_Text text -> VirtualDom_Text text
         | VirtualDom_Element element ->
             VirtualDom_Element(VirtualDom_elementMap eventChange element)
         | VirtualDom_ElementKeyed element ->
