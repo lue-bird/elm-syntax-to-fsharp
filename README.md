@@ -24,7 +24,7 @@ plus2 n =
 -->
 Ok """namespace global
 module Elm =
-    let Sample_plus2 (n: int64) =
+    let Sample_plus2 (n: int64) : int64 =
         (+) n (List.sum [ 2L ])
 
     ..and some default declarations..
