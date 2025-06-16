@@ -230,6 +230,12 @@ let rec virtualDomNodeToStringHelp
                     indenter soFar.Depth (virtualDomEscapeHtmlText string_)
                     :: soFar.Result
                   Stack = soFar.Stack }
+        
+        | Elm.VirtualDom_NodeLazy nodeLazy ->
+            virtualDomNodeToStringHelp
+                indenter
+                (nodeLazy.Construct () :: rest)
+                soFar
 
 let virtualDomNodeToString
     (depth: int)

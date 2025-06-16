@@ -115,6 +115,11 @@ let rec elmVirtualDomNodeToBolero
                     (ValueSome subKeyed.Key)
                     subKeyed.Node)
         }
+    | Elm.VirtualDom_NodeLazy nodeLazy ->
+        Bolero.lazyComp
+            (fun _ ->
+                elmVirtualDomNodeToBolero dispatch maybeKey (nodeLazy.Construct()))
+            nodeLazy.Keys
 
 type App() =
     inherit Bolero.ProgramComponent<Elm.Main_State, Elm.Main_Event>()

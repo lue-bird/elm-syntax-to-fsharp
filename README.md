@@ -37,7 +37,6 @@ module Elm =
     -   ports that use non-json values like `port sendMessage : String -> Cmd msg`, glsl
     -   `elm/file`, `elm/http`, `elm/browser`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`
     -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`, `Math.Matrix4.inverseOrthonormal`, `Math.Matrix4.mulAffine`
-    -  `VirtualDom.lazyN` exist for compatibility but they just apply the arguments directly
     -   extensible record types. For example, these declarations might not work (at let or module level):
         ```elm
         -- in aliased type or variant value

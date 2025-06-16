@@ -11009,9 +11009,7 @@ defaultDeclarations =
         (fieldNameStringRope: StringRope)
         (valueDecoder: JsonDecode_Decoder<'value>)
         : JsonDecode_Decoder<'value> =
-        JsonDecode_fieldRaw
-            (StringRope.toString fieldNameStringRope)
-            valueDecoder
+        JsonDecode_fieldRaw (StringRope.toString fieldNameStringRope) valueDecoder
 
     let JsonDecode_at
         (fieldNames: List<StringRope>)
@@ -12548,7 +12546,8 @@ defaultDeclarations =
                         )
                     )
                 )
-    
+
+
     let VirtualDom_RE_js: System.Text.RegularExpressions.Regex =
         System.Text.RegularExpressions.Regex(
             "/^\\s*j\\s*a\\s*v\\s*a\\s*s\\s*c\\s*r\\s*i\\s*p\\s*t\\s*:/i"
@@ -12570,7 +12569,6 @@ defaultDeclarations =
             stringRopeEmpty
         else
             uri
-
 
     [<Struct>]
     type VirtualDom_ModifierAttribute =
@@ -12646,7 +12644,6 @@ defaultDeclarations =
                     decoder
             )
 
-
     [<Struct>]
     type VirtualDom_ModifierEventListener<'event> =
         { Name: string
@@ -12676,10 +12673,15 @@ defaultDeclarations =
         { Key: string
           Node: VirtualDom_Node<'event> }
 
+    and [<Struct>] VirtualDom_NodeLazy<'event> =
+        { Keys: array<obj>
+          Construct: unit -> VirtualDom_Node<'event> }
+
     and VirtualDom_Node<'event> =
         | VirtualDom_Text of string
         | VirtualDom_Element of VirtualDom_Element<'event>
         | VirtualDom_ElementKeyed of VirtualDom_ElementKeyed<'event>
+        | VirtualDom_NodeLazy of VirtualDom_NodeLazy<'event>
 
     let inline VirtualDom_text (string: StringRope) : VirtualDom_Node<'event> =
         VirtualDom_Text(StringRope.toString string)
@@ -12831,6 +12833,13 @@ defaultDeclarations =
                 (fun modifier -> VirtualDom_mapAttribute eventChange modifier)
                 element.Modifiers }
 
+    and VirtualDom_NodeLazyMap
+        (eventChange: 'event -> 'eventMapped)
+        (nodeLazy: VirtualDom_NodeLazy<'event>)
+        : VirtualDom_NodeLazy<'eventMapped> =
+        { Keys = nodeLazy.Keys
+          Construct = fun () -> VirtualDom_map eventChange (nodeLazy.Construct()) }
+
     and VirtualDom_map
         (eventChange: 'event -> 'eventMapped)
         (node: VirtualDom_Node<'event>)
@@ -12841,19 +12850,25 @@ defaultDeclarations =
             VirtualDom_Element(VirtualDom_elementMap eventChange element)
         | VirtualDom_ElementKeyed element ->
             VirtualDom_ElementKeyed(VirtualDom_elementKeyedMap eventChange element)
+        | VirtualDom_NodeLazy nodeLazy ->
+            VirtualDom_NodeLazy(VirtualDom_NodeLazyMap eventChange nodeLazy)
 
     let inline VirtualDom_lazy
         (construct: 'a -> VirtualDom_Node<'event>)
         (a: 'a)
         : VirtualDom_Node<'event> =
-        construct a
+        VirtualDom_NodeLazy
+            { Keys = [| a |]
+              Construct = fun () -> construct a }
 
     let inline VirtualDom_lazy2
         (construct: 'a -> 'b -> VirtualDom_Node<'event>)
         (a: 'a)
         (b: 'b)
         : VirtualDom_Node<'event> =
-        construct a b
+        VirtualDom_NodeLazy
+            { Keys = [| a; b |]
+              Construct = fun () -> construct a b }
 
     let inline VirtualDom_lazy3
         (construct: 'a -> 'b -> 'c -> VirtualDom_Node<'event>)
@@ -12861,7 +12876,9 @@ defaultDeclarations =
         (b: 'b)
         (c: 'c)
         : VirtualDom_Node<'event> =
-        construct a b c
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c |]
+              Construct = fun () -> construct a b c }
 
     let inline VirtualDom_lazy4
         (construct: 'a -> 'b -> 'c -> 'd -> VirtualDom_Node<'event>)
@@ -12870,7 +12887,9 @@ defaultDeclarations =
         (c: 'c)
         (d: 'd)
         : VirtualDom_Node<'event> =
-        construct a b c d
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c; d |]
+              Construct = fun () -> construct a b c d }
 
     let inline VirtualDom_lazy5
         (construct: 'a -> 'b -> 'c -> 'd -> 'e -> VirtualDom_Node<'event>)
@@ -12880,7 +12899,9 @@ defaultDeclarations =
         (d: 'd)
         (e: 'e)
         : VirtualDom_Node<'event> =
-        construct a b c d e
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c; d; e |]
+              Construct = fun () -> construct a b c d e }
 
     let inline VirtualDom_lazy6
         (construct: 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> VirtualDom_Node<'event>)
@@ -12891,7 +12912,9 @@ defaultDeclarations =
         (e: 'e)
         (f: 'f)
         : VirtualDom_Node<'event> =
-        construct a b c d e f
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c; d; e; f |]
+              Construct = fun () -> construct a b c d e f }
 
     let inline VirtualDom_lazy7
         (construct:
@@ -12904,7 +12927,9 @@ defaultDeclarations =
         (f: 'f)
         (g: 'g)
         : VirtualDom_Node<'event> =
-        construct a b c d e f g
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c; d; e; f; g |]
+              Construct = fun () -> construct a b c d e f g }
 
     let inline VirtualDom_lazy8
         (construct:
@@ -12918,7 +12943,9 @@ defaultDeclarations =
         (g: 'g)
         (h: 'h)
         : VirtualDom_Node<'event> =
-        construct a b c d e f g h
+        VirtualDom_NodeLazy
+            { Keys = [| a; b; c; d; e; f; g; h |]
+              Construct = fun () -> construct a b c d e f g h }
 
 
     let inline MathVector2_vec2 (x: float) (y: float) : System.Numerics.Vector2 =
