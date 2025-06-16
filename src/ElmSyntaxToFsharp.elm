@@ -9382,8 +9382,6 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
     in
     """namespace global
 
-open System
-
 module Elm =
 """
         ++ defaultDeclarations
