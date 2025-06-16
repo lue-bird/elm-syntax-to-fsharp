@@ -244,14 +244,12 @@ let virtualDomNodeToString
     String.concat
         (match depth with
          | 0 -> ""
-
          | _ -> "\n")
         (List.rev
             (virtualDomNodeToStringHelp
                 (fun (indentLevel: int) (line: string) ->
                     match depth with
                     | 0 -> line
-
                     | _ -> lineIndent depth indentLevel line)
                 [ html ]
                 { Depth = 0; Result = []; Stack = [] })
