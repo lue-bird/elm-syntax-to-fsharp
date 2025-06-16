@@ -1,5 +1,6 @@
 port module Main exposing (main)
 
+import Codec exposing (Codec)
 import Color exposing (Color)
 import Duration exposing (Duration)
 import Json.Decode
@@ -9,19 +10,7 @@ import Random
 import Time
 
 
-port portStdOutWrite : Json.Encode.Value -> Cmd event_
-
-
-port portProcessExit : Json.Encode.Value -> Cmd event_
-
-
-port portWindowTitleSet : Json.Encode.Value -> Cmd event_
-
-
-port portWindowDimensionsSet : Json.Encode.Value -> Cmd event_
-
-
-port portRender : Json.Encode.Value -> Cmd event_
+port fromElm : Json.Encode.Value -> Cmd event_
 
 
 port portFramePassed : (Json.Encode.Value -> event) -> Sub event
@@ -30,44 +19,120 @@ port portFramePassed : (Json.Encode.Value -> event) -> Sub event
 port portKeysPressed : (Json.Encode.Value -> event) -> Sub event
 
 
+type PortFromElm
+    = PortStdOutWrite String
+    | PortProcessExit Int
+    | PortWindowTitleSet String
+    | PortWindowDimensionsSet { width : Int, height : Int }
+    | PortRender
+        { backgroundColor : Color
+        , elements : List ElementToRender
+        }
+
+
+portFromElmCodec : Codec PortFromElm
+portFromElmCodec =
+    Codec.custom
+        (\portStdOutWrite portProcessExit portWindowTitleSet portWindowDimensionsSet portRender choice ->
+            case choice of
+                PortStdOutWrite text ->
+                    portStdOutWrite text
+
+                PortProcessExit code ->
+                    portProcessExit code
+
+                PortWindowTitleSet newTitle ->
+                    portWindowTitleSet newTitle
+
+                PortWindowDimensionsSet newDimensions ->
+                    portWindowDimensionsSet newDimensions
+
+                PortRender toRender ->
+                    portRender toRender
+        )
+        |> Codec.variant1 "PortStdOutWrite"
+            PortStdOutWrite
+            Codec.string
+        |> Codec.variant1 "PortProcessExit"
+            PortProcessExit
+            Codec.int
+        |> Codec.variant1 "PortWindowTitleSet"
+            PortWindowTitleSet
+            Codec.string
+        |> Codec.variant1 "PortWindowDimensionsSet"
+            PortWindowDimensionsSet
+            (Codec.object (\width height -> { width = width, height = height })
+                |> Codec.field "width" .width Codec.int
+                |> Codec.field "height" .height Codec.int
+                |> Codec.buildObject
+            )
+        |> Codec.variant1 "PortRender"
+            PortRender
+            (Codec.object
+                (\backgroundColor elements ->
+                    { backgroundColor = backgroundColor, elements = elements }
+                )
+                |> Codec.field "backgroundColor"
+                    .backgroundColor
+                    colorCodec
+                |> Codec.field "elements"
+                    .elements
+                    (Codec.list elementToRenderCodec)
+                |> Codec.buildObject
+            )
+        |> Codec.buildCustom
+
+
+portFromElmToCmd : PortFromElm -> Cmd event_
+portFromElmToCmd portFromElmToExecute =
+    fromElm (Codec.encodeToValue portFromElmCodec portFromElmToExecute)
+
+
 stdOutWrite : String -> Cmd event_
 stdOutWrite output =
-    portStdOutWrite (Json.Encode.string output)
+    portFromElmToCmd (PortStdOutWrite output)
 
 
 processExit : Int -> Cmd event_
 processExit code =
-    portProcessExit (Json.Encode.int code)
+    portFromElmToCmd (PortProcessExit code)
 
 
 windowTitleSet : String -> Cmd event_
 windowTitleSet newTitle =
-    portWindowTitleSet (Json.Encode.string newTitle)
+    portFromElmToCmd (PortWindowTitleSet newTitle)
 
 
 windowDimensionsSet : { width : Int, height : Int } -> Cmd event_
 windowDimensionsSet newDimensions =
-    portWindowDimensionsSet
-        (Json.Encode.object
-            [ ( "width", newDimensions.width |> Json.Encode.int )
-            , ( "height", newDimensions.height |> Json.Encode.int )
-            ]
+    portFromElmToCmd (PortWindowDimensionsSet newDimensions)
+
+
+colorCodec : Codec Color
+colorCodec =
+    Codec.build
+        (\color ->
+            let
+                components : { red : Float, green : Float, blue : Float, alpha : Float }
+                components =
+                    color |> Color.toRgba
+            in
+            Json.Encode.object
+                [ ( "red", components.red |> Json.Encode.float )
+                , ( "green", components.green |> Json.Encode.float )
+                , ( "blue", components.blue |> Json.Encode.float )
+                , ( "alpha", components.alpha |> Json.Encode.float )
+                ]
         )
-
-
-colorToJson : Color -> Json.Encode.Value
-colorToJson color =
-    let
-        components : { red : Float, green : Float, blue : Float, alpha : Float }
-        components =
-            color |> Color.toRgba
-    in
-    Json.Encode.object
-        [ ( "red", components.red |> Json.Encode.float )
-        , ( "green", components.green |> Json.Encode.float )
-        , ( "blue", components.blue |> Json.Encode.float )
-        , ( "alpha", components.alpha |> Json.Encode.float )
-        ]
+        (Json.Decode.map4
+            (\red green blue alpha ->
+                Color.fromRgba { red = red, green = green, blue = blue, alpha = alpha }
+            )
+            (Json.Decode.field "red" Json.Decode.float)
+            (Json.Decode.field "green" Json.Decode.float)
+            (Json.Decode.field "blue" Json.Decode.float)
+            (Json.Decode.field "alpha" Json.Decode.float)
+        )
 
 
 colorOpaqueRandom : Random.Generator Color
@@ -81,16 +146,20 @@ type ElementToRender
     | RectangleToRender RectangleToRender
 
 
-elementToRenderToJson : ElementToRender -> Json.Encode.Value
-elementToRenderToJson elementToRender =
-    case elementToRender of
-        TextToRender textToRender ->
-            Json.Encode.object
-                [ ( "text", textToRender |> textToRenderToJson ) ]
+elementToRenderCodec : Codec ElementToRender
+elementToRenderCodec =
+    Codec.custom
+        (\textToRender rectangleToRender elementToRender ->
+            case elementToRender of
+                TextToRender text ->
+                    textToRender text
 
-        RectangleToRender rectangleToRender ->
-            Json.Encode.object
-                [ ( "rectangle", rectangleToRender |> rectangleToRenderToJson ) ]
+                RectangleToRender rectangle ->
+                    rectangleToRender rectangle
+        )
+        |> Codec.variant1 "TextToRender" TextToRender textToRenderCodec
+        |> Codec.variant1 "RectangleToRender" RectangleToRender rectangleToRenderCodec
+        |> Codec.buildCustom
 
 
 type alias TextToRender =
@@ -103,15 +172,18 @@ type alias TextToRender =
         }
 
 
-textToRenderToJson : TextToRender -> Json.Encode.Value
-textToRenderToJson textToRender =
-    Json.Encode.object
-        [ ( "content", textToRender.content |> Json.Encode.string )
-        , ( "fontSize", textToRender.fontSize |> Json.Encode.int )
-        , ( "left", textToRender.left |> Json.Encode.int )
-        , ( "top", textToRender.top |> Json.Encode.int )
-        , ( "color", textToRender.color |> colorToJson )
-        ]
+textToRenderCodec : Codec TextToRender
+textToRenderCodec =
+    Codec.object
+        (\content fontSize left top color ->
+            { content = content, fontSize = fontSize, left = left, top = top, color = color }
+        )
+        |> Codec.field "content" .content Codec.string
+        |> Codec.field "fontSize" .fontSize Codec.int
+        |> Codec.field "left" .left Codec.int
+        |> Codec.field "top" .top Codec.int
+        |> Codec.field "color" .color colorCodec
+        |> Codec.buildObject
 
 
 type alias RectangleToRender =
@@ -124,15 +196,18 @@ type alias RectangleToRender =
         }
 
 
-rectangleToRenderToJson : RectangleToRender -> Json.Encode.Value
-rectangleToRenderToJson rectangleToRender =
-    Json.Encode.object
-        [ ( "width", rectangleToRender.width |> Json.Encode.int )
-        , ( "height", rectangleToRender.height |> Json.Encode.int )
-        , ( "left", rectangleToRender.left |> Json.Encode.int )
-        , ( "top", rectangleToRender.top |> Json.Encode.int )
-        , ( "color", rectangleToRender.color |> colorToJson )
-        ]
+rectangleToRenderCodec : Codec RectangleToRender
+rectangleToRenderCodec =
+    Codec.object
+        (\width height left top color ->
+            { width = width, height = height, left = left, top = top, color = color }
+        )
+        |> Codec.field "width" .width Codec.int
+        |> Codec.field "height" .height Codec.int
+        |> Codec.field "left" .left Codec.int
+        |> Codec.field "top" .top Codec.int
+        |> Codec.field "color" .color colorCodec
+        |> Codec.buildObject
 
 
 render :
@@ -141,12 +216,7 @@ render :
     }
     -> Cmd event_
 render toRender =
-    portRender
-        (Json.Encode.object
-            [ ( "backgroundColor", toRender.backgroundColor |> colorToJson )
-            , ( "elements", toRender.elements |> Json.Encode.list elementToRenderToJson )
-            ]
-        )
+    portFromElmToCmd (PortRender toRender)
 
 
 durationJsonDecoderFromSeconds : Json.Decode.Decoder Duration
@@ -173,7 +243,7 @@ framePassed onReadLine =
 
 keysPressed : (List Int -> Event) -> Sub Event
 keysPressed onReadLine =
-    portFramePassed
+    portKeysPressed
         (\value ->
             case value |> Json.Decode.decodeValue (Json.Decode.list Json.Decode.int) of
                 Ok readLine ->
@@ -181,7 +251,7 @@ keysPressed onReadLine =
 
                 Err error ->
                     PortEventFailedToDecode
-                        { name = "portFramePassed"
+                        { name = "portKeysPressed"
                         , error = error
                         }
         )
