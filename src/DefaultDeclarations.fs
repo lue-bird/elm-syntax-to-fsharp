@@ -1364,7 +1364,7 @@ module Elm =
         (elementDecoder: JsonDecode_Decoder<'element>)
         : JsonDecode_Decoder<'element> =
         fun json ->
-            if index <= 0 then
+            if index < 0 then
                 Error(
                     JsonDecode_Failure(
                         struct (StringRopeOne(

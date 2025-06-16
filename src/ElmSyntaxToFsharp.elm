@@ -9383,7 +9383,6 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
     """namespace global
 
 open System
-open System.Runtime.CompilerServices
 
 module Elm =
 """
@@ -10908,7 +10907,7 @@ defaultDeclarations =
         (elementDecoder: JsonDecode_Decoder<'element>)
         : JsonDecode_Decoder<'element> =
         fun json ->
-            if index <= 0 then
+            if index < 0 then
                 Error(
                     JsonDecode_Failure(
                         struct (StringRopeOne(
