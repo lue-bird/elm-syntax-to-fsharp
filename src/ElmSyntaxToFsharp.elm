@@ -7785,7 +7785,36 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
             in
             Print.exactly
                 (fsharpValueOrFunctionDeclaration.name
-                    ++ fsharpTypeParametersToString typeVariablesToDeclare
+                    ++ (case typeVariablesToDeclare of
+                            [] ->
+                                ""
+
+                            parameter0 :: parameter1Up ->
+                                "<"
+                                    ++ ((parameter0 :: parameter1Up)
+                                            |> List.map
+                                                (\parameter -> "'" ++ parameter)
+                                            |> String.join ", "
+                                       )
+                                    ++ (case
+                                            (parameter0 :: parameter1Up)
+                                                |> List.filter (\parameter -> parameter |> String.startsWith "comparable")
+                                        of
+                                            [] ->
+                                                ""
+
+                                            comparableParameter0 :: comparableParameter1Up ->
+                                                " when "
+                                                    ++ ((comparableParameter0 :: comparableParameter1Up)
+                                                            |> List.map
+                                                                (\parameter ->
+                                                                    "'" ++ parameter ++ ": comparison"
+                                                                )
+                                                            |> String.join ", "
+                                                       )
+                                       )
+                                    ++ ">"
+                       )
                     ++ ""
                 )
                 |> Print.followedBy
