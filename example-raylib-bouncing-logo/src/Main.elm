@@ -124,10 +124,7 @@ colorCodec =
                 , ( "alpha", components.alpha |> Json.Encode.float )
                 ]
         )
-        (Json.Decode.map4
-            (\red green blue alpha ->
-                Color.fromRgba { red = red, green = green, blue = blue, alpha = alpha }
-            )
+        (Json.Decode.map4 Color.rgba  
             (Json.Decode.field "red" Json.Decode.float)
             (Json.Decode.field "green" Json.Decode.float)
             (Json.Decode.field "blue" Json.Decode.float)
