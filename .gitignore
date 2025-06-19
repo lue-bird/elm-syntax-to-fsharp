@@ -20,6 +20,9 @@ obj
 fable_modules
 bin
 
+# still working on
+example-language-server
+
 # Editors
 .idea/
 ElmjutsuDumMyM0DuL3.elm
