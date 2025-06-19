@@ -4,7 +4,7 @@ module ElmSyntaxToFsharp exposing
     )
 
 {-| Transpiling [`elm-syntax`](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/)
-declarations to fsharp.
+declarations to fsharp (tested to be compatible with .net8.0 and .net9.0).
 
 @docs modules, fsharpDeclarationsToModuleString
 @docs FsharpLetDeclaration, FsharpExpression, FsharpPattern, FsharpType
