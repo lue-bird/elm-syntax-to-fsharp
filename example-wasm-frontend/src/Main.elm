@@ -34,6 +34,8 @@ view state =
                 (Json.Decode.field "clientX" Json.Decode.int)
                 (Json.Decode.field "clientY" Json.Decode.int)
             )
+        , Html.Attributes.style "width" "100%"
+        , Html.Attributes.style "height" "100%"
         ]
         [ Html.h1 []
             [ Html.text "Hello, wanderer!" ]
