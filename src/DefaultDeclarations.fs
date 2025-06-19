@@ -999,7 +999,23 @@ module Elm =
                 Map.empty
                 dict
         )
+        
+    let lineSetIndentSizeFrom2To (newIndentSize: int) (line: string) : string =
+        let lineWithoutIndentation: string = line.TrimStart(' ')
+        let lineIndentation: int = (String.length line - String.length lineWithoutIndentation) / 2
 
+        String.replicate (int newIndentSize * lineIndentation) " "
+            + lineWithoutIndentation
+
+    let setIndentSizeFrom2To (newIndentSize: int) (printed: string) : string =
+        if newIndentSize = 2 then
+            printed
+        else
+            String.concat "\n"
+                (Array.map
+                    (fun (line: string) -> lineSetIndentSizeFrom2To newIndentSize line)
+                    (printed.Split('\n'))
+                )
 
     let JsonEncode_encode
         (indentDepth: int64)
@@ -1007,11 +1023,15 @@ module Elm =
         : StringRope =
         let printOptions = System.Text.Json.JsonSerializerOptions()
 
-        if (indentDepth <> 0) then
+        if (indentDepth = 0) then
+            StringRopeOne(json.ToJsonString(printOptions))
+        else
             printOptions.WriteIndented <- true
-            printOptions.IndentSize <- int indentDepth
-
-        StringRopeOne(json.ToJsonString(printOptions))
+            // JsonSerializerOptions.IndentSize is only available since .net9.0
+            StringRopeOne(
+                setIndentSizeFrom2To (int indentDepth)
+                    (json.ToJsonString(printOptions))
+            )
 
     type JsonDecode_Error =
         | JsonDecode_Field of (struct (StringRope * JsonDecode_Error))
@@ -3434,7 +3454,7 @@ module Elm =
 
 
     let inline MathVector2_vec2 (x: float) (y: float) : System.Numerics.Vector2 =
-        System.Numerics.Vector2.Create(float32 x, float32 y)
+        System.Numerics.Vector2(float32 x, float32 y)
 
     let inline MathVector2_getX (vector2: System.Numerics.Vector2) : float =
         float vector2.X
@@ -3446,13 +3466,13 @@ module Elm =
         (newX: float)
         (vector2: System.Numerics.Vector2)
         : System.Numerics.Vector2 =
-        System.Numerics.Vector2.Create(float32 newX, vector2.Y)
+        System.Numerics.Vector2(float32 newX, vector2.Y)
 
     let inline MathVector2_setY
         (newY: float)
         (vector2: System.Numerics.Vector2)
         : System.Numerics.Vector2 =
-        System.Numerics.Vector2.Create(vector2.X, float32 newY)
+        System.Numerics.Vector2(vector2.X, float32 newY)
 
     let inline MathVector2_add
         (a: System.Numerics.Vector2)
@@ -3535,16 +3555,16 @@ module Elm =
         (y: float)
         (z: float)
         : System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(float32 x, float32 y, float32 z)
+        System.Numerics.Vector3(float32 x, float32 y, float32 z)
 
     let MathVector3_i: System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(1f, 0f, 0f)
+        System.Numerics.Vector3(1f, 0f, 0f)
 
     let MathVector3_j: System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(0f, 1f, 0f)
+        System.Numerics.Vector3(0f, 1f, 0f)
 
     let MathVector3_k: System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(0f, 0f, 1f)
+        System.Numerics.Vector3(0f, 0f, 1f)
 
     let MathVector3_getX (vector3: System.Numerics.Vector3) : float =
         float vector3.X
@@ -3559,19 +3579,19 @@ module Elm =
         (newX: float)
         (vector3: System.Numerics.Vector3)
         : System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(float32 newX, vector3.Y, vector3.Z)
+        System.Numerics.Vector3(float32 newX, vector3.Y, vector3.Z)
 
     let MathVector3_setY
         (newY: float)
         (vector3: System.Numerics.Vector3)
         : System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(vector3.X, float32 newY, vector3.Z)
+        System.Numerics.Vector3(vector3.X, float32 newY, vector3.Z)
 
     let MathVector3_setZ
         (newZ: float)
         (vector3: System.Numerics.Vector3)
         : System.Numerics.Vector3 =
-        System.Numerics.Vector3.Create(vector3.X, vector3.Y, float32 newZ)
+        System.Numerics.Vector3(vector3.X, vector3.Y, float32 newZ)
 
     let MathVector3_add
         (a: System.Numerics.Vector3)
@@ -3664,7 +3684,7 @@ module Elm =
         (z: float)
         (w: float)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4.Create(float32 x, float32 y, float32 z, float32 w)
+        System.Numerics.Vector4(float32 x, float32 y, float32 z, float32 w)
 
     let inline MathVector4_getX (vector4: System.Numerics.Vector4) : float =
         float vector4.X
@@ -3682,7 +3702,7 @@ module Elm =
         (newX: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4.Create(
+        System.Numerics.Vector4(
             float32 newX,
             vector4.Y,
             vector4.Z,
@@ -3693,7 +3713,7 @@ module Elm =
         (newY: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4.Create(
+        System.Numerics.Vector4(
             vector4.X,
             float32 newY,
             vector4.Z,
@@ -3704,7 +3724,7 @@ module Elm =
         (newZ: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4.Create(
+        System.Numerics.Vector4(
             vector4.X,
             vector4.Y,
             float32 newZ,
@@ -3715,7 +3735,7 @@ module Elm =
         (newW: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4.Create(
+        System.Numerics.Vector4(
             vector4.X,
             vector4.Y,
             vector4.Z,
