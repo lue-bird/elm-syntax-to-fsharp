@@ -18,6 +18,7 @@ import Bitwise
 import Data.Graph
 import Elm.Syntax.Declaration
 import Elm.Syntax.Exposing
+import Elm.Syntax.Expression
 import Elm.Syntax.File
 import Elm.Syntax.Import
 import Elm.Syntax.Module
@@ -894,131 +895,253 @@ importMerge earlier later =
     }
 
 
-fsharpTypeContainedRecords :
-    FsharpType
+typeContainedRecords :
+    Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
     ->
         FastSet.Set
             -- sorted field names
             (List String)
-fsharpTypeContainedRecords fsharpType =
+typeContainedRecords (Elm.Syntax.Node.Node _ syntaxType) =
     -- IGNORE TCO
-    case fsharpType of
-        FsharpTypeVariable _ ->
+    case syntaxType of
+        Elm.Syntax.TypeAnnotation.Unit ->
             FastSet.empty
 
-        FsharpTypeFunction typeFunction ->
-            FastSet.union
-                (typeFunction.input |> fsharpTypeContainedRecords)
-                (typeFunction.output |> fsharpTypeContainedRecords)
+        Elm.Syntax.TypeAnnotation.GenericType _ ->
+            FastSet.empty
 
-        FsharpTypeTuple typeTuple ->
-            (typeTuple.part0 :: typeTuple.part1 :: typeTuple.part2Up)
+        Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation inType outType ->
+            FastSet.union
+                (inType |> typeContainedRecords)
+                (outType |> typeContainedRecords)
+
+        Elm.Syntax.TypeAnnotation.Tupled typeTupleParts ->
+            typeTupleParts
                 |> listMapToFastSetsAndUnify
-                    fsharpTypeContainedRecords
+                    typeContainedRecords
 
-        FsharpTypeConstruct typeConstruct ->
-            -- TODO instead extract fields from the original Elm.Syntax.TypeAnnotation
-            {- FsharpTypeRecord fields ->
-               FastSet.insert
-                   (fields |> FastDict.keys)
-                   (fields
-                       |> fastDictMapToFastSetAndUnify
-                           fsharpTypeContainedRecords
-                   )
-            -}
-            FastSet.union
-                (if typeConstruct.name |> String.startsWith "Generated_" then
-                    FastSet.singleton
-                        (typeConstruct.name
-                            |> String.split "_"
-                            |> List.drop 1
-                            |> List.filterMap
-                                (\fieldOrEmpty ->
-                                    case fieldOrEmpty of
-                                        "" ->
-                                            Nothing
+        Elm.Syntax.TypeAnnotation.Typed _ arguments ->
+            arguments
+                |> listMapToFastSetsAndUnify
+                    typeContainedRecords
 
-                                        field ->
-                                            Just (field |> stringFirstCharToUpper)
-                                )
-                            |> List.sort
+        Elm.Syntax.TypeAnnotation.Record fields ->
+            FastSet.insert
+                (fields
+                    |> List.map
+                        (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ name, _ )) ->
+                            name
                         )
-
-                 else
-                    FastSet.empty
+                    |> List.sort
                 )
-                (typeConstruct.arguments
+                (fields
+                    |> List.map
+                        (\(Elm.Syntax.Node.Node _ ( _, value )) ->
+                            value
+                        )
                     |> listMapToFastSetsAndUnify
-                        fsharpTypeContainedRecords
+                        typeContainedRecords
                 )
 
+        Elm.Syntax.TypeAnnotation.GenericRecord _ (Elm.Syntax.Node.Node _ fields) ->
+            fields
+                |> List.map
+                    (\(Elm.Syntax.Node.Node _ ( _, value )) ->
+                        value
+                    )
+                |> listMapToFastSetsAndUnify
+                    typeContainedRecords
 
-fsharpExpressionContainedConstructedRecords :
-    FsharpExpression
+
+syntaxExpressionContainedConstructedRecords :
+    Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression
     ->
         FastSet.Set
             -- sorted field names
             (List String)
-fsharpExpressionContainedConstructedRecords syntaxExpression =
+syntaxExpressionContainedConstructedRecords syntaxExpressionNode =
     -- IGNORE TCO
     FastSet.union
-        (case syntaxExpression of
-            FsharpExpressionRecord fields ->
-                FastSet.singleton (fields |> FastDict.keys)
+        (case syntaxExpressionNode |> Elm.Syntax.Node.value of
+            Elm.Syntax.Expression.RecordExpr fields ->
+                FastSet.singleton
+                    (fields
+                        |> List.map
+                            (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ name, _ )) ->
+                                name
+                            )
+                        |> List.sort
+                    )
 
-            FsharpExpressionUnit ->
+            Elm.Syntax.Expression.UnitExpr ->
                 FastSet.empty
 
-            FsharpExpressionFloat _ ->
+            Elm.Syntax.Expression.Floatable _ ->
                 FastSet.empty
 
-            FsharpExpressionInt64 _ ->
+            Elm.Syntax.Expression.Integer _ ->
                 FastSet.empty
 
-            FsharpExpressionChar _ ->
+            Elm.Syntax.Expression.Hex _ ->
                 FastSet.empty
 
-            FsharpExpressionStringLiteral _ ->
+            Elm.Syntax.Expression.CharLiteral _ ->
                 FastSet.empty
 
-            FsharpExpressionReference _ ->
+            Elm.Syntax.Expression.Literal _ ->
                 FastSet.empty
 
-            FsharpExpressionRecordAccess _ ->
+            Elm.Syntax.Expression.FunctionOrValue _ _ ->
                 FastSet.empty
 
-            FsharpExpressionTuple _ ->
+            Elm.Syntax.Expression.RecordAccess _ _ ->
                 FastSet.empty
 
-            FsharpExpressionIfElse _ ->
+            Elm.Syntax.Expression.TupledExpression _ ->
                 FastSet.empty
 
-            FsharpExpressionListLiteral _ ->
+            Elm.Syntax.Expression.IfBlock _ _ _ ->
                 FastSet.empty
 
-            FsharpExpressionArrayLiteral _ ->
+            Elm.Syntax.Expression.ListExpr _ ->
                 FastSet.empty
 
-            FsharpExpressionRecordUpdate _ ->
+            Elm.Syntax.Expression.RecordUpdateExpression _ _ ->
                 FastSet.empty
 
-            FsharpExpressionCall _ ->
+            Elm.Syntax.Expression.Application _ ->
                 FastSet.empty
 
-            FsharpExpressionLambda _ ->
+            Elm.Syntax.Expression.LambdaExpression _ ->
                 FastSet.empty
 
-            FsharpExpressionMatchWith _ ->
+            Elm.Syntax.Expression.CaseExpression _ ->
                 FastSet.empty
 
-            FsharpExpressionWithLetDeclarations _ ->
+            Elm.Syntax.Expression.LetExpression _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.OperatorApplication _ _ _ _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.PrefixOperator _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.Operator _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.Negation _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.ParenthesizedExpression _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.RecordAccessFunction _ ->
+                FastSet.empty
+
+            Elm.Syntax.Expression.GLSLExpression _ ->
                 FastSet.empty
         )
-        (syntaxExpression
-            |> fsharpExpressionSubs
+        (syntaxExpressionNode
+            |> syntaxExpressionSubs
             |> listMapToFastSetsAndUnify
-                fsharpExpressionContainedConstructedRecords
+                syntaxExpressionContainedConstructedRecords
         )
+
+
+{-| All surface-level child [expression](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Expression)s
+-}
+syntaxExpressionSubs :
+    Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression
+    -> List (Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression)
+syntaxExpressionSubs (Elm.Syntax.Node.Node _ syntaxExpression) =
+    case syntaxExpression of
+        Elm.Syntax.Expression.Application expressions ->
+            expressions
+
+        Elm.Syntax.Expression.ListExpr elements ->
+            elements
+
+        Elm.Syntax.Expression.RecordExpr fields ->
+            List.map (\(Elm.Syntax.Node.Node _ ( _, expr )) -> expr) fields
+
+        Elm.Syntax.Expression.RecordUpdateExpression _ setters ->
+            List.map (\(Elm.Syntax.Node.Node _ ( _, expr )) -> expr) setters
+
+        Elm.Syntax.Expression.ParenthesizedExpression expr ->
+            [ expr ]
+
+        Elm.Syntax.Expression.OperatorApplication _ _ left right ->
+            [ left, right ]
+
+        Elm.Syntax.Expression.IfBlock cond then_ else_ ->
+            [ cond, then_, else_ ]
+
+        Elm.Syntax.Expression.LetExpression letIn ->
+            List.foldr
+                (\declaration soFar ->
+                    case Elm.Syntax.Node.value declaration of
+                        Elm.Syntax.Expression.LetFunction function ->
+                            (function.declaration
+                                |> Elm.Syntax.Node.value
+                                |> .expression
+                            )
+                                :: soFar
+
+                        Elm.Syntax.Expression.LetDestructuring _ expr ->
+                            expr :: soFar
+                )
+                [ letIn.expression ]
+                letIn.declarations
+
+        Elm.Syntax.Expression.CaseExpression caseOf ->
+            caseOf.expression
+                :: List.map (\( _, caseExpression ) -> caseExpression) caseOf.cases
+
+        Elm.Syntax.Expression.LambdaExpression lambda ->
+            [ lambda.expression ]
+
+        Elm.Syntax.Expression.TupledExpression expressions ->
+            expressions
+
+        Elm.Syntax.Expression.Negation expr ->
+            [ expr ]
+
+        Elm.Syntax.Expression.RecordAccess expr _ ->
+            [ expr ]
+
+        Elm.Syntax.Expression.PrefixOperator _ ->
+            []
+
+        Elm.Syntax.Expression.Operator _ ->
+            []
+
+        Elm.Syntax.Expression.Integer _ ->
+            []
+
+        Elm.Syntax.Expression.Hex _ ->
+            []
+
+        Elm.Syntax.Expression.Floatable _ ->
+            []
+
+        Elm.Syntax.Expression.Literal _ ->
+            []
+
+        Elm.Syntax.Expression.CharLiteral _ ->
+            []
+
+        Elm.Syntax.Expression.UnitExpr ->
+            []
+
+        Elm.Syntax.Expression.FunctionOrValue _ _ ->
+            []
+
+        Elm.Syntax.Expression.RecordAccessFunction _ ->
+            []
+
+        Elm.Syntax.Expression.GLSLExpression _ ->
+            []
 
 
 fsharpExpressionUsedLocalReferences : FsharpExpression -> FastSet.Set String
@@ -5647,60 +5770,68 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                 additionalRecordTypeAliases : FastSet.Set (List String)
                 additionalRecordTypeAliases =
-                    FastSet.union
-                        (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.valuesAndFunctions
-                            |> fastDictMapToFastSetAndUnify
-                                (\valueOrFunctionInfo ->
-                                    valueOrFunctionInfo.parameters
-                                        |> listMapToFastSetsAndUnify
-                                            (\parameter ->
-                                                parameter.type_ |> fsharpTypeContainedRecords
-                                            )
-                                        |> FastSet.union
-                                            (valueOrFunctionInfo.result
-                                                |> fsharpExpressionContainedConstructedRecords
-                                            )
-                                        |> FastSet.union
-                                            (valueOrFunctionInfo.resultType
-                                                |> fsharpTypeContainedRecords
-                                            )
-                                )
-                        )
-                        (FastSet.union
-                            (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.typeAliases
-                                |> fastDictMapToFastSetAndUnify
-                                    (\typeAliasInfo ->
-                                        typeAliasInfo.type_
-                                            |> fsharpTypeContainedRecords
-                                    )
-                            )
-                            (fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.choiceTypes
-                                |> fastDictMapToFastSetAndUnify
-                                    (\choiceTypeInfo ->
-                                        choiceTypeInfo.variants
-                                            |> fastDictMapToFastSetAndUnify
-                                                (\maybeValue ->
-                                                    case maybeValue of
-                                                        Nothing ->
-                                                            FastSet.empty
+                    modulesInferred
+                        |> listMapToFastSetsAndUnify
+                            (\moduleInferred ->
+                                moduleInferred.module_.declarations
+                                    |> listMapToFastSetsAndUnify
+                                        (\(Elm.Syntax.Node.Node _ syntaxDeclaration) ->
+                                            case syntaxDeclaration of
+                                                Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
+                                                    (syntaxValueOrFunctionDeclaration.declaration
+                                                        |> Elm.Syntax.Node.value
+                                                        |> .expression
+                                                        |> syntaxExpressionContainedConstructedRecords
+                                                    )
+                                                        |> FastSet.union
+                                                            (case syntaxValueOrFunctionDeclaration.signature of
+                                                                Nothing ->
+                                                                    FastSet.empty
 
-                                                        Just variantValue ->
-                                                            variantValue
-                                                                |> fsharpTypeContainedRecords
-                                                )
-                                    )
+                                                                Just (Elm.Syntax.Node.Node _ signature) ->
+                                                                    signature.typeAnnotation
+                                                                        |> typeContainedRecords
+                                                            )
+
+                                                Elm.Syntax.Declaration.Destructuring _ _ ->
+                                                    -- invalid syntax
+                                                    FastSet.empty
+
+                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                    FastSet.empty
+
+                                                Elm.Syntax.Declaration.AliasDeclaration syntaxTypeAliasDeclaration ->
+                                                    syntaxTypeAliasDeclaration.typeAnnotation
+                                                        |> typeContainedRecords
+
+                                                Elm.Syntax.Declaration.PortDeclaration syntaxPortDeclaration ->
+                                                    syntaxPortDeclaration.typeAnnotation
+                                                        |> typeContainedRecords
+
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
+                                                    syntaxChoiceTypeDeclaration.constructors
+                                                        |> listMapToFastSetsAndUnify
+                                                            (\(Elm.Syntax.Node.Node _ variant) ->
+                                                                variant.arguments
+                                                                    |> listMapToFastSetsAndUnify typeContainedRecords
+                                                            )
+                                        )
                             )
-                        )
-                        |> FastSet.filter
-                            (\additionalRecordTypeAlias ->
+                        |> FastSet.foldl
+                            (\additionalRecordTypeAlias soFar ->
                                 -- skip those that are already in the default declarations
                                 case additionalRecordTypeAlias of
-                                    [ "Message", "PreventDefault", "StopPropagation" ] ->
-                                        False
+                                    [ "message", "preventDefault", "stopPropagation" ] ->
+                                        soFar
 
-                                    _ ->
-                                        True
+                                    additionalRecordTypeAliasNotAlreadyDeclared ->
+                                        soFar
+                                            |> FastSet.insert
+                                                (additionalRecordTypeAliasNotAlreadyDeclared
+                                                    |> List.map stringFirstCharToUpper
+                                                )
                             )
+                            FastSet.empty
             in
             { declarations =
                 { valuesAndFunctions =
@@ -5993,21 +6124,6 @@ typeNotVariableSetLocalToOrigin moduleOrigin typeNotVariable =
                                     |> typeSetLocalToOrigin moduleOrigin
                             )
                 }
-
-
-fastDictMapToFastSetAndUnify :
-    (value -> FastSet.Set comparableFastSetElement)
-    -> FastDict.Dict key_ value
-    -> FastSet.Set comparableFastSetElement
-fastDictMapToFastSetAndUnify valueToFastSet fastDict =
-    fastDict
-        |> FastDict.foldl
-            (\_ value soFar ->
-                FastSet.union
-                    (value |> valueToFastSet)
-                    soFar
-            )
-            FastSet.empty
 
 
 generatedFsharpRecordTypeAliasName : List String -> String
