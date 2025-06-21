@@ -5768,8 +5768,8 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 }
                             }
 
-                additionalRecordTypeAliases : FastSet.Set (List String)
-                additionalRecordTypeAliases =
+                allFsharpRecords : FastSet.Set (List String)
+                allFsharpRecords =
                     modulesInferred
                         |> listMapToFastSetsAndUnify
                             (\moduleInferred ->
@@ -5817,21 +5817,11 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             )
                                         )
                             )
-                        |> FastSet.foldl
-                            (\additionalRecordTypeAlias soFar ->
-                                -- skip those that are already in the default declarations
-                                case additionalRecordTypeAlias of
-                                    [ "message", "preventDefault", "stopPropagation" ] ->
-                                        soFar
-
-                                    additionalRecordTypeAliasNotAlreadyDeclared ->
-                                        soFar
-                                            |> FastSet.insert
-                                                (additionalRecordTypeAliasNotAlreadyDeclared
-                                                    |> List.map stringFirstCharToUpper
-                                                )
+                        |> FastSet.map
+                            (\additionalRecordTypeAlias ->
+                                additionalRecordTypeAlias
+                                    |> List.map stringFirstCharToUpper
                             )
-                            FastSet.empty
             in
             { declarations =
                 { valuesAndFunctions =
@@ -5851,7 +5841,11 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 , variants = typeAliasInfo.variants
                                 }
                             )
-                , recordTypes = additionalRecordTypeAliases
+                , recordTypes =
+                    allFsharpRecords
+                        |> -- skip those that are already in the default declarations
+                           FastSet.remove
+                            [ "Message", "PreventDefault", "StopPropagation" ]
                 , typeAliases =
                     fsharpDeclarationsWithoutExtraRecordTypeAliases.declarations.typeAliases
                         |> FastDict.map
