@@ -37,32 +37,32 @@ module Elm =
     -   ports that use non-json values like `port sendMessage : String -> Cmd msg`, glsl
     -   `elm/file`, `elm/http`, `elm/browser`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`
     -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`, `Math.Matrix4.inverseOrthonormal`, `Math.Matrix4.mulAffine`
-    -   extensible record types. For example, these declarations might not work (at let or module level):
+    -   extensible record types outside of annotated module-level value/function declarations. For example, these declarations might not work:
         ```elm
         -- in aliased type or variant value
         type alias Named otherFields =
             { otherFields | name : String }
         
-        -- in explicit annotation
-        getName : { r | name : name } -> name
-        getName =
-            .name
+        -- in explicit let annotation
+        let
+            getName : { r | name : name } -> name
+            getName =
+                .name
+        in
+        ...
         
-        -- in un-annotated type
+        -- in un-annotated type at let or module-level
         -- Here inferred as name -> { r | name : name } -> { r | name : name }
         setName new r =
             { r | name = new }
         ```
         Allowed however are for example:
         ```elm
-        userGetName : { name : String, email : Email } -> String
+        userGetName : { user_ | name : String, email : Email } -> String
         userGetName =
             .name
         ```
-        In these cases we assume that you intended to use a regular record type with only the extension fields which can lead to F# compile errors if you actually pass in additional fields.
-
-        Incidentally, avoiding extensible record types
-        also tends to improve your elm code because it's simpler and makes the compiler errors more concrete
+        In the non-allowed cases listed above, we assume that you intended to use a regular record type with only the extension fields which can lead to F# compile errors if you actually pass in additional fields.
 -   elm-exploration/linear-algebra's `Vec2`, `Vec3`, `Vec4`, `Mat4` components have 64-bit precision but their F# counterparts only have 32
 -   dependencies cannot internally use the same module names as the transpiled project
 -   no compile checks are performed before transpiling to F#
@@ -101,7 +101,7 @@ let main args =
     let output = Elm.YourModule_yourFunction yourInput
     0
 ```
-where `Elm.YourModule_yourFunction` is the transpiled elm function `Your.Module.yourFunction`.
+where `Elm.YourModule_yourFunction` is the transpiled elm function `Your.Module.yourFunction`. (If the value/function contains `number` type variables or extensible records, search for `Elm.YourModule_yourFunction__` to see the different specialized options)
 
 Here's some special types you can expect:
   - elm `Basics.Int`s will be of type `int64`.
