@@ -160,15 +160,6 @@ runningInterface state =
         in
         [ Node.standardOutWrite
             ((transpiledDeclarationsAndErrors.errors
-                |> List.filter
-                    (\error ->
-                        error
-                            /= "could not find imported/local declaration for Decoder"
-                            && error
-                            /= "could not find imported/local declaration for Value"
-                            && error
-                            /= "could not find imported/local declaration for Interface"
-                    )
                 |> String.join "\n"
              )
                 ++ "\n"
