@@ -3,6 +3,8 @@ Transpile all elm modules in the current project
 into a bundled `src/Elm.fs` file that exposes every value/function declaration
 (e.g. `Main_runOnString` for `Main.runOnString`)
 
+Be aware that no compile checks are performed before transpiling to F#
+
 
 ```bash
 npm install && npm run build

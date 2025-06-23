@@ -40,32 +40,19 @@ module Elm =
     -   extensible record types outside of annotated module-level value/function declarations. For example, these declarations might not work:
         ```elm
         -- in aliased type or variant value
-        type alias Named otherFields =
-            { otherFields | name : String }
-        
+        type alias Named rec = { rec | name : String }
         -- in explicit let annotation
-        let
-            getName : { r | name : name } -> name
-            getName =
-                .name
-        in
-        ...
-        
+        let getName : { r | name : name } -> name
         -- in un-annotated type at let or module-level
-        -- Here inferred as name -> { r | name : name } -> { r | name : name }
-        setName new r =
-            { r | name = new }
+        setName new r = { r | name = new }
         ```
-        Allowed however are for example:
+        Allowed is only explicit record extension in module-level value/functions:
         ```elm
-        userGetName : { user_ | name : String, email : Email } -> String
-        userGetName =
-            .name
+        userId : { u | name : String, server : Domain } -> String
         ```
         In the non-allowed cases listed above, we assume that you intended to use a regular record type with only the extension fields which can lead to F# compile errors if you actually pass in additional fields.
 -   elm-exploration/linear-algebra's `Vec2`, `Vec3`, `Vec4`, `Mat4` components have 64-bit precision but their F# counterparts only have 32
 -   dependencies cannot internally use the same module names as the transpiled project
--   no compile checks are performed before transpiling to F#
 -   the resulting code might not be readable or even conventionally formatted and comments are not preserved
 
 Please [report any issues](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new) you notice <3
@@ -92,8 +79,8 @@ Add a project config `yourProjectName.fsproj`
   </ItemGroup>
 </Project>
 ```
-Add a file `Program.fs` that uses `Elm.fs`
-```fs
+Add a file `src/Program.fs` that uses `src/Elm.fs`
+```fsharp
 module Program
 
 [<EntryPoint>]
