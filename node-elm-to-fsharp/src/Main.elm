@@ -225,19 +225,6 @@ runningInterface state =
                                                             Nothing
 
                                                         else
-                                                        if
-                                                            -- excluded because Elm.Parser.Expression
-                                                            -- uses annotated extensible record types
-                                                            (sourceDirectoryPath |> String.contains "stil4m/elm-syntax")
-                                                                && ((subPath == "Elm/Parser.elm")
-                                                                        || (subPath == "Elm/Parser/Expression.elm")
-                                                                        || (subPath == "Elm/Parser/Declarations.elm")
-                                                                        || (subPath == "Elm/Parser/File.elm")
-                                                                   )
-                                                        then
-                                                            Nothing
-
-                                                        else
                                                             Just subPath
                                                     )
                                                 |> List.foldl
