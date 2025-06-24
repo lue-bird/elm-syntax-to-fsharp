@@ -171,18 +171,24 @@ Contains variants, variant function and value declaration names.
 type alias ModuleContext =
     { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
-            ( String, String )
             String
+            (FastDict.Dict String String)
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     }
@@ -436,34 +442,40 @@ importsToModuleContext moduleExposes imports =
                 soFar
                     |> moduleContextMerge
                         { variantLookup =
-                            syntaxImport.exposedVariants
-                                |> FastDict.foldl
-                                    (\variantName variantInfo dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert ( "", variantName )
-                                                { moduleOrigin = syntaxImport.moduleName
-                                                , valueCount = variantInfo.valueCount
-                                                }
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton ""
+                                (syntaxImport.exposedVariants
+                                    |> FastDict.foldl
+                                        (\variantName variantInfo dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert variantName
+                                                    { moduleOrigin = syntaxImport.moduleName
+                                                    , valueCount = variantInfo.valueCount
+                                                    }
+                                        )
+                                        FastDict.empty
+                                )
                         , valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                            syntaxImport.exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes
-                                |> FastSet.foldl
-                                    (\expose dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert ( "", expose )
-                                                syntaxImport.moduleName
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton ""
+                                (syntaxImport.exposedValuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                    |> FastSet.foldl
+                                        (\expose dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert expose
+                                                    syntaxImport.moduleName
+                                        )
+                                        FastDict.empty
+                                )
                         , recordTypeAliasLookup =
-                            syntaxImport.exposedRecordTypeAliases
-                                |> FastDict.foldl
-                                    (\typeAliasName fieldOrder dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert ( "", typeAliasName )
-                                                fieldOrder
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton ""
+                                (syntaxImport.exposedRecordTypeAliases
+                                    |> FastDict.foldl
+                                        (\typeAliasName fieldOrder dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert typeAliasName
+                                                    fieldOrder
+                                        )
+                                        FastDict.empty
+                                )
                         , portIncomingLookup =
                             syntaxImport.exposedPortsIncoming
                                 |> FastSet.map (\portName -> ( "", portName ))
@@ -473,36 +485,42 @@ importsToModuleContext moduleExposes imports =
                         }
                     |> moduleContextMerge
                         { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                            importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
-                                |> FastSet.foldl
-                                    (\exposeFromImportedModule dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert
-                                                ( moduleNameOrAlias, exposeFromImportedModule )
-                                                syntaxImport.moduleName
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton moduleNameOrAlias
+                                (importedModuleMembers.valuesAndFunctionsAndTypeAliasesAndChoiceTypes
+                                    |> FastSet.foldl
+                                        (\exposeFromImportedModule dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert
+                                                    exposeFromImportedModule
+                                                    syntaxImport.moduleName
+                                        )
+                                        FastDict.empty
+                                )
                         , variantLookup =
-                            importedModuleMembers.variants
-                                |> FastDict.foldl
-                                    (\exposeFromImportedModule variantInfo dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert
-                                                ( moduleNameOrAlias, exposeFromImportedModule )
-                                                { moduleOrigin = syntaxImport.moduleName
-                                                , valueCount = variantInfo.valueCount
-                                                }
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton moduleNameOrAlias
+                                (importedModuleMembers.variants
+                                    |> FastDict.foldl
+                                        (\exposeFromImportedModule variantInfo dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert
+                                                    exposeFromImportedModule
+                                                    { moduleOrigin = syntaxImport.moduleName
+                                                    , valueCount = variantInfo.valueCount
+                                                    }
+                                        )
+                                        FastDict.empty
+                                )
                         , recordTypeAliasLookup =
-                            syntaxImport.exposedRecordTypeAliases
-                                |> FastDict.foldl
-                                    (\typeAliasName fieldOrder dictSoFar ->
-                                        dictSoFar
-                                            |> FastDict.insert ( moduleNameOrAlias, typeAliasName )
-                                                fieldOrder
-                                    )
-                                    FastDict.empty
+                            FastDict.singleton moduleNameOrAlias
+                                (syntaxImport.exposedRecordTypeAliases
+                                    |> FastDict.foldl
+                                        (\typeAliasName fieldOrder dictSoFar ->
+                                            dictSoFar
+                                                |> FastDict.insert typeAliasName
+                                                    fieldOrder
+                                        )
+                                        FastDict.empty
+                                )
                         , portIncomingLookup =
                             syntaxImport.exposedPortsIncoming
                                 |> FastSet.map (\portName -> ( moduleNameOrAlias, portName ))
@@ -1702,7 +1720,8 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node typeRange syntaxType) =
             in
             case
                 moduleOriginLookup.valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup
-                    |> FastDict.get ( qualificationAsDotSeparated |> String.join ".", name )
+                    |> FastDict.get (qualificationAsDotSeparated |> String.join ".")
+                    |> Maybe.andThen (\byName -> byName |> FastDict.get name)
             of
                 Nothing ->
                     Err
@@ -5187,57 +5206,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             |> List.map stringFirstCharToUpper
                     )
 
-        allValueAndFunctionAnnotations :
-            FastDict.Dict
-                ( String, String )
-                Elm.Syntax.TypeAnnotation.TypeAnnotation
-        allValueAndFunctionAnnotations =
-            syntaxModules
-                |> listMapToFastDictsAndUnify
-                    (\syntaxModule ->
-                        syntaxModule.declarations
-                            |> List.foldl
-                                (\(Elm.Syntax.Node.Node _ syntaxDeclaration) soFar ->
-                                    case syntaxDeclaration of
-                                        Elm.Syntax.Declaration.Destructuring _ _ ->
-                                            -- invalid syntax
-                                            soFar
-
-                                        Elm.Syntax.Declaration.InfixDeclaration _ ->
-                                            soFar
-
-                                        Elm.Syntax.Declaration.AliasDeclaration _ ->
-                                            soFar
-
-                                        Elm.Syntax.Declaration.PortDeclaration _ ->
-                                            soFar
-
-                                        Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
-                                            soFar
-
-                                        Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                            case syntaxValueOrFunctionDeclaration.signature of
-                                                Nothing ->
-                                                    soFar
-
-                                                Just (Elm.Syntax.Node.Node _ signature) ->
-                                                    soFar
-                                                        |> FastDict.insert
-                                                            ( syntaxModule.moduleDefinition
-                                                                |> Elm.Syntax.Node.value
-                                                                |> moduleHeaderName
-                                                            , syntaxValueOrFunctionDeclaration.declaration
-                                                                |> Elm.Syntax.Node.value
-                                                                |> .name
-                                                                |> Elm.Syntax.Node.value
-                                                            )
-                                                            (signature.typeAnnotation
-                                                                |> Elm.Syntax.Node.value
-                                                            )
-                                )
-                                FastDict.empty
-                    )
-
         syntaxModulesFromMostToLeastImported : List Elm.Syntax.File.File
         syntaxModulesFromMostToLeastImported =
             syntaxModules
@@ -5481,6 +5449,57 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
         Ok modulesInferred ->
             let
+                allValueAndFunctionAnnotations :
+                    FastDict.Dict
+                        ( String, String )
+                        Elm.Syntax.TypeAnnotation.TypeAnnotation
+                allValueAndFunctionAnnotations =
+                    syntaxModules
+                        |> listMapToFastDictsAndUnify
+                            (\syntaxModule ->
+                                syntaxModule.declarations
+                                    |> List.foldl
+                                        (\(Elm.Syntax.Node.Node _ syntaxDeclaration) soFar ->
+                                            case syntaxDeclaration of
+                                                Elm.Syntax.Declaration.Destructuring _ _ ->
+                                                    -- invalid syntax
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.AliasDeclaration _ ->
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.PortDeclaration _ ->
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
+                                                    case syntaxValueOrFunctionDeclaration.signature of
+                                                        Nothing ->
+                                                            soFar
+
+                                                        Just (Elm.Syntax.Node.Node _ signature) ->
+                                                            soFar
+                                                                |> FastDict.insert
+                                                                    ( syntaxModule.moduleDefinition
+                                                                        |> Elm.Syntax.Node.value
+                                                                        |> moduleHeaderName
+                                                                    , syntaxValueOrFunctionDeclaration.declaration
+                                                                        |> Elm.Syntax.Node.value
+                                                                        |> .name
+                                                                        |> Elm.Syntax.Node.value
+                                                                    )
+                                                                    (signature.typeAnnotation
+                                                                        |> Elm.Syntax.Node.value
+                                                                    )
+                                        )
+                                        FastDict.empty
+                            )
+
                 moduleMembers :
                     FastDict.Dict
                         String
@@ -5774,47 +5793,53 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                 Just moduleLocalNames ->
                                                     { valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup =
-                                                        FastSet.union
-                                                            moduleLocalNames.valueOrFunctionOrTypeAliasNames
+                                                        FastDict.singleton ""
+                                                            (FastSet.union
+                                                                moduleLocalNames.valueOrFunctionOrTypeAliasNames
+                                                                (moduleLocalNames.choiceTypesExposingVariants
+                                                                    |> FastDict.foldl
+                                                                        (\choiceTypeName _ soFar ->
+                                                                            soFar |> FastSet.insert choiceTypeName
+                                                                        )
+                                                                        FastSet.empty
+                                                                )
+                                                                |> FastSet.foldl
+                                                                    (\name soFar ->
+                                                                        soFar
+                                                                            |> FastDict.insert name
+                                                                                moduleName
+                                                                    )
+                                                                    FastDict.empty
+                                                            )
+                                                    , variantLookup =
+                                                        FastDict.singleton ""
                                                             (moduleLocalNames.choiceTypesExposingVariants
                                                                 |> FastDict.foldl
-                                                                    (\choiceTypeName _ soFar ->
-                                                                        soFar |> FastSet.insert choiceTypeName
+                                                                    (\_ variantNames soFarAcrossChoiceTypes ->
+                                                                        variantNames
+                                                                            |> FastDict.foldl
+                                                                                (\name info soFar ->
+                                                                                    soFar
+                                                                                        |> FastDict.insert name
+                                                                                            { moduleOrigin = moduleName
+                                                                                            , valueCount = info.valueCount
+                                                                                            }
+                                                                                )
+                                                                                soFarAcrossChoiceTypes
                                                                     )
-                                                                    FastSet.empty
+                                                                    FastDict.empty
                                                             )
-                                                            |> FastSet.foldl
-                                                                (\name soFar ->
-                                                                    soFar
-                                                                        |> FastDict.insert ( "", name )
-                                                                            moduleName
-                                                                )
-                                                                FastDict.empty
-                                                    , variantLookup =
-                                                        moduleLocalNames.choiceTypesExposingVariants
-                                                            |> FastDict.foldl
-                                                                (\_ variantNames soFarAcrossChoiceTypes ->
-                                                                    variantNames
-                                                                        |> FastDict.foldl
-                                                                            (\name info soFar ->
-                                                                                soFar
-                                                                                    |> FastDict.insert ( "", name )
-                                                                                        { moduleOrigin = moduleName
-                                                                                        , valueCount = info.valueCount
-                                                                                        }
-                                                                            )
-                                                                            soFarAcrossChoiceTypes
-                                                                )
-                                                                FastDict.empty
                                                     , recordTypeAliasLookup =
-                                                        moduleLocalNames.recordTypeAliases
-                                                            |> FastDict.foldl
-                                                                (\name fieldOrder soFar ->
-                                                                    soFar
-                                                                        |> FastDict.insert ( "", name )
-                                                                            fieldOrder
-                                                                )
-                                                                FastDict.empty
+                                                        FastDict.singleton ""
+                                                            (moduleLocalNames.recordTypeAliases
+                                                                |> FastDict.foldl
+                                                                    (\name fieldOrder soFar ->
+                                                                        soFar
+                                                                            |> FastDict.insert name
+                                                                                fieldOrder
+                                                                    )
+                                                                    FastDict.empty
+                                                            )
                                                     , portIncomingLookup =
                                                         moduleLocalNames.portsIncoming
                                                             |> FastSet.map (\portName -> ( "", portName ))
@@ -6029,44 +6054,6 @@ baseElmDeclarationTypes =
         |> FastDict.union elmExplorationsLinearAlgebraTypes
         |> FastDict.union elmKernelParserTypes
         |> FastDict.union elmKernelUrlTypes
-
-
-syntaxValueOrFunctionDeclarationSetName :
-    String
-    -> Elm.Syntax.Expression.Function
-    -> Elm.Syntax.Expression.Function
-syntaxValueOrFunctionDeclarationSetName newName syntaxValueOrFunctionDeclaration =
-    { documentation = syntaxValueOrFunctionDeclaration.documentation
-    , signature =
-        case syntaxValueOrFunctionDeclaration.signature of
-            Nothing ->
-                Nothing
-
-            Just (Elm.Syntax.Node.Node signatureRange signature) ->
-                Just
-                    (Elm.Syntax.Node.Node signatureRange
-                        { typeAnnotation = signature.typeAnnotation
-                        , name =
-                            Elm.Syntax.Node.Node
-                                (signature.name |> Elm.Syntax.Node.range)
-                                newName
-                        }
-                    )
-    , declaration =
-        let
-            (Elm.Syntax.Node.Node implementationRange declaration) =
-                syntaxValueOrFunctionDeclaration.declaration
-        in
-        Elm.Syntax.Node.Node
-            implementationRange
-            { name =
-                Elm.Syntax.Node.Node
-                    (declaration.name |> Elm.Syntax.Node.range)
-                    newName
-            , arguments = declaration.arguments
-            , expression = declaration.expression
-            }
-    }
 
 
 portTypeSignifiesOutgoing :
@@ -6341,18 +6328,24 @@ valueOrFunctionDeclaration :
             Elm.Syntax.TypeAnnotation.TypeAnnotation
     , valueAndFunctionAndTypeAliasAndChoiceTypeModuleOriginLookup :
         FastDict.Dict
-            ( String, String )
             String
+            (FastDict.Dict String String)
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     }
@@ -6520,14 +6513,20 @@ expressionContextAddVariablesInScope :
                 Elm.Syntax.TypeAnnotation.TypeAnnotation
         , variantLookup :
             FastDict.Dict
-                ( String, String )
-                { moduleOrigin : String
-                , valueCount : Int
-                }
+                String
+                (FastDict.Dict
+                    String
+                    { moduleOrigin : String
+                    , valueCount : Int
+                    }
+                )
         , recordTypeAliasLookup :
             FastDict.Dict
-                ( String, String )
-                (List String)
+                String
+                (FastDict.Dict
+                    String
+                    (List String)
+                )
         , portIncomingLookup : FastSet.Set ( String, String )
         , portOutgoingLookup : FastSet.Set ( String, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -6539,14 +6538,20 @@ expressionContextAddVariablesInScope :
                 Elm.Syntax.TypeAnnotation.TypeAnnotation
         , variantLookup :
             FastDict.Dict
-                ( String, String )
-                { moduleOrigin : String
-                , valueCount : Int
-                }
+                String
+                (FastDict.Dict
+                    String
+                    { moduleOrigin : String
+                    , valueCount : Int
+                    }
+                )
         , recordTypeAliasLookup :
             FastDict.Dict
-                ( String, String )
-                (List String)
+                String
+                (FastDict.Dict
+                    String
+                    (List String)
+                )
         , portIncomingLookup : FastSet.Set ( String, String )
         , portOutgoingLookup : FastSet.Set ( String, String )
         , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -6571,14 +6576,20 @@ expression :
             Elm.Syntax.TypeAnnotation.TypeAnnotation
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -6836,7 +6847,11 @@ expression context expressionTypedNode =
                         )
 
         ElmSyntaxTypeInfer.ExpressionReferenceRecordTypeAliasConstructorFunction reference ->
-            case context.recordTypeAliasLookup |> FastDict.get ( reference.qualification, reference.name ) of
+            case
+                context.recordTypeAliasLookup
+                    |> FastDict.get reference.qualification
+                    |> Maybe.andThen (\byName -> byName |> FastDict.get reference.name)
+            of
                 Just fieldOrder ->
                     case fieldOrder of
                         [] ->
@@ -7652,14 +7667,20 @@ case_ :
             Elm.Syntax.TypeAnnotation.TypeAnnotation
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -7707,14 +7728,20 @@ letDeclaration :
             Elm.Syntax.TypeAnnotation.TypeAnnotation
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -7750,14 +7777,20 @@ letValueOrFunctionDeclaration :
             Elm.Syntax.TypeAnnotation.TypeAnnotation
     , variantLookup :
         FastDict.Dict
-            ( String, String )
-            { moduleOrigin : String
-            , valueCount : Int
-            }
+            String
+            (FastDict.Dict
+                String
+                { moduleOrigin : String
+                , valueCount : Int
+                }
+            )
     , recordTypeAliasLookup :
         FastDict.Dict
-            ( String, String )
-            (List String)
+            String
+            (FastDict.Dict
+                String
+                (List String)
+            )
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     , variablesFromWithinDeclarationInScope : FastSet.Set String
@@ -8757,6 +8790,7 @@ syntaxTypeApplySpecialization specialization syntaxType =
 
         Elm.Syntax.TypeAnnotation.GenericRecord (Elm.Syntax.Node.Node recordVariableRange recordVariableName) (Elm.Syntax.Node.Node fieldsRange fields) ->
             let
+                fieldsSpecialized : List (Elm.Syntax.Node.Node ( Elm.Syntax.Node.Node String, Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation ))
                 fieldsSpecialized =
                     fields
                         |> List.map
