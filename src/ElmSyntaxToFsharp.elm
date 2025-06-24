@@ -1686,7 +1686,7 @@ typeAnnotation :
     ModuleContext
     -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
     -> Result String FsharpType
-typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
+typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node typeRange syntaxType) =
     -- IGNORE TCO
     case syntaxType of
         Elm.Syntax.TypeAnnotation.Unit ->
@@ -1828,7 +1828,24 @@ typeAnnotation moduleOriginLookup (Elm.Syntax.Node.Node _ syntaxType) =
                 (outputNode |> typeAnnotation moduleOriginLookup)
 
         Elm.Syntax.TypeAnnotation.GenericRecord _ _ ->
-            Err "extensible record types are not supported"
+            Err
+                ((typeRange |> rangeToInfoString)
+                    ++ " extensible record types are not supported"
+                )
+
+
+rangeToInfoString : Elm.Syntax.Range.Range -> String
+rangeToInfoString range =
+    (range.start |> locationToInfoString)
+        ++ "-"
+        ++ (range.end |> locationToInfoString)
+
+
+locationToInfoString : Elm.Syntax.Range.Location -> String
+locationToInfoString location =
+    (location.row |> String.fromInt)
+        ++ ":"
+        ++ (location.column |> String.fromInt)
 
 
 okFsharpTypeUnit : Result error_ FsharpType
@@ -5838,7 +5855,15 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                         Err error ->
                                                             { declarations = soFar.declarations
-                                                            , errors = error :: soFar.errors
+                                                            , errors =
+                                                                ("in type alias declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ (syntaxTypeAliasDeclaration.name |> Elm.Syntax.Node.value)
+                                                                    ++ ": "
+                                                                    ++ error
+                                                                )
+                                                                    :: soFar.errors
                                                             }
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
@@ -5877,7 +5902,15 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                         Err error ->
                                                             { declarations = soFar.declarations
-                                                            , errors = error :: soFar.errors
+                                                            , errors =
+                                                                ("in choice type declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ (syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value)
+                                                                    ++ ": "
+                                                                    ++ error
+                                                                )
+                                                                    :: soFar.errors
                                                             }
 
                                                 Elm.Syntax.Declaration.PortDeclaration _ ->
@@ -5923,7 +5956,15 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
 
                                                         Err error ->
                                                             { declarations = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations
-                                                            , errors = error :: soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
+                                                            , errors =
+                                                                ("in value/function declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ valueOrFunctionDeclarationInferred.name
+                                                                    ++ ": "
+                                                                    ++ error
+                                                                )
+                                                                    :: soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
                                                             }
                                                 )
                                                 soFarAcrossModules
