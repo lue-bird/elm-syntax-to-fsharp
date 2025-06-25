@@ -8163,15 +8163,11 @@ printFsharpLocalLetValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                 fsharpValueOrFunctionDeclaration.name
                 |> Print.followedBy
                     (Print.withIndentAtNextMultipleOf4
-                        ((let
-                            fullLineSpread : Print.LineSpread
-                            fullLineSpread =
-                                resultTypePrint |> Print.lineSpread
-                          in
-                          printExactlyColon
+                        ((printExactlyColon
                             |> Print.followedBy
                                 (Print.withIndentAtNextMultipleOf4
-                                    (Print.spaceOrLinebreakIndented fullLineSpread
+                                    (Print.spaceOrLinebreakIndented
+                                        (resultTypePrint |> Print.lineSpread)
                                         |> Print.followedBy resultTypePrint
                                     )
                                 )
