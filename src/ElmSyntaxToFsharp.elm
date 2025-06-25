@@ -5312,10 +5312,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 )
                             |> Result.mapError
                                 (\error ->
-                                    "In module "
-                                        ++ moduleName
-                                        ++ " "
-                                        ++ error
+                                    "In module " ++ moduleName ++ ": " ++ error
                                 )
                     )
     in
@@ -5334,54 +5331,63 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             let
                 allValueAndFunctionAnnotations :
                     FastDict.Dict
-                        ( String, String )
-                        Elm.Syntax.TypeAnnotation.TypeAnnotation
+                        -- module origin
+                        String
+                        (FastDict.Dict
+                            String
+                            Elm.Syntax.TypeAnnotation.TypeAnnotation
+                        )
                 allValueAndFunctionAnnotations =
                     syntaxModules
-                        |> listMapToFastDictsAndUnify
-                            (\syntaxModule ->
-                                syntaxModule.declarations
-                                    |> List.foldl
-                                        (\(Elm.Syntax.Node.Node _ syntaxDeclaration) soFar ->
-                                            case syntaxDeclaration of
-                                                Elm.Syntax.Declaration.Destructuring _ _ ->
-                                                    -- invalid syntax
-                                                    soFar
-
-                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
-                                                    soFar
-
-                                                Elm.Syntax.Declaration.AliasDeclaration _ ->
-                                                    soFar
-
-                                                Elm.Syntax.Declaration.PortDeclaration _ ->
-                                                    soFar
-
-                                                Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
-                                                    soFar
-
-                                                Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                                    case syntaxValueOrFunctionDeclaration.signature of
-                                                        Nothing ->
-                                                            soFar
-
-                                                        Just (Elm.Syntax.Node.Node _ signature) ->
-                                                            soFar
-                                                                |> FastDict.insert
-                                                                    ( syntaxModule.moduleDefinition
-                                                                        |> Elm.Syntax.Node.value
-                                                                        |> moduleHeaderName
-                                                                    , syntaxValueOrFunctionDeclaration.declaration
-                                                                        |> Elm.Syntax.Node.value
-                                                                        |> .name
-                                                                        |> Elm.Syntax.Node.value
-                                                                    )
-                                                                    (signature.typeAnnotation
-                                                                        |> Elm.Syntax.Node.value
-                                                                    )
+                        |> List.foldl
+                            (\syntaxModule soFarModules ->
+                                soFarModules
+                                    |> FastDict.insert
+                                        (syntaxModule.moduleDefinition
+                                            |> Elm.Syntax.Node.value
+                                            |> moduleHeaderName
                                         )
-                                        FastDict.empty
+                                        (syntaxModule.declarations
+                                            |> List.foldl
+                                                (\(Elm.Syntax.Node.Node _ syntaxDeclaration) soFar ->
+                                                    case syntaxDeclaration of
+                                                        Elm.Syntax.Declaration.Destructuring _ _ ->
+                                                            -- invalid syntax
+                                                            soFar
+
+                                                        Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                            soFar
+
+                                                        Elm.Syntax.Declaration.AliasDeclaration _ ->
+                                                            soFar
+
+                                                        Elm.Syntax.Declaration.PortDeclaration _ ->
+                                                            soFar
+
+                                                        Elm.Syntax.Declaration.CustomTypeDeclaration _ ->
+                                                            soFar
+
+                                                        Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
+                                                            case syntaxValueOrFunctionDeclaration.signature of
+                                                                Nothing ->
+                                                                    soFar
+
+                                                                Just (Elm.Syntax.Node.Node _ signature) ->
+                                                                    soFar
+                                                                        |> FastDict.insert
+                                                                            (syntaxValueOrFunctionDeclaration.declaration
+                                                                                |> Elm.Syntax.Node.value
+                                                                                |> .name
+                                                                                |> Elm.Syntax.Node.value
+                                                                            )
+                                                                            (signature.typeAnnotation
+                                                                                |> Elm.Syntax.Node.value
+                                                                            )
+                                                )
+                                                FastDict.empty
+                                        )
                             )
+                            FastDict.empty
 
                 moduleMembers :
                     FastDict.Dict
@@ -6126,8 +6132,12 @@ moduleHeaderName moduleHeader =
 valueOrFunctionDeclaration :
     { valueAndFunctionAnnotations :
         FastDict.Dict
-            ( String, String )
-            Elm.Syntax.TypeAnnotation.TypeAnnotation
+            -- module origin
+            String
+            (FastDict.Dict
+                String
+                Elm.Syntax.TypeAnnotation.TypeAnnotation
+            )
     , recordTypeAliases :
         FastDict.Dict
             String
@@ -6302,8 +6312,12 @@ expressionContextAddVariablesInScope :
     ->
         { valueAndFunctionAnnotations :
             FastDict.Dict
-                ( String, String )
-                Elm.Syntax.TypeAnnotation.TypeAnnotation
+                -- module origin
+                String
+                (FastDict.Dict
+                    String
+                    Elm.Syntax.TypeAnnotation.TypeAnnotation
+                )
         , recordTypeAliases :
             FastDict.Dict
                 String
@@ -6318,8 +6332,12 @@ expressionContextAddVariablesInScope :
     ->
         { valueAndFunctionAnnotations :
             FastDict.Dict
-                ( String, String )
-                Elm.Syntax.TypeAnnotation.TypeAnnotation
+                -- module origin
+                String
+                (FastDict.Dict
+                    String
+                    Elm.Syntax.TypeAnnotation.TypeAnnotation
+                )
         , recordTypeAliases :
             FastDict.Dict
                 String
@@ -6346,8 +6364,12 @@ expressionContextAddVariablesInScope additionalVariablesInScope context =
 expression :
     { valueAndFunctionAnnotations :
         FastDict.Dict
-            ( String, String )
-            Elm.Syntax.TypeAnnotation.TypeAnnotation
+            -- module origin
+            String
+            (FastDict.Dict
+                String
+                Elm.Syntax.TypeAnnotation.TypeAnnotation
+            )
     , recordTypeAliases :
         FastDict.Dict
             String
@@ -6745,7 +6767,8 @@ expression context expressionTypedNode =
                             Nothing ->
                                 case
                                     context.valueAndFunctionAnnotations
-                                        |> FastDict.get ( reference.moduleOrigin, reference.name )
+                                        |> FastDict.get reference.moduleOrigin
+                                        |> Maybe.andThen (\byName -> byName |> FastDict.get reference.name)
                                 of
                                     Just annotation ->
                                         Ok
@@ -7428,8 +7451,12 @@ callAsArrayFromList reference argument =
 case_ :
     { valueAndFunctionAnnotations :
         FastDict.Dict
-            ( String, String )
-            Elm.Syntax.TypeAnnotation.TypeAnnotation
+            -- module origin
+            String
+            (FastDict.Dict
+                String
+                Elm.Syntax.TypeAnnotation.TypeAnnotation
+            )
     , recordTypeAliases :
         FastDict.Dict
             String
@@ -7480,8 +7507,12 @@ case_ context syntaxCase =
 letDeclaration :
     { valueAndFunctionAnnotations :
         FastDict.Dict
-            ( String, String )
-            Elm.Syntax.TypeAnnotation.TypeAnnotation
+            -- module origin
+            String
+            (FastDict.Dict
+                String
+                Elm.Syntax.TypeAnnotation.TypeAnnotation
+            )
     , recordTypeAliases :
         FastDict.Dict
             String
@@ -7520,8 +7551,12 @@ letDeclaration context syntaxLetDeclaration =
 letValueOrFunctionDeclaration :
     { valueAndFunctionAnnotations :
         FastDict.Dict
-            ( String, String )
-            Elm.Syntax.TypeAnnotation.TypeAnnotation
+            -- module origin
+            String
+            (FastDict.Dict
+                String
+                Elm.Syntax.TypeAnnotation.TypeAnnotation
+            )
     , recordTypeAliases :
         FastDict.Dict
             String
