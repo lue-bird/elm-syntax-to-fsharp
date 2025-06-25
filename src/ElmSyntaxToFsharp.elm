@@ -5288,10 +5288,20 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                             ++ soFar.errors
                                     , types =
                                         soFar.types
-                                            |> -- TODO insert inferred types instead
-                                               FastDict.insert
+                                            |> FastDict.insert
                                                 moduleName
-                                                currentModuleDeclarationTypesAndErrors.types
+                                                { typeAliases = currentModuleDeclarationTypesAndErrors.types.typeAliases
+                                                , choiceTypes = currentModuleDeclarationTypesAndErrors.types.choiceTypes
+                                                , signatures =
+                                                    declarationsInferred
+                                                        |> List.foldl
+                                                            (\declarationInferred moduleTypesSoFar ->
+                                                                moduleTypesSoFar
+                                                                    |> FastDict.insert declarationInferred.name
+                                                                        declarationInferred.type_
+                                                            )
+                                                            currentModuleDeclarationTypesAndErrors.types.signatures
+                                                }
                                     , inferred =
                                         { declarationsInferred = declarationsInferred
                                         , module_ = syntaxModule
