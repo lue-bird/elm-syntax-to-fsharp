@@ -4849,6 +4849,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                     List
                         { module_ : Elm.Syntax.File.File
                         , moduleOriginLookup : ElmSyntaxTypeInfer.ModuleOriginLookup
+                        , declarationTypes : ElmSyntaxTypeInfer.ModuleTypes
                         , declarationsInferred :
                             List
                                 { name : String
@@ -4995,29 +4996,34 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 }
                             |> Result.map
                                 (\declarationsInferred ->
+                                    let
+                                        currentModuleDeclarationTypesIncludingUnannotated : ElmSyntaxTypeInfer.ModuleTypes
+                                        currentModuleDeclarationTypesIncludingUnannotated =
+                                            { typeAliases = currentModuleDeclarationTypesAndErrors.types.typeAliases
+                                            , choiceTypes = currentModuleDeclarationTypesAndErrors.types.choiceTypes
+                                            , signatures =
+                                                declarationsInferred
+                                                    |> List.foldl
+                                                        (\declarationInferred moduleTypesSoFar ->
+                                                            moduleTypesSoFar
+                                                                |> FastDict.insert declarationInferred.name
+                                                                    declarationInferred.type_
+                                                        )
+                                                        currentModuleDeclarationTypesAndErrors.types.signatures
+                                            }
+                                    in
                                     { errors =
                                         currentModuleDeclarationTypesAndErrors.errors
                                             ++ soFar.errors
                                     , types =
                                         soFar.types
-                                            |> FastDict.insert
-                                                moduleName
-                                                { typeAliases = currentModuleDeclarationTypesAndErrors.types.typeAliases
-                                                , choiceTypes = currentModuleDeclarationTypesAndErrors.types.choiceTypes
-                                                , signatures =
-                                                    declarationsInferred
-                                                        |> List.foldl
-                                                            (\declarationInferred moduleTypesSoFar ->
-                                                                moduleTypesSoFar
-                                                                    |> FastDict.insert declarationInferred.name
-                                                                        declarationInferred.type_
-                                                            )
-                                                            currentModuleDeclarationTypesAndErrors.types.signatures
-                                                }
+                                            |> FastDict.insert moduleName
+                                                currentModuleDeclarationTypesIncludingUnannotated
                                     , inferred =
                                         { declarationsInferred = declarationsInferred
                                         , module_ = syntaxModule
                                         , moduleOriginLookup = moduleOriginLookup
+                                        , declarationTypes = currentModuleDeclarationTypesIncludingUnannotated
                                         }
                                             :: soFar.inferred
                                     }
@@ -5381,222 +5387,212 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         moduleInferred.module_.moduleDefinition
                                             |> Elm.Syntax.Node.value
                                             |> moduleHeaderName
-                                in
-                                case modulesInferred.types |> FastDict.get moduleName of
-                                    Nothing ->
-                                        { declarations = soFarAcrossModules.declarations
-                                        , errors =
-                                            "bug in elm-syntax-to-fsharp: couldn't find declaration types"
-                                                :: soFarAcrossModules.errors
-                                        }
 
-                                    Just currentModuleDeclarationTypes ->
-                                        let
-                                            createdModuleContext : ModuleContext
-                                            createdModuleContext =
-                                                moduleContextMerge
-                                                    (moduleInferred.module_.imports
-                                                        |> importsToModuleContext moduleMembers
-                                                    )
-                                                    (case moduleMembers |> FastDict.get moduleName of
-                                                        Nothing ->
-                                                            moduleContextEmpty
+                                    createdModuleContext : ModuleContext
+                                    createdModuleContext =
+                                        moduleContextMerge
+                                            (moduleInferred.module_.imports
+                                                |> importsToModuleContext moduleMembers
+                                            )
+                                            (case moduleMembers |> FastDict.get moduleName of
+                                                Nothing ->
+                                                    moduleContextEmpty
 
-                                                        Just moduleLocalNames ->
-                                                            { recordTypeAliases =
-                                                                FastDict.singleton moduleName
-                                                                    (moduleLocalNames.recordTypeAliases
-                                                                        |> FastDict.foldl
-                                                                            (\name fieldOrder soFar ->
-                                                                                soFar
-                                                                                    |> FastDict.insert name
-                                                                                        fieldOrder
-                                                                            )
-                                                                            FastDict.empty
+                                                Just moduleLocalNames ->
+                                                    { recordTypeAliases =
+                                                        FastDict.singleton moduleName
+                                                            (moduleLocalNames.recordTypeAliases
+                                                                |> FastDict.foldl
+                                                                    (\name fieldOrder soFar ->
+                                                                        soFar
+                                                                            |> FastDict.insert name
+                                                                                fieldOrder
                                                                     )
-                                                            , portIncomingLookup =
-                                                                moduleLocalNames.portsIncoming
-                                                                    |> FastSet.map (\portName -> ( moduleName, portName ))
-                                                            , portOutgoingLookup =
-                                                                moduleLocalNames.portsOutgoing
-                                                                    |> FastSet.map (\portName -> ( moduleName, portName ))
+                                                                    FastDict.empty
+                                                            )
+                                                    , portIncomingLookup =
+                                                        moduleLocalNames.portsIncoming
+                                                            |> FastSet.map (\portName -> ( moduleName, portName ))
+                                                    , portOutgoingLookup =
+                                                        moduleLocalNames.portsOutgoing
+                                                            |> FastSet.map (\portName -> ( moduleName, portName ))
+                                                    }
+                                            )
+                                in
+                                moduleInferred.module_.declarations
+                                    |> List.foldr
+                                        (\(Elm.Syntax.Node.Node _ declaration) soFar ->
+                                            case declaration of
+                                                Elm.Syntax.Declaration.FunctionDeclaration _ ->
+                                                    -- handled below
+                                                    soFar
+
+                                                Elm.Syntax.Declaration.AliasDeclaration syntaxTypeAliasDeclaration ->
+                                                    let
+                                                        typeAliasName : String
+                                                        typeAliasName =
+                                                            syntaxTypeAliasDeclaration.name |> Elm.Syntax.Node.value
+                                                    in
+                                                    case moduleInferred.declarationTypes.typeAliases |> FastDict.get typeAliasName of
+                                                        Nothing ->
+                                                            { declarations = soFar.declarations
+                                                            , errors =
+                                                                ("bug in elm-syntax-to-fsharp: failed to find transformed type alias declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ typeAliasName
+                                                                )
+                                                                    :: soFar.errors
                                                             }
-                                                    )
-                                        in
-                                        moduleInferred.module_.declarations
-                                            |> List.foldr
-                                                (\(Elm.Syntax.Node.Node _ declaration) soFar ->
-                                                    case declaration of
-                                                        Elm.Syntax.Declaration.FunctionDeclaration _ ->
-                                                            -- handled below
-                                                            soFar
 
-                                                        Elm.Syntax.Declaration.AliasDeclaration syntaxTypeAliasDeclaration ->
+                                                        Just inferredTypeAliasDeclaration ->
                                                             let
-                                                                typeAliasName : String
-                                                                typeAliasName =
-                                                                    syntaxTypeAliasDeclaration.name |> Elm.Syntax.Node.value
-                                                            in
-                                                            case currentModuleDeclarationTypes.typeAliases |> FastDict.get typeAliasName of
-                                                                Nothing ->
-                                                                    { declarations = soFar.declarations
-                                                                    , errors =
-                                                                        ("bug in elm-syntax-to-fsharp: failed to find transformed type alias declaration "
-                                                                            ++ moduleName
-                                                                            ++ "."
-                                                                            ++ typeAliasName
-                                                                        )
-                                                                            :: soFar.errors
+                                                                fsharpTypeAliasDeclaration :
+                                                                    { name : String
+                                                                    , parameters : List String
+                                                                    , type_ : FsharpType
                                                                     }
-
-                                                                Just inferredTypeAliasDeclaration ->
-                                                                    let
-                                                                        fsharpTypeAliasDeclaration :
-                                                                            { name : String
-                                                                            , parameters : List String
-                                                                            , type_ : FsharpType
-                                                                            }
-                                                                        fsharpTypeAliasDeclaration =
-                                                                            typeAliasDeclaration
-                                                                                { name = typeAliasName
-                                                                                , parameters = inferredTypeAliasDeclaration.parameters
-                                                                                , type_ = inferredTypeAliasDeclaration.type_
-                                                                                }
-                                                                    in
-                                                                    { errors = soFar.errors
-                                                                    , declarations =
-                                                                        { valuesAndFunctions = soFar.declarations.valuesAndFunctions
-                                                                        , choiceTypes = soFar.declarations.choiceTypes
-                                                                        , typeAliases =
-                                                                            soFar.declarations.typeAliases
-                                                                                |> FastDict.insert
-                                                                                    ({ moduleOrigin = moduleName
-                                                                                     , name = fsharpTypeAliasDeclaration.name
-                                                                                     }
-                                                                                        |> referenceToFsharpName
-                                                                                    )
-                                                                                    { parameters = fsharpTypeAliasDeclaration.parameters
-                                                                                    , type_ = fsharpTypeAliasDeclaration.type_
-                                                                                    }
+                                                                fsharpTypeAliasDeclaration =
+                                                                    typeAliasDeclaration
+                                                                        { name = typeAliasName
+                                                                        , parameters = inferredTypeAliasDeclaration.parameters
+                                                                        , type_ = inferredTypeAliasDeclaration.type_
                                                                         }
-                                                                    }
+                                                            in
+                                                            { errors = soFar.errors
+                                                            , declarations =
+                                                                { valuesAndFunctions = soFar.declarations.valuesAndFunctions
+                                                                , choiceTypes = soFar.declarations.choiceTypes
+                                                                , typeAliases =
+                                                                    soFar.declarations.typeAliases
+                                                                        |> FastDict.insert
+                                                                            ({ moduleOrigin = moduleName
+                                                                             , name = fsharpTypeAliasDeclaration.name
+                                                                             }
+                                                                                |> referenceToFsharpName
+                                                                            )
+                                                                            { parameters = fsharpTypeAliasDeclaration.parameters
+                                                                            , type_ = fsharpTypeAliasDeclaration.type_
+                                                                            }
+                                                                }
+                                                            }
 
-                                                        Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
+                                                Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
+                                                    let
+                                                        choiceTypeName : String
+                                                        choiceTypeName =
+                                                            syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value
+                                                    in
+                                                    case moduleInferred.declarationTypes.choiceTypes |> FastDict.get choiceTypeName of
+                                                        Nothing ->
+                                                            { declarations = soFar.declarations
+                                                            , errors =
+                                                                ("bug in elm-syntax-to-fsharp: failed to find transformed choice type declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ choiceTypeName
+                                                                )
+                                                                    :: soFar.errors
+                                                            }
+
+                                                        Just inferredChoiceAliasDeclaration ->
                                                             let
-                                                                choiceTypeName : String
-                                                                choiceTypeName =
-                                                                    syntaxChoiceTypeDeclaration.name |> Elm.Syntax.Node.value
+                                                                fsharpTypeAliasDeclaration :
+                                                                    { name : String
+                                                                    , parameters : List String
+                                                                    , variants : FastDict.Dict String (Maybe FsharpType)
+                                                                    }
+                                                                fsharpTypeAliasDeclaration =
+                                                                    choiceTypeDeclaration
+                                                                        { name = choiceTypeName
+                                                                        , parameters = inferredChoiceAliasDeclaration.parameters
+                                                                        , variants = inferredChoiceAliasDeclaration.variants
+                                                                        }
                                                             in
-                                                            case currentModuleDeclarationTypes.choiceTypes |> FastDict.get choiceTypeName of
-                                                                Nothing ->
-                                                                    { declarations = soFar.declarations
-                                                                    , errors =
-                                                                        ("bug in elm-syntax-to-fsharp: failed to find transformed choice type declaration "
-                                                                            ++ moduleName
-                                                                            ++ "."
-                                                                            ++ choiceTypeName
-                                                                        )
-                                                                            :: soFar.errors
-                                                                    }
-
-                                                                Just inferredChoiceAliasDeclaration ->
-                                                                    let
-                                                                        fsharpTypeAliasDeclaration :
-                                                                            { name : String
-                                                                            , parameters : List String
-                                                                            , variants : FastDict.Dict String (Maybe FsharpType)
+                                                            { errors = soFar.errors
+                                                            , declarations =
+                                                                { valuesAndFunctions = soFar.declarations.valuesAndFunctions
+                                                                , typeAliases = soFar.declarations.typeAliases
+                                                                , choiceTypes =
+                                                                    soFar.declarations.choiceTypes
+                                                                        |> FastDict.insert
+                                                                            ({ moduleOrigin = moduleName
+                                                                             , name = fsharpTypeAliasDeclaration.name
+                                                                             }
+                                                                                |> referenceToFsharpName
+                                                                            )
+                                                                            { parameters = fsharpTypeAliasDeclaration.parameters
+                                                                            , variants =
+                                                                                fsharpTypeAliasDeclaration.variants
+                                                                                    |> FastDict.foldl
+                                                                                        (\variantName maybeValue variantsSoFar ->
+                                                                                            variantsSoFar
+                                                                                                |> FastDict.insert
+                                                                                                    ({ moduleOrigin = moduleName
+                                                                                                     , name = variantName
+                                                                                                     }
+                                                                                                        |> referenceToFsharpName
+                                                                                                    )
+                                                                                                    maybeValue
+                                                                                        )
+                                                                                        FastDict.empty
                                                                             }
-                                                                        fsharpTypeAliasDeclaration =
-                                                                            choiceTypeDeclaration
-                                                                                { name = choiceTypeName
-                                                                                , parameters = inferredChoiceAliasDeclaration.parameters
-                                                                                , variants = inferredChoiceAliasDeclaration.variants
-                                                                                }
-                                                                    in
-                                                                    { errors = soFar.errors
-                                                                    , declarations =
-                                                                        { valuesAndFunctions = soFar.declarations.valuesAndFunctions
-                                                                        , typeAliases = soFar.declarations.typeAliases
-                                                                        , choiceTypes =
-                                                                            soFar.declarations.choiceTypes
-                                                                                |> FastDict.insert
-                                                                                    ({ moduleOrigin = moduleName
-                                                                                     , name = fsharpTypeAliasDeclaration.name
-                                                                                     }
-                                                                                        |> referenceToFsharpName
-                                                                                    )
-                                                                                    { parameters = fsharpTypeAliasDeclaration.parameters
-                                                                                    , variants =
-                                                                                        fsharpTypeAliasDeclaration.variants
-                                                                                            |> FastDict.foldl
-                                                                                                (\variantName maybeValue variantsSoFar ->
-                                                                                                    variantsSoFar
-                                                                                                        |> FastDict.insert
-                                                                                                            ({ moduleOrigin = moduleName
-                                                                                                             , name = variantName
-                                                                                                             }
-                                                                                                                |> referenceToFsharpName
-                                                                                                            )
-                                                                                                            maybeValue
-                                                                                                )
-                                                                                                FastDict.empty
-                                                                                    }
-                                                                        }
-                                                                    }
+                                                                }
+                                                            }
 
-                                                        Elm.Syntax.Declaration.PortDeclaration _ ->
-                                                            soFar
+                                                Elm.Syntax.Declaration.PortDeclaration _ ->
+                                                    soFar
 
-                                                        Elm.Syntax.Declaration.InfixDeclaration _ ->
-                                                            soFar
+                                                Elm.Syntax.Declaration.InfixDeclaration _ ->
+                                                    soFar
 
-                                                        Elm.Syntax.Declaration.Destructuring _ _ ->
-                                                            soFar
+                                                Elm.Syntax.Declaration.Destructuring _ _ ->
+                                                    soFar
+                                        )
+                                        (moduleInferred.declarationsInferred
+                                            |> List.foldl
+                                                (\valueOrFunctionDeclarationInferred soFarAcrossModulesWithInferredValeAndFunctionDeclarations ->
+                                                    case
+                                                        valueOrFunctionDeclarationInferred
+                                                            |> valueOrFunctionDeclaration
+                                                                { valueAndFunctionAnnotations = allValueAndFunctionAnnotations
+                                                                , recordTypeAliases = createdModuleContext.recordTypeAliases
+                                                                , portIncomingLookup = createdModuleContext.portIncomingLookup
+                                                                , portOutgoingLookup = createdModuleContext.portOutgoingLookup
+                                                                }
+                                                    of
+                                                        Ok fsharpValueOrFunctionDeclaration ->
+                                                            { errors = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
+                                                            , declarations =
+                                                                { typeAliases = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.typeAliases
+                                                                , choiceTypes = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.choiceTypes
+                                                                , valuesAndFunctions =
+                                                                    soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.valuesAndFunctions
+                                                                        |> FastDict.insert
+                                                                            ({ moduleOrigin = moduleName
+                                                                             , name = valueOrFunctionDeclarationInferred.name
+                                                                             }
+                                                                                |> referenceToFsharpName
+                                                                            )
+                                                                            fsharpValueOrFunctionDeclaration
+                                                                }
+                                                            }
+
+                                                        Err error ->
+                                                            { declarations = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations
+                                                            , errors =
+                                                                ("in value/function declaration "
+                                                                    ++ moduleName
+                                                                    ++ "."
+                                                                    ++ valueOrFunctionDeclarationInferred.name
+                                                                    ++ ": "
+                                                                    ++ error
+                                                                )
+                                                                    :: soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
+                                                            }
                                                 )
-                                                (moduleInferred.declarationsInferred
-                                                    |> List.foldl
-                                                        (\valueOrFunctionDeclarationInferred soFarAcrossModulesWithInferredValeAndFunctionDeclarations ->
-                                                            case
-                                                                valueOrFunctionDeclarationInferred
-                                                                    |> valueOrFunctionDeclaration
-                                                                        { valueAndFunctionAnnotations = allValueAndFunctionAnnotations
-                                                                        , recordTypeAliases = createdModuleContext.recordTypeAliases
-                                                                        , portIncomingLookup = createdModuleContext.portIncomingLookup
-                                                                        , portOutgoingLookup = createdModuleContext.portOutgoingLookup
-                                                                        }
-                                                            of
-                                                                Ok fsharpValueOrFunctionDeclaration ->
-                                                                    { errors = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
-                                                                    , declarations =
-                                                                        { typeAliases = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.typeAliases
-                                                                        , choiceTypes = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.choiceTypes
-                                                                        , valuesAndFunctions =
-                                                                            soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations.valuesAndFunctions
-                                                                                |> FastDict.insert
-                                                                                    ({ moduleOrigin = moduleName
-                                                                                     , name = valueOrFunctionDeclarationInferred.name
-                                                                                     }
-                                                                                        |> referenceToFsharpName
-                                                                                    )
-                                                                                    fsharpValueOrFunctionDeclaration
-                                                                        }
-                                                                    }
-
-                                                                Err error ->
-                                                                    { declarations = soFarAcrossModulesWithInferredValeAndFunctionDeclarations.declarations
-                                                                    , errors =
-                                                                        ("in value/function declaration "
-                                                                            ++ moduleName
-                                                                            ++ "."
-                                                                            ++ valueOrFunctionDeclarationInferred.name
-                                                                            ++ ": "
-                                                                            ++ error
-                                                                        )
-                                                                            :: soFarAcrossModulesWithInferredValeAndFunctionDeclarations.errors
-                                                                    }
-                                                        )
-                                                        soFarAcrossModules
-                                                )
+                                                soFarAcrossModules
+                                        )
                             )
                             { errors = []
                             , declarations =
