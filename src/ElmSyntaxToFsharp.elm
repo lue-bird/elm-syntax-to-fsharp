@@ -169,7 +169,7 @@ Contains variants, variant function and value declaration names.
 
 -}
 type alias ModuleContext =
-    { recordTypeAliasLookup :
+    { recordTypeAliases :
         FastDict.Dict
             -- module origin
             String
@@ -401,7 +401,7 @@ importsToModuleContext moduleExposes imports =
                 in
                 soFar
                     |> moduleContextMerge
-                        { recordTypeAliasLookup =
+                        { recordTypeAliases =
                             FastDict.singleton syntaxImport.moduleName
                                 importedModuleMembers.recordTypeAliases
                         , portIncomingLookup =
@@ -417,7 +417,7 @@ importsToModuleContext moduleExposes imports =
 
 moduleContextEmpty : ModuleContext
 moduleContextEmpty =
-    { recordTypeAliasLookup = FastDict.empty
+    { recordTypeAliases = FastDict.empty
     , portIncomingLookup = FastSet.empty
     , portOutgoingLookup = FastSet.empty
     }
@@ -445,10 +445,10 @@ exposesEmpty =
 
 moduleContextMerge : ModuleContext -> ModuleContext -> ModuleContext
 moduleContextMerge a b =
-    { recordTypeAliasLookup =
+    { recordTypeAliases =
         FastDict.union
-            a.recordTypeAliasLookup
-            b.recordTypeAliasLookup
+            a.recordTypeAliases
+            b.recordTypeAliases
     , portIncomingLookup =
         FastSet.union a.portIncomingLookup b.portIncomingLookup
     , portOutgoingLookup =
@@ -5170,9 +5170,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                     |> Elm.Syntax.Node.value
                                     |> moduleHeaderName
 
-                            _ =
-                                Debug.log "in module" moduleName
-
                             moduleOriginLookup : ElmSyntaxTypeInfer.ModuleOriginLookup
                             moduleOriginLookup =
                                 syntaxModule.imports
@@ -5704,7 +5701,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                     moduleContextEmpty
 
                                                 Just moduleLocalNames ->
-                                                    { recordTypeAliasLookup =
+                                                    { recordTypeAliases =
                                                         FastDict.singleton moduleName
                                                             (moduleLocalNames.recordTypeAliases
                                                                 |> FastDict.foldl
@@ -5829,7 +5826,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                         valueOrFunctionDeclarationInferred
                                                             |> valueOrFunctionDeclaration
                                                                 { valueAndFunctionAnnotations = allValueAndFunctionAnnotations
-                                                                , recordTypeAliasLookup = createdModuleContext.recordTypeAliasLookup
+                                                                , recordTypeAliases = createdModuleContext.recordTypeAliases
                                                                 , portIncomingLookup = createdModuleContext.portIncomingLookup
                                                                 , portOutgoingLookup = createdModuleContext.portOutgoingLookup
                                                                 }
@@ -6095,106 +6092,6 @@ patternIntroducedVariables inferredPattern =
                     FastSet.empty
 
 
-typeSetLocalToOrigin :
-    String
-    -> ElmSyntaxTypeInfer.Type
-    -> ElmSyntaxTypeInfer.Type
-typeSetLocalToOrigin moduleOrigin inferredType =
-    case inferredType of
-        ElmSyntaxTypeInfer.TypeVariable variable ->
-            ElmSyntaxTypeInfer.TypeVariable variable
-
-        ElmSyntaxTypeInfer.TypeNotVariable typeNotVariable ->
-            ElmSyntaxTypeInfer.TypeNotVariable
-                (typeNotVariableSetLocalToOrigin moduleOrigin typeNotVariable)
-
-
-{-| TODO remove because redundant
--}
-typeNotVariableSetLocalToOrigin :
-    String
-    -> ElmSyntaxTypeInfer.TypeNotVariable
-    -> ElmSyntaxTypeInfer.TypeNotVariable
-typeNotVariableSetLocalToOrigin moduleOrigin typeNotVariable =
-    case typeNotVariable of
-        ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
-            ElmSyntaxTypeInfer.TypeConstruct
-                { name = typeConstruct.name
-                , moduleOrigin =
-                    case typeConstruct.moduleOrigin of
-                        "" ->
-                            moduleOrigin
-
-                        aliasOrModuleName ->
-                            aliasOrModuleName
-                , arguments =
-                    typeConstruct.arguments
-                        |> List.map
-                            (\argument ->
-                                argument
-                                    |> typeSetLocalToOrigin moduleOrigin
-                            )
-                }
-
-        ElmSyntaxTypeInfer.TypeUnit ->
-            ElmSyntaxTypeInfer.TypeUnit
-
-        ElmSyntaxTypeInfer.TypeFunction parts ->
-            ElmSyntaxTypeInfer.TypeFunction
-                { input =
-                    parts.input
-                        |> typeSetLocalToOrigin moduleOrigin
-                , output =
-                    parts.output
-                        |> typeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.TypeTuple parts ->
-            ElmSyntaxTypeInfer.TypeTuple
-                { part0 =
-                    parts.part0
-                        |> typeSetLocalToOrigin moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> typeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.TypeTriple parts ->
-            ElmSyntaxTypeInfer.TypeTriple
-                { part0 =
-                    parts.part0
-                        |> typeSetLocalToOrigin moduleOrigin
-                , part1 =
-                    parts.part1
-                        |> typeSetLocalToOrigin moduleOrigin
-                , part2 =
-                    parts.part2
-                        |> typeSetLocalToOrigin moduleOrigin
-                }
-
-        ElmSyntaxTypeInfer.TypeRecord fields ->
-            ElmSyntaxTypeInfer.TypeRecord
-                (fields
-                    |> FastDict.map
-                        (\_ fieldValue ->
-                            fieldValue
-                                |> typeSetLocalToOrigin moduleOrigin
-                        )
-                )
-
-        ElmSyntaxTypeInfer.TypeRecordExtension typeRecordExtension ->
-            ElmSyntaxTypeInfer.TypeRecordExtension
-                { recordVariable = typeRecordExtension.recordVariable
-                , fields =
-                    typeRecordExtension.fields
-                        |> FastDict.map
-                            (\_ fieldValue ->
-                                fieldValue
-                                    |> typeSetLocalToOrigin moduleOrigin
-                            )
-                }
-
-
 generatedFsharpRecordTypeAliasName : List String -> String
 generatedFsharpRecordTypeAliasName recordFields =
     "Generated_" ++ (recordFields |> String.join "_")
@@ -6221,7 +6118,7 @@ valueOrFunctionDeclaration :
         FastDict.Dict
             ( String, String )
             Elm.Syntax.TypeAnnotation.TypeAnnotation
-    , recordTypeAliasLookup :
+    , recordTypeAliases :
         FastDict.Dict
             String
             (FastDict.Dict
@@ -6271,7 +6168,7 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
                 (syntaxDeclarationValueOrFunction.result
                     |> expression
                         { valueAndFunctionAnnotations = moduleContext.valueAndFunctionAnnotations
-                        , recordTypeAliasLookup = moduleContext.recordTypeAliasLookup
+                        , recordTypeAliases = moduleContext.recordTypeAliases
                         , portIncomingLookup = moduleContext.portIncomingLookup
                         , portOutgoingLookup = moduleContext.portOutgoingLookup
                         , variablesFromWithinDeclarationInScope =
@@ -6397,7 +6294,7 @@ expressionContextAddVariablesInScope :
             FastDict.Dict
                 ( String, String )
                 Elm.Syntax.TypeAnnotation.TypeAnnotation
-        , recordTypeAliasLookup :
+        , recordTypeAliases :
             FastDict.Dict
                 String
                 (FastDict.Dict
@@ -6413,7 +6310,7 @@ expressionContextAddVariablesInScope :
             FastDict.Dict
                 ( String, String )
                 Elm.Syntax.TypeAnnotation.TypeAnnotation
-        , recordTypeAliasLookup :
+        , recordTypeAliases :
             FastDict.Dict
                 String
                 (FastDict.Dict
@@ -6426,7 +6323,7 @@ expressionContextAddVariablesInScope :
         }
 expressionContextAddVariablesInScope additionalVariablesInScope context =
     { valueAndFunctionAnnotations = context.valueAndFunctionAnnotations
-    , recordTypeAliasLookup = context.recordTypeAliasLookup
+    , recordTypeAliases = context.recordTypeAliases
     , portIncomingLookup = context.portIncomingLookup
     , portOutgoingLookup = context.portOutgoingLookup
     , variablesFromWithinDeclarationInScope =
@@ -6441,7 +6338,7 @@ expression :
         FastDict.Dict
             ( String, String )
             Elm.Syntax.TypeAnnotation.TypeAnnotation
-    , recordTypeAliasLookup :
+    , recordTypeAliases :
         FastDict.Dict
             String
             (FastDict.Dict
@@ -6706,7 +6603,7 @@ expression context expressionTypedNode =
 
         ElmSyntaxTypeInfer.ExpressionReferenceRecordTypeAliasConstructorFunction reference ->
             case
-                context.recordTypeAliasLookup
+                context.recordTypeAliases
                     |> FastDict.get reference.moduleOrigin
                     |> Maybe.andThen (\byName -> byName |> FastDict.get reference.name)
             of
@@ -7523,7 +7420,7 @@ case_ :
         FastDict.Dict
             ( String, String )
             Elm.Syntax.TypeAnnotation.TypeAnnotation
-    , recordTypeAliasLookup :
+    , recordTypeAliases :
         FastDict.Dict
             String
             (FastDict.Dict
@@ -7575,7 +7472,7 @@ letDeclaration :
         FastDict.Dict
             ( String, String )
             Elm.Syntax.TypeAnnotation.TypeAnnotation
-    , recordTypeAliasLookup :
+    , recordTypeAliases :
         FastDict.Dict
             String
             (FastDict.Dict
@@ -7615,7 +7512,7 @@ letValueOrFunctionDeclaration :
         FastDict.Dict
             ( String, String )
             Elm.Syntax.TypeAnnotation.TypeAnnotation
-    , recordTypeAliasLookup :
+    , recordTypeAliases :
         FastDict.Dict
             String
             (FastDict.Dict
