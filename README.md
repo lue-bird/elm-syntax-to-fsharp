@@ -90,12 +90,13 @@ let main args =
 ```
 where `Elm.YourModule_yourFunction` is the transpiled elm function `Your.Module.yourFunction`. (If the value/function contains `number` type variables or extensible records, search for `Elm.YourModule_yourFunction__` to see the different specialized options)
 
-Here's some special types you can expect:
-  - elm `Basics.Int`s will be of type `int64`.
+You will find these types:
+  - elm `Float` → F# `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Char` → `Map<float, char>`, `Result Float Char` → `Result<char, float>`, `Order` → `Elm.Basics_Order` (enum)
+  - elm `Int`s will be of type `int64`.
     You can create them explicitly by appending L to an int literal (`42L`)
     or simply using any `int` (F# implicitly converts them)
     and unwrap them to an `int` with `int yourInt64`
-  - elm `String.String`s will be of type `Elm.StringRope`.
+  - elm `String`s will be of type `Elm.StringRope`.
     You can create them with `Elm.StringRopeOne yourFsharpString`
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
   - elm records like `{ a : Float, b : Float }` will be provided as
@@ -116,8 +117,6 @@ Here's some special types you can expect:
   - elm `Regex` will be of type [`System.Text.RegularExpressions.Regex`](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-9.0).
     Create them like you would in elm with `Elm.Regex_fromString`, `Elm.Regex_fromStringWith` or `Elm.Regex_never`
   - elm-exploration/linear-algebra's `Math.Matrix2.Vec2`, `Math.Matrix3.Vec3`, `Math.Matrix4.Vec4`, `Math.Matrix4.Mat4` will be of type [`System.Numerics.Vector2`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector2?view=net-9.0), [`System.Numerics.Vector3`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector3?view=net-9.0), [`System.Numerics.Vector4`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector4?view=net-9.0), [`System.Numerics.Matrix4x4`](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.matrix4x4?view=net-9.0)
-
-The rest is more obvious: `Float` → `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Char` → `Map<float, char>`, `Result Float Char` → `Result<char, float>`, `Order` → `Elm.Basics_Order` (enum).
 
 Compile the resulting F# to an executable:
 ```bash
