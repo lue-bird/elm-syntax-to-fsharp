@@ -4850,22 +4850,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         { module_ : Elm.Syntax.File.File
                         , moduleOriginLookup : ElmSyntaxTypeInfer.ModuleOriginLookup
                         , declarationTypes : ElmSyntaxTypeInfer.ModuleTypes
-                        , declarationsInferred :
-                            List
-                                { name : String
-                                , nameRange : Elm.Syntax.Range.Range
-                                , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
-                                , signature :
-                                    Maybe
-                                        { range : Elm.Syntax.Range.Range
-                                        , nameRange : Elm.Syntax.Range.Range
-                                        , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
-                                        , annotationTypeRange : Elm.Syntax.Range.Range
-                                        }
-                                , parameters : List (ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern)
-                                , result : ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Expression
-                                , type_ : ElmSyntaxTypeInfer.Type
-                                }
+                        , declarationsInferred : List InferredDeclaration
                         }
                 }
         syntaxModulesInferredOrError =
@@ -5843,6 +5828,23 @@ moduleHeaderName moduleHeader =
         |> String.join "."
 
 
+type alias InferredDeclaration =
+    { name : String
+    , nameRange : Elm.Syntax.Range.Range
+    , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
+    , signature :
+        Maybe
+            { range : Elm.Syntax.Range.Range
+            , nameRange : Elm.Syntax.Range.Range
+            , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
+            , annotationTypeRange : Elm.Syntax.Range.Range
+            }
+    , parameters : List (ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern)
+    , result : ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Expression
+    , type_ : ElmSyntaxTypeInfer.Type
+    }
+
+
 valueOrFunctionDeclaration :
     { valueAndFunctionAnnotations :
         FastDict.Dict
@@ -5862,21 +5864,7 @@ valueOrFunctionDeclaration :
     , portIncomingLookup : FastSet.Set ( String, String )
     , portOutgoingLookup : FastSet.Set ( String, String )
     }
-    ->
-        { name : String
-        , nameRange : Elm.Syntax.Range.Range
-        , documentation : Maybe { content : String, range : Elm.Syntax.Range.Range }
-        , signature :
-            Maybe
-                { range : Elm.Syntax.Range.Range
-                , nameRange : Elm.Syntax.Range.Range
-                , annotationType : Elm.Syntax.TypeAnnotation.TypeAnnotation
-                , annotationTypeRange : Elm.Syntax.Range.Range
-                }
-        , parameters : List (ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern)
-        , result : ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Expression
-        , type_ : ElmSyntaxTypeInfer.Type
-        }
+    -> InferredDeclaration
     ->
         Result
             String
