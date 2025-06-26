@@ -1379,12 +1379,7 @@ type_ : ElmSyntaxTypeInfer.Type -> FsharpType
 type_ inferredType =
     case inferredType of
         ElmSyntaxTypeInfer.TypeVariable variable ->
-            if variable.name |> String.startsWith "number" then
-                -- assume Float
-                fsharpTypeFloat
-
-            else
-                FsharpTypeVariable (variable.name |> variableNameDisambiguateFromFsharpKeywords)
+            FsharpTypeVariable (variable.name |> variableNameDisambiguateFromFsharpKeywords)
 
         ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
             typeNotVariable inferredTypeNotVariable
@@ -2735,23 +2730,12 @@ referenceToCoreFsharp reference =
                 "negate" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            if typeFunction.input == inferredTypeBasicsFloat then
-                                Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
+                            case typeFunction.input |> inferredTypeCheckOrGuessIntOrFloat of
+                                FloatNotInt ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
 
-                            else
-                                case typeFunction.input of
-                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                        if typeVariable.name |> String.startsWith "number" then
-                                            -- assume Float
-                                            Just { moduleOrigin = Nothing, name = "Basics_fnegate" }
-
-                                        else
-                                            -- assume Int
-                                            Just { moduleOrigin = Nothing, name = "Basics_inegate" }
-
-                                    _ ->
-                                        -- assume Int
-                                        Just { moduleOrigin = Nothing, name = "Basics_inegate" }
+                                IntNotFloat ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_inegate" }
 
                         _ ->
                             -- assume Int
@@ -2760,23 +2744,12 @@ referenceToCoreFsharp reference =
                 "abs" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            if typeFunction.input == inferredTypeBasicsFloat then
-                                Just { moduleOrigin = Nothing, name = "Basics_fabs" }
+                            case typeFunction.input |> inferredTypeCheckOrGuessIntOrFloat of
+                                FloatNotInt ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_fabs" }
 
-                            else
-                                case typeFunction.input of
-                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                        if typeVariable.name |> String.startsWith "number" then
-                                            -- assume Float
-                                            Just { moduleOrigin = Nothing, name = "Basics_fabs" }
-
-                                        else
-                                            -- assume Int
-                                            Just { moduleOrigin = Nothing, name = "Basics_iabs" }
-
-                                    _ ->
-                                        -- assume Int
-                                        Just { moduleOrigin = Nothing, name = "Basics_iabs" }
+                                IntNotFloat ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_iabs" }
 
                         _ ->
                             -- assume Int
@@ -2842,23 +2815,12 @@ referenceToCoreFsharp reference =
                 "clamp" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            if typeFunction.input == inferredTypeBasicsFloat then
-                                Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
+                            case typeFunction.input |> inferredTypeCheckOrGuessIntOrFloat of
+                                FloatNotInt ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
 
-                            else
-                                case typeFunction.input of
-                                    ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                        if typeVariable.name |> String.startsWith "number" then
-                                            -- assume Float
-                                            Just { moduleOrigin = Nothing, name = "Basics_fclamp" }
-
-                                        else
-                                            -- assume Int
-                                            Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
-
-                                    _ ->
-                                        -- assume Int
-                                        Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
+                                IntNotFloat ->
+                                    Just { moduleOrigin = Nothing, name = "Basics_iclamp" }
 
                         _ ->
                             -- assume Int
@@ -3082,23 +3044,12 @@ referenceToCoreFsharp reference =
                 "product" ->
                     case reference.type_ of
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                            if typeFunction.output == inferredTypeBasicsFloat then
-                                Just { moduleOrigin = Nothing, name = "List_fproduct" }
+                            case typeFunction.output |> inferredTypeCheckOrGuessIntOrFloat of
+                                FloatNotInt ->
+                                    Just { moduleOrigin = Nothing, name = "List_fproduct" }
 
-                            else
-                                case typeFunction.output of
-                                    ElmSyntaxTypeInfer.TypeVariable outputTypeVariable ->
-                                        if outputTypeVariable.name |> String.startsWith "number" then
-                                            -- assume Float
-                                            Just { moduleOrigin = Nothing, name = "List_fproduct" }
-
-                                        else
-                                            -- assume Int
-                                            Just { moduleOrigin = Nothing, name = "List_iproduct" }
-
-                                    _ ->
-                                        -- assume Int
-                                        Just { moduleOrigin = Nothing, name = "List_iproduct" }
+                                IntNotFloat ->
+                                    Just { moduleOrigin = Nothing, name = "List_iproduct" }
 
                         _ ->
                             -- assume Int
@@ -6093,23 +6044,12 @@ expression context expressionTypedNode =
             Ok FsharpExpressionUnit
 
         ElmSyntaxTypeInfer.ExpressionInteger intValue ->
-            if expressionTypedNode.type_ == inferredTypeBasicsFloat then
-                Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
+            case expressionTypedNode.type_ |> inferredTypeCheckOrGuessIntOrFloat of
+                FloatNotInt ->
+                    Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
 
-            else
-                case expressionTypedNode.type_ of
-                    ElmSyntaxTypeInfer.TypeVariable variable ->
-                        if variable.name |> String.startsWith "number" then
-                            -- assume Float
-                            Ok (FsharpExpressionFloat (intValue.value |> Basics.toFloat))
-
-                        else
-                            -- assume Int
-                            Ok (FsharpExpressionInt64 intValue.value)
-
-                    _ ->
-                        -- assume Int
-                        Ok (FsharpExpressionInt64 intValue.value)
+                IntNotFloat ->
+                    Ok (FsharpExpressionInt64 intValue.value)
 
         ElmSyntaxTypeInfer.ExpressionFloat floatValue ->
             Ok (FsharpExpressionFloat floatValue)
@@ -6417,7 +6357,7 @@ expression context expressionTypedNode =
                         )
 
                 Nothing ->
-                    if context.portOutgoingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                    if context.portOutgoingLookup |> FastSet.member ( reference.moduleOrigin, reference.name ) then
                         Ok
                             (FsharpExpressionCall
                                 { called =
@@ -6432,7 +6372,7 @@ expression context expressionTypedNode =
                                 }
                             )
 
-                    else if context.portIncomingLookup |> FastSet.member ( reference.qualification, reference.name ) then
+                    else if context.portIncomingLookup |> FastSet.member ( reference.moduleOrigin, reference.name ) then
                         Ok
                             (FsharpExpressionCall
                                 { called =
@@ -6523,23 +6463,12 @@ expression context expressionTypedNode =
                             FsharpExpressionCall
                                 { called =
                                     FsharpExpressionReference
-                                        (if inNegationNode.type_ == inferredTypeBasicsFloat then
-                                            referenceBasicsFnegate
+                                        (case inNegationNode.type_ |> inferredTypeCheckOrGuessIntOrFloat of
+                                            FloatNotInt ->
+                                                referenceBasicsFnegate
 
-                                         else
-                                            case inNegationNode.type_ of
-                                                ElmSyntaxTypeInfer.TypeVariable typeVariable ->
-                                                    if typeVariable.name |> String.startsWith "number" then
-                                                        -- assume Float
-                                                        referenceBasicsFnegate
-
-                                                    else
-                                                        -- assume Int
-                                                        referenceBasicsInegate
-
-                                                _ ->
-                                                    -- assume Int
-                                                    referenceBasicsInegate
+                                            IntNotFloat ->
+                                                referenceBasicsInegate
                                         )
                                 , arguments = [ nonLiteralNumberInNegation ]
                                 }
@@ -7352,23 +7281,12 @@ expressionOperatorToFsharpFunctionReference operator =
         "^" ->
             case operator.type_ of
                 ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
-                    if typeFunction.input == inferredTypeBasicsFloat then
-                        okReferenceFpow
+                    case typeFunction.input |> inferredTypeCheckOrGuessIntOrFloat of
+                        FloatNotInt ->
+                            okReferenceFpow
 
-                    else
-                        case typeFunction.input of
-                            ElmSyntaxTypeInfer.TypeVariable inputTypeVariable ->
-                                if inputTypeVariable.name |> String.startsWith "number" then
-                                    -- assume Float
-                                    okReferenceFpow
-
-                                else
-                                    -- assume Int
-                                    okReferenceIpow
-
-                            _ ->
-                                -- assume Int
-                                okReferenceIpow
+                        IntNotFloat ->
+                            okReferenceIpow
 
                 _ ->
                     -- assume Int
@@ -7441,6 +7359,61 @@ expressionOperatorToFsharpFunctionReference operator =
 
         unknownOrUnsupportedOperator ->
             Err ("unknown/unsupported operator " ++ unknownOrUnsupportedOperator)
+
+
+type IntOrFloat
+    = IntNotFloat
+    | FloatNotInt
+
+
+inferredTypeCheckOrGuessIntOrFloat : ElmSyntaxTypeInfer.Type -> IntOrFloat
+inferredTypeCheckOrGuessIntOrFloat inferredType =
+    if inferredType == inferredTypeBasicsFloat then
+        FloatNotInt
+
+    else if inferredType == inferredTypeBasicsInt then
+        IntNotFloat
+
+    else
+        case inferredType of
+            ElmSyntaxTypeInfer.TypeVariable inputTypeVariable ->
+                if inputTypeVariable.name |> String.startsWith "number" then
+                    -- assume Float
+                    FloatNotInt
+
+                else
+                    -- assume Int
+                    IntNotFloat
+
+            ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
+                case inferredTypeNotVariable of
+                    ElmSyntaxTypeInfer.TypeConstruct _ ->
+                        -- TODO de-alias
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeUnit ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeTuple _ ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeTriple _ ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeRecord _ ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeRecordExtension _ ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
+
+                    ElmSyntaxTypeInfer.TypeFunction _ ->
+                        -- incorrect type inference, assume Float
+                        IntNotFloat
 
 
 okReferenceIpow : Result error_ { moduleOrigin : Maybe String, name : String }
@@ -14241,60 +14214,60 @@ elmKernelParserTypes =
             FastDict.fromList
                 [ ( "isSubString"
                   , inferredTypeFunction
-                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
-                                { part0 = typeInt
-                                , part1 = typeInt
-                                , part2 = typeInt
+                                { part0 = inferredTypeBasicsInt
+                                , part1 = inferredTypeBasicsInt
+                                , part2 = inferredTypeBasicsInt
                                 }
                             )
                         )
                   )
                 , ( "isSubChar"
                   , inferredTypeFunction
-                        [ inferredTypeFunction [ typeChar ] typeBool, typeInt, typeString ]
-                        typeInt
+                        [ inferredTypeFunction [ typeChar ] typeBool, inferredTypeBasicsInt, typeString ]
+                        inferredTypeBasicsInt
                   )
                 , ( "isAsciiCode"
                   , inferredTypeFunction
-                        [ typeInt, typeInt, typeString ]
+                        [ inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         typeBool
                   )
                 , ( "chompBase10"
                   , inferredTypeFunction
-                        [ typeInt, typeString ]
-                        typeInt
+                        [ inferredTypeBasicsInt, typeString ]
+                        inferredTypeBasicsInt
                   )
                 , ( "consumeBase"
-                  , inferredTypeFunction [ typeInt, typeInt, typeString ]
+                  , inferredTypeFunction [ inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTuple
-                                { part0 = typeInt
-                                , part1 = typeInt
+                                { part0 = inferredTypeBasicsInt
+                                , part1 = inferredTypeBasicsInt
                                 }
                             )
                         )
                   )
                 , ( "consumeBase16"
                   , inferredTypeFunction
-                        [ typeInt, typeString ]
+                        [ inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTuple
-                                { part0 = typeInt
-                                , part1 = typeInt
+                                { part0 = inferredTypeBasicsInt
+                                , part1 = inferredTypeBasicsInt
                                 }
                             )
                         )
                   )
                 , ( "findSubString"
                   , inferredTypeFunction
-                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
-                                { part0 = typeInt
-                                , part1 = typeInt
-                                , part2 = typeInt
+                                { part0 = inferredTypeBasicsInt
+                                , part1 = inferredTypeBasicsInt
+                                , part2 = inferredTypeBasicsInt
                                 }
                             )
                         )
@@ -14329,12 +14302,12 @@ elmKernelUrlTypes =
                   )
                 , ( "findSubString"
                   , inferredTypeFunction
-                        [ typeString, typeInt, typeInt, typeInt, typeString ]
+                        [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
-                                { part0 = typeInt
-                                , part1 = typeInt
-                                , part2 = typeInt
+                                { part0 = inferredTypeBasicsInt
+                                , part1 = inferredTypeBasicsInt
+                                , part2 = inferredTypeBasicsInt
                                 }
                             )
                         )
@@ -14375,8 +14348,8 @@ typeBool =
         )
 
 
-typeInt : ElmSyntaxTypeInfer.Type
-typeInt =
+inferredTypeBasicsInt : ElmSyntaxTypeInfer.Type
+inferredTypeBasicsInt =
     ElmSyntaxTypeInfer.TypeNotVariable typeNotVariableBasicsInt
 
 
