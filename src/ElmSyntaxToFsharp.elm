@@ -523,6 +523,8 @@ implicitImports =
                 , "always"
                 , "Never"
                 , "never"
+                , -- future keywords
+                  "constraint"
                 ]
       }
     , { moduleName = "List"
@@ -1582,16 +1584,16 @@ printFsharpTypeTuple parts =
     let
         part0Print : Print
         part0Print =
-            parts.part0 |> printFsharpTypeNotParenthesized
+            parts.part0 |> printFsharpTypeParenthesizedIfSpaceSeparated
 
         part1Print : Print
         part1Print =
-            parts.part1 |> printFsharpTypeNotParenthesized
+            parts.part1 |> printFsharpTypeParenthesizedIfSpaceSeparated
 
         part2UpPrints : List Print
         part2UpPrints =
             parts.part2Up
-                |> List.map printFsharpTypeNotParenthesized
+                |> List.map printFsharpTypeParenthesizedIfSpaceSeparated
     in
     printExactlyParenOpeningStructParenOpeningLinebreakIndentedSpaceSpace
         |> Print.followedBy
@@ -4832,6 +4834,50 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                         { moduleName = moduleName
                                         , moduleOriginLookup = moduleOriginLookup
                                         }
+
+                            typeConstructModuleOriginLookup :
+                                FastDict.Dict
+                                    {- qualification -} String
+                                    (FastDict.Dict
+                                        {- name -} String
+                                        String
+                                    )
+                            typeConstructModuleOriginLookup =
+                                moduleOriginLookup.typeConstructs
+                                    |> FastDict.update ""
+                                        (\maybeExistingExposedTypeConstructs ->
+                                            FastDict.union
+                                                (currentModuleDeclarationTypesAndErrors.types.typeAliases
+                                                    |> FastDict.map (\_ _ -> moduleName)
+                                                )
+                                                (currentModuleDeclarationTypesAndErrors.types.choiceTypes
+                                                    |> FastDict.foldl
+                                                        (\choiceTypeName _ typeConstructModuleOriginLookupSoFar ->
+                                                            typeConstructModuleOriginLookupSoFar
+                                                                |> FastDict.insert choiceTypeName moduleName
+                                                        )
+                                                        (maybeExistingExposedTypeConstructs
+                                                            |> Maybe.withDefault FastDict.empty
+                                                        )
+                                                )
+                                                |> Just
+                                        )
+
+                            typeAliasesAcrossModulesSoFar :
+                                FastDict.Dict
+                                    {- module origin -} String
+                                    (FastDict.Dict
+                                        {- name -} String
+                                        { parameters : List String
+                                        , recordFieldOrder : Maybe (List String)
+                                        , type_ : ElmSyntaxTypeInfer.Type
+                                        }
+                                    )
+                            typeAliasesAcrossModulesSoFar =
+                                soFar.types
+                                    |> FastDict.map (\_ moduleTypes -> moduleTypes.typeAliases)
+                                    |> FastDict.insert moduleName
+                                        currentModuleDeclarationTypesAndErrors.types.typeAliases
                         in
                         syntaxModule.declarations
                             |> List.concatMap
@@ -4848,7 +4894,10 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                         specializedTypes =
                                                             signature.typeAnnotation
                                                                 |> syntaxTypeSplitIntoSpecializedFsharpTypes
-                                                                    allFsharpRecords
+                                                                    { allFsharpRecords = allFsharpRecords
+                                                                    , typeConstructModuleOriginLookup = typeConstructModuleOriginLookup
+                                                                    , typeAliases = typeAliasesAcrossModulesSoFar
+                                                                    }
                                                     in
                                                     if specializedTypes |> FastDict.isEmpty then
                                                         [ syntaxValueOrFunctionDeclaration ]
@@ -8059,10 +8108,23 @@ type FsharpTypeVariableSpecialization
 
 
 syntaxTypeSplitIntoSpecializedFsharpTypes :
-    FastSet.Set (List String)
+    { allFsharpRecords : FastSet.Set (List String)
+    , typeAliases :
+        FastDict.Dict
+            {- module origin -} String
+            (FastDict.Dict
+                {- name -} String
+                { parameters : List String
+                , recordFieldOrder : Maybe (List String)
+                , type_ : ElmSyntaxTypeInfer.Type
+                }
+            )
+    , typeConstructModuleOriginLookup :
+        FastDict.Dict String (FastDict.Dict String String)
+    }
     -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
     -> FastDict.Dict String (List FsharpTypeVariableSpecialization)
-syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords (Elm.Syntax.Node.Node _ syntaxType) =
+syntaxTypeSplitIntoSpecializedFsharpTypes context (Elm.Syntax.Node.Node syntaxTypeRange syntaxType) =
     -- IGNORE TCO
     case syntaxType of
         Elm.Syntax.TypeAnnotation.Unit ->
@@ -8082,31 +8144,65 @@ syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords (Elm.Syntax.Node.Node
             parts
                 |> listMapToFastDictsAndUnify
                     (\part ->
-                        part |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords
+                        part |> syntaxTypeSplitIntoSpecializedFsharpTypes context
                     )
 
-        Elm.Syntax.TypeAnnotation.Typed _ arguments ->
-            arguments
-                |> listMapToFastDictsAndUnify
-                    (\argument ->
-                        argument |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords
-                    )
+        Elm.Syntax.TypeAnnotation.Typed (Elm.Syntax.Node.Node _ ( qualificationDotSeparated, name )) arguments ->
+            case
+                context.typeConstructModuleOriginLookup
+                    |> FastDict.get (qualificationDotSeparated |> String.join ".")
+                    |> Maybe.andThen (\byName -> byName |> FastDict.get name)
+            of
+                Just moduleOrigin ->
+                    case
+                        context.typeAliases
+                            |> FastDict.get moduleOrigin
+                            |> Maybe.andThen (\byName -> byName |> FastDict.get name)
+                    of
+                        Just aliasedType ->
+                            syntaxTypeSplitIntoSpecializedFsharpTypes context
+                                (aliasedType.type_
+                                    |> inferredTypeToSyntax syntaxTypeRange
+                                    |> typeNodeExpand
+                                        (listFoldl2From FastDict.empty
+                                            aliasedType.parameters
+                                            arguments
+                                            (\parameter (Elm.Syntax.Node.Node _ argument) soFar ->
+                                                soFar |> FastDict.insert parameter argument
+                                            )
+                                        )
+                                )
+
+                        Nothing ->
+                            -- choice type
+                            arguments
+                                |> listMapToFastDictsAndUnify
+                                    (\argument ->
+                                        argument |> syntaxTypeSplitIntoSpecializedFsharpTypes context
+                                    )
+
+                Nothing ->
+                    arguments
+                        |> listMapToFastDictsAndUnify
+                            (\argument ->
+                                argument |> syntaxTypeSplitIntoSpecializedFsharpTypes context
+                            )
 
         Elm.Syntax.TypeAnnotation.Record fields ->
             fields
                 |> listMapToFastDictsAndUnify
                     (\(Elm.Syntax.Node.Node _ ( _, value )) ->
-                        value |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords
+                        value |> syntaxTypeSplitIntoSpecializedFsharpTypes context
                     )
 
         Elm.Syntax.TypeAnnotation.GenericRecord (Elm.Syntax.Node.Node _ recordVariable) (Elm.Syntax.Node.Node _ fields) ->
             fields
                 |> listMapToFastDictsAndUnify
                     (\(Elm.Syntax.Node.Node _ ( _, value )) ->
-                        value |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords
+                        value |> syntaxTypeSplitIntoSpecializedFsharpTypes context
                     )
                 |> FastDict.insert recordVariable
-                    (allFsharpRecords
+                    (context.allFsharpRecords
                         |> FastSet.foldl
                             (\fsharpRecord fsharpRecordsThatContainAllSyntaxFieldsSoFar ->
                                 if
@@ -8130,8 +8226,286 @@ syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords (Elm.Syntax.Node.Node
 
         Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation inType outType ->
             FastDict.union
-                (inType |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords)
-                (outType |> syntaxTypeSplitIntoSpecializedFsharpTypes allFsharpRecords)
+                (inType |> syntaxTypeSplitIntoSpecializedFsharpTypes context)
+                (outType |> syntaxTypeSplitIntoSpecializedFsharpTypes context)
+
+
+listFoldl2From :
+    state
+    -> List a
+    -> List b
+    -> (a -> b -> state -> state)
+    -> state
+listFoldl2From initialState aList bList reduce =
+    case aList of
+        [] ->
+            initialState
+
+        aHead :: aTail ->
+            case bList of
+                [] ->
+                    initialState
+
+                bHead :: bTail ->
+                    listFoldl2From
+                        (reduce aHead bHead initialState)
+                        aTail
+                        bTail
+                        reduce
+
+
+typeNodeExpand :
+    FastDict.Dict String Elm.Syntax.TypeAnnotation.TypeAnnotation
+    -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
+    -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
+typeNodeExpand expansions syntaxTypeNode =
+    syntaxTypeNode
+        |> Elm.Syntax.Node.map
+            (\syntaxType ->
+                syntaxType |> typeExpand expansions
+            )
+
+
+{-| *Caution!* only use when resulting type construct qualification does not matter
+-}
+inferredTypeToSyntax :
+    Elm.Syntax.Range.Range
+    -> ElmSyntaxTypeInfer.Type
+    -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
+inferredTypeToSyntax rootRange inferredType =
+    case inferredType of
+        ElmSyntaxTypeInfer.TypeVariable variable ->
+            Elm.Syntax.Node.Node rootRange
+                (Elm.Syntax.TypeAnnotation.GenericType variable.name)
+
+        ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
+            Elm.Syntax.Node.Node rootRange
+                (inferredTypeNotVariableToSyntax rootRange inferredTypeNotVariable)
+
+
+{-| *Caution!* only use when resulting type construct qualification does not matter
+-}
+inferredTypeNotVariableToSyntax :
+    Elm.Syntax.Range.Range
+    -> ElmSyntaxTypeInfer.TypeNotVariable
+    -> Elm.Syntax.TypeAnnotation.TypeAnnotation
+inferredTypeNotVariableToSyntax rootRange inferredTypeNotVariable =
+    case inferredTypeNotVariable of
+        ElmSyntaxTypeInfer.TypeUnit ->
+            Elm.Syntax.TypeAnnotation.Unit
+
+        ElmSyntaxTypeInfer.TypeFunction typeFunction ->
+            Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation
+                (typeFunction.input |> inferredTypeToSyntax rootRange)
+                (typeFunction.output |> inferredTypeToSyntax rootRange)
+
+        ElmSyntaxTypeInfer.TypeTuple parts ->
+            Elm.Syntax.TypeAnnotation.Tupled
+                [ parts.part0 |> inferredTypeToSyntax rootRange
+                , parts.part1 |> inferredTypeToSyntax rootRange
+                ]
+
+        ElmSyntaxTypeInfer.TypeTriple parts ->
+            Elm.Syntax.TypeAnnotation.Tupled
+                [ parts.part0 |> inferredTypeToSyntax rootRange
+                , parts.part1 |> inferredTypeToSyntax rootRange
+                , parts.part2 |> inferredTypeToSyntax rootRange
+                ]
+
+        ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
+            Elm.Syntax.TypeAnnotation.Typed
+                (Elm.Syntax.Node.Node rootRange
+                    ( typeConstruct.moduleOrigin |> String.split ".", typeConstruct.name )
+                )
+                (typeConstruct.arguments
+                    |> List.map
+                        (\argument ->
+                            argument |> inferredTypeToSyntax rootRange
+                        )
+                )
+
+        ElmSyntaxTypeInfer.TypeRecord fields ->
+            Elm.Syntax.TypeAnnotation.Record
+                (fields
+                    |> FastDict.foldr
+                        (\fieldName fieldValue soFar ->
+                            Elm.Syntax.Node.Node rootRange
+                                ( Elm.Syntax.Node.Node rootRange fieldName
+                                , fieldValue |> inferredTypeToSyntax rootRange
+                                )
+                                :: soFar
+                        )
+                        []
+                )
+
+        ElmSyntaxTypeInfer.TypeRecordExtension typeRecordExtension ->
+            Elm.Syntax.TypeAnnotation.GenericRecord
+                (Elm.Syntax.Node.Node rootRange typeRecordExtension.recordVariable.name)
+                (Elm.Syntax.Node.Node rootRange
+                    (typeRecordExtension.fields
+                        |> FastDict.foldr
+                            (\fieldName fieldValue soFar ->
+                                Elm.Syntax.Node.Node rootRange
+                                    ( Elm.Syntax.Node.Node rootRange fieldName
+                                    , fieldValue |> inferredTypeToSyntax rootRange
+                                    )
+                                    :: soFar
+                            )
+                            []
+                    )
+                )
+
+
+{-| Caution! This is only an approximation that's good enough for
+resolving type aliases for specialization but not much else.
+
+Resulting ranges and type construct qualifications can also be all over the place, don't rely on them
+
+-}
+typeExpand :
+    FastDict.Dict String Elm.Syntax.TypeAnnotation.TypeAnnotation
+    -> Elm.Syntax.TypeAnnotation.TypeAnnotation
+    -> Elm.Syntax.TypeAnnotation.TypeAnnotation
+typeExpand expansions syntaxType =
+    -- IGNORE TCO
+    case syntaxType of
+        Elm.Syntax.TypeAnnotation.Unit ->
+            Elm.Syntax.TypeAnnotation.Unit
+
+        Elm.Syntax.TypeAnnotation.GenericType variable ->
+            case expansions |> FastDict.get variable of
+                Nothing ->
+                    Elm.Syntax.TypeAnnotation.GenericType variable
+
+                Just expanded ->
+                    expanded
+
+        Elm.Syntax.TypeAnnotation.Tupled parts ->
+            Elm.Syntax.TypeAnnotation.Tupled
+                (parts
+                    |> List.map
+                        (\part ->
+                            part |> typeNodeExpand expansions
+                        )
+                )
+
+        Elm.Syntax.TypeAnnotation.Typed typeReference arguments ->
+            Elm.Syntax.TypeAnnotation.Typed typeReference
+                (arguments
+                    |> List.map
+                        (\argument ->
+                            argument |> typeNodeExpand expansions
+                        )
+                )
+
+        Elm.Syntax.TypeAnnotation.Record fields ->
+            Elm.Syntax.TypeAnnotation.Record
+                (fields
+                    |> List.map
+                        (\fieldNode ->
+                            fieldNode
+                                |> Elm.Syntax.Node.map
+                                    (\( nameNode, value ) ->
+                                        ( nameNode, value |> typeNodeExpand expansions )
+                                    )
+                        )
+                )
+
+        Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode (Elm.Syntax.Node.Node fieldsRange fields) ->
+            let
+                (Elm.Syntax.Node.Node recordVariableRange recordVariable) =
+                    recordVariableNode
+
+                fieldsExpanded :
+                    List
+                        (Elm.Syntax.Node.Node
+                            ( Elm.Syntax.Node.Node String
+                            , Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
+                            )
+                        )
+                fieldsExpanded =
+                    fields
+                        |> List.map
+                            (\fieldNode ->
+                                fieldNode
+                                    |> Elm.Syntax.Node.map
+                                        (\( nameNode, value ) ->
+                                            ( nameNode, value |> typeNodeExpand expansions )
+                                        )
+                            )
+            in
+            case expansions |> FastDict.get recordVariable of
+                Nothing ->
+                    Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
+                        (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+                Just expanded ->
+                    case expanded of
+                        Elm.Syntax.TypeAnnotation.Unit ->
+                            -- invalid expansion
+                            Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
+                                (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+                        Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation _ _ ->
+                            -- invalid expansion
+                            Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
+                                (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+                        Elm.Syntax.TypeAnnotation.Tupled _ ->
+                            -- invalid expansion
+                            Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
+                                (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+                        Elm.Syntax.TypeAnnotation.GenericType expandedRecordVariable ->
+                            Elm.Syntax.TypeAnnotation.GenericRecord
+                                (Elm.Syntax.Node.Node recordVariableRange expandedRecordVariable)
+                                (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+                        Elm.Syntax.TypeAnnotation.Record expandedFields ->
+                            -- i think in reality this might keep the old field types
+                            Elm.Syntax.TypeAnnotation.Record expandedFields
+
+                        Elm.Syntax.TypeAnnotation.GenericRecord (Elm.Syntax.Node.Node _ expandedRecordVariable) (Elm.Syntax.Node.Node _ expandedFields) ->
+                            Elm.Syntax.TypeAnnotation.GenericRecord
+                                (Elm.Syntax.Node.Node recordVariableRange expandedRecordVariable)
+                                (Elm.Syntax.Node.Node fieldsRange
+                                    (expandedFields
+                                        |> List.foldl
+                                            (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ expandedFieldName, expandedFieldValue )) soFar ->
+                                                if soFar |> FastDict.member expandedFieldName then
+                                                    soFar
+
+                                                else
+                                                    soFar |> FastDict.insert expandedFieldName expandedFieldValue
+                                            )
+                                            (fields
+                                                |> List.foldl
+                                                    (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ fieldName, fieldValue )) soFar ->
+                                                        soFar |> FastDict.insert fieldName fieldValue
+                                                    )
+                                                    FastDict.empty
+                                            )
+                                        |> FastDict.foldr
+                                            (\name value soFar ->
+                                                Elm.Syntax.Node.Node fieldsRange
+                                                    ( Elm.Syntax.Node.Node fieldsRange name
+                                                    , value
+                                                    )
+                                                    :: soFar
+                                            )
+                                            []
+                                    )
+                                )
+
+                        Elm.Syntax.TypeAnnotation.Typed _ _ ->
+                            -- TODO expand if type alias
+                            Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
+                                (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
+
+        Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation inType outType ->
+            Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation
+                (inType |> typeNodeExpand expansions)
+                (outType |> typeNodeExpand expansions)
 
 
 syntaxTypeNodeApplySpecialization :
