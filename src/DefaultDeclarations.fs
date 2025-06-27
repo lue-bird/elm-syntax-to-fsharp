@@ -345,6 +345,46 @@ module Elm =
                     .Split(newLineOptions, System.StringSplitOptions.None)))
         )
 
+    let whitespaceCharacters: array<char> =
+        // \s in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+        [| '\n'
+           '\r'
+           '\f'
+           '\t'
+           '\v'
+           ' '
+           '\u00a0'
+           '\u1680'
+           '\u2000'
+           '\u2001'
+           '\u2002'
+           '\u2003'
+           '\u2004'
+           '\u2005'
+           '\u2006'
+           '\u2007'
+           '\u2008'
+           '\u2009'
+           '\u200a'
+           '\u2028'
+           '\u2029'
+           '\u202f'
+           '\u205f'
+           '\u3000'
+           '\ufeff' |]
+
+    let String_words (string: StringRope) : List<StringRope> =
+        // can be optimized
+        List.ofArray (
+            (Array.map
+                (fun line -> StringRopeOne line)
+                ((StringRope.toString string)
+                    .Split(
+                        whitespaceCharacters,
+                        System.StringSplitOptions.RemoveEmptyEntries
+                    )))
+        )
+
     let String_reverse (string: StringRope) : StringRope =
         StringRopeOne(
             new string (Array.rev ((StringRope.toString string).ToCharArray()))
@@ -528,15 +568,13 @@ module Elm =
 
     let inline List_range (startFloat: int64) (endFloat: int64) : List<int64> =
         [ startFloat..endFloat ]
-    
+
     let inline List_indexedMap
         ([<InlineIfLambda>] indexAndElementToNewElement: int64 -> 'a -> 'b)
         (list: List<'a>)
         : List<'b> =
         List.mapi
-            (fun index element ->
-                indexAndElementToNewElement (int64 index) element
-            )
+            (fun index element -> indexAndElementToNewElement (int64 index) element)
             list
 
     let rec List_map4_into_reverse
@@ -1009,23 +1047,26 @@ module Elm =
                 Map.empty
                 dict
         )
-        
+
     let lineSetIndentSizeFrom2To (newIndentSize: int) (line: string) : string =
         let lineWithoutIndentation: string = line.TrimStart(' ')
-        let lineIndentation: int = (String.length line - String.length lineWithoutIndentation) / 2
+
+        let lineIndentation: int =
+            (String.length line - String.length lineWithoutIndentation) / 2
 
         String.replicate (int newIndentSize * lineIndentation) " "
-            + lineWithoutIndentation
+        + lineWithoutIndentation
 
     let setIndentSizeFrom2To (newIndentSize: int) (printed: string) : string =
         if newIndentSize = 2 then
             printed
         else
-            String.concat "\n"
+            String.concat
+                "\n"
                 (Array.map
-                    (fun (line: string) -> lineSetIndentSizeFrom2To newIndentSize line)
-                    (printed.Split('\n'))
-                )
+                    (fun (line: string) ->
+                        lineSetIndentSizeFrom2To newIndentSize line)
+                    (printed.Split('\n')))
 
     let JsonEncode_encode
         (indentDepth: int64)
@@ -1039,7 +1080,8 @@ module Elm =
             printOptions.WriteIndented <- true
             // JsonSerializerOptions.IndentSize is only available since .net9.0
             StringRopeOne(
-                setIndentSizeFrom2To (int indentDepth)
+                setIndentSizeFrom2To
+                    (int indentDepth)
                     (json.ToJsonString(printOptions))
             )
 
@@ -3567,14 +3609,11 @@ module Elm =
         : System.Numerics.Vector3 =
         System.Numerics.Vector3(float32 x, float32 y, float32 z)
 
-    let MathVector3_i: System.Numerics.Vector3 =
-        System.Numerics.Vector3(1f, 0f, 0f)
+    let MathVector3_i: System.Numerics.Vector3 = System.Numerics.Vector3(1f, 0f, 0f)
 
-    let MathVector3_j: System.Numerics.Vector3 =
-        System.Numerics.Vector3(0f, 1f, 0f)
+    let MathVector3_j: System.Numerics.Vector3 = System.Numerics.Vector3(0f, 1f, 0f)
 
-    let MathVector3_k: System.Numerics.Vector3 =
-        System.Numerics.Vector3(0f, 0f, 1f)
+    let MathVector3_k: System.Numerics.Vector3 = System.Numerics.Vector3(0f, 0f, 1f)
 
     let MathVector3_getX (vector3: System.Numerics.Vector3) : float =
         float vector3.X
@@ -3712,45 +3751,25 @@ module Elm =
         (newX: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            float32 newX,
-            vector4.Y,
-            vector4.Z,
-            vector4.W
-        )
+        System.Numerics.Vector4(float32 newX, vector4.Y, vector4.Z, vector4.W)
 
     let inline MathVector4_setY
         (newY: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            float32 newY,
-            vector4.Z,
-            vector4.W
-        )
+        System.Numerics.Vector4(vector4.X, float32 newY, vector4.Z, vector4.W)
 
     let inline MathVector4_setZ
         (newZ: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            vector4.Y,
-            float32 newZ,
-            vector4.W
-        )
+        System.Numerics.Vector4(vector4.X, vector4.Y, float32 newZ, vector4.W)
 
     let inline MathVector4_setW
         (newW: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            vector4.Y,
-            vector4.Z,
-            float32 newW
-        )
+        System.Numerics.Vector4(vector4.X, vector4.Y, vector4.Z, float32 newW)
 
     let inline MathVector4_add
         (a: System.Numerics.Vector4)

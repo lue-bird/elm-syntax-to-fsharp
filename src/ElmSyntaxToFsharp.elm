@@ -525,6 +525,7 @@ implicitImports =
                 , "never"
                 , -- future keywords
                   "constraint"
+                , "component"
                 ]
       }
     , { moduleName = "List"
@@ -2934,6 +2935,9 @@ referenceToCoreFsharp reference =
                 "lines" ->
                     Just { moduleOrigin = Nothing, name = "String_lines" }
 
+                "words" ->
+                    Just { moduleOrigin = Nothing, name = "String_words" }
+
                 "startsWith" ->
                     Just { moduleOrigin = Nothing, name = "String_startsWith" }
 
@@ -4341,7 +4345,7 @@ printFsharpPatternNotParenthesized fsharpPattern =
                                 |> Print.followedBy
                                     ((variantValue0 :: variantValue1Up)
                                         |> Print.listMapAndIntersperseAndFlatten
-                                            printFsharpPatternNotParenthesized
+                                            printFsharpPatternParenthesizedIfSpaceSeparated
                                             printExactlyCommaSpace
                                     )
                                 |> Print.followedBy printExactlyParenClosing
@@ -4355,7 +4359,7 @@ printFsharpPatternNotParenthesized fsharpPattern =
                 |> Print.followedBy
                     ((parts.part0 :: parts.part1 :: parts.part2Up)
                         |> Print.listMapAndIntersperseAndFlatten
-                            printFsharpPatternNotParenthesized
+                            printFsharpPatternParenthesizedIfSpaceSeparated
                             printExactlyCommaSpace
                     )
                 |> Print.followedBy printExactlySpaceParenClosingParenClosing
@@ -10650,6 +10654,46 @@ defaultDeclarations =
                 (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
                     .Split(newLineOptions, System.StringSplitOptions.None)))
+        )
+
+    let whitespaceCharacters: array<char> =
+        // \\s in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+        [| '\\n'
+           '\\r'
+           '\\f'
+           '\\t'
+           '\\v'
+           ' '
+           '\\u00a0'
+           '\\u1680'
+           '\\u2000'
+           '\\u2001'
+           '\\u2002'
+           '\\u2003'
+           '\\u2004'
+           '\\u2005'
+           '\\u2006'
+           '\\u2007'
+           '\\u2008'
+           '\\u2009'
+           '\\u200a'
+           '\\u2028'
+           '\\u2029'
+           '\\u202f'
+           '\\u205f'
+           '\\u3000'
+           '\\ufeff' |]
+
+    let String_words (string: StringRope) : List<StringRope> =
+        // can be optimized
+        List.ofArray (
+            (Array.map
+                (fun line -> StringRopeOne line)
+                ((StringRope.toString string)
+                    .Split(
+                        whitespaceCharacters,
+                        System.StringSplitOptions.RemoveEmptyEntries
+                    )))
         )
 
     let String_reverse (string: StringRope) : StringRope =
