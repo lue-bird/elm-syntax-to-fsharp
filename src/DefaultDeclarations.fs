@@ -528,6 +528,16 @@ module Elm =
 
     let inline List_range (startFloat: int64) (endFloat: int64) : List<int64> =
         [ startFloat..endFloat ]
+    
+    let inline List_indexedMap
+        ([<InlineIfLambda>] indexAndElementToNewElement: int64 -> 'a -> 'b)
+        (list: List<'a>)
+        : List<'b> =
+        List.mapi
+            (fun index element ->
+                indexAndElementToNewElement (int64 index) element
+            )
+            list
 
     let rec List_map4_into_reverse
         (combinedSoFarReverse: List<'combined>)
