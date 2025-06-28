@@ -61,10 +61,10 @@ module Elm =
         int64 (float a ** float b)
 
     let inline Basics_iclamp (minimum: int64) (maximum: int64) (n: int64) : int64 =
-        System.Math.Clamp(value = n, min = minimum, max = maximum)
+        System.Int64.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
-        System.Math.Clamp(value = n, min = minimum, max = maximum)
+        System.Single.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_logBase (newBase: float) (n: float) : float =
         System.Math.Log(n, newBase = newBase)
