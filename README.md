@@ -39,9 +39,9 @@ module Elm =
     -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`, `Math.Matrix4.inverseOrthonormal`, `Math.Matrix4.mulAffine`
     -   extensible record types outside of module-level value/function declarations. For example, these declarations might not work:
         ```elm
-        -- in aliased type or variant value
-        type alias Named rec = { rec | name : String }
-        -- in explicit let annotation
+        -- in variant value
+        type Named rec = Named { rec | name : String }
+        -- in let type, annotated or not
         let getName : { r | name : name } -> name
         ```
         Allowed is only record extension in module-level value/functions, annotated or not:
