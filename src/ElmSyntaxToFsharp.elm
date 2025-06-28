@@ -4824,14 +4824,13 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                             config.inferred.name
                                                 |> fsharpNameWithSpecializedTypes
                                                     specialization
+
+                                        (Elm.Syntax.Node.Node implementationRange implementation) =
+                                            config.syntax.declaration
                                     in
                                     { documentation = config.syntax.documentation
                                     , signature = Nothing
                                     , declaration =
-                                        let
-                                            (Elm.Syntax.Node.Node implementationRange implementation) =
-                                                config.syntax.declaration
-                                        in
                                         Elm.Syntax.Node.Node
                                             implementationRange
                                             { name =
@@ -7646,7 +7645,6 @@ inferredTypeCheckOrGuessIntOrFloat inferredType =
             ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
                 case inferredTypeNotVariable of
                     ElmSyntaxTypeInfer.TypeConstruct _ ->
-                        -- TODO de-alias
                         IntNotFloat
 
                     ElmSyntaxTypeInfer.TypeUnit ->
@@ -9220,7 +9218,6 @@ typeExpand expansions syntaxType =
                                 )
 
                         Elm.Syntax.TypeAnnotation.Typed _ _ ->
-                            -- TODO expand if type alias
                             Elm.Syntax.TypeAnnotation.GenericRecord recordVariableNode
                                 (Elm.Syntax.Node.Node fieldsRange fieldsExpanded)
 
@@ -9820,7 +9817,22 @@ inferredTypeSpecializedVariablesFrom originalInferredType specializedInferredTyp
                             else
                                 FastDict.empty
 
-                        _ ->
+                        ElmSyntaxTypeInfer.TypeUnit ->
+                            FastDict.empty
+
+                        ElmSyntaxTypeInfer.TypeTuple _ ->
+                            FastDict.empty
+
+                        ElmSyntaxTypeInfer.TypeTriple _ ->
+                            FastDict.empty
+
+                        ElmSyntaxTypeInfer.TypeRecord _ ->
+                            FastDict.empty
+
+                        ElmSyntaxTypeInfer.TypeRecordExtension _ ->
+                            FastDict.empty
+
+                        ElmSyntaxTypeInfer.TypeFunction _ ->
                             FastDict.empty
 
         ElmSyntaxTypeInfer.TypeNotVariable originalTypeNotVariable ->
