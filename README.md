@@ -37,16 +37,14 @@ module Elm =
     -   ports that use non-json values like `port sendMessage : String -> Cmd msg`, glsl
     -   `elm/file`, `elm/http`, `elm/browser`, `elm-explorations/markdown`, `elm-explorations/webgl`, `elm-explorations/benchmark`
     -   `Task`, `Process`, `Platform.Task`, `Platform.ProcessId`, `Platform.Router`, `Platform.sendToApp`, `Platform.sendToSelf`, `Random.generate`, `Time.now`, `Time.every`, `Time.here`, `Time.getZoneName`, `Bytes.getHostEndianness`, `Math.Matrix4.inverseOrthonormal`, `Math.Matrix4.mulAffine`
-    -   extensible record types outside of annotated module-level value/function declarations. For example, these declarations might not work:
+    -   extensible record types outside of module-level value/function declarations. For example, these declarations might not work:
         ```elm
         -- in aliased type or variant value
         type alias Named rec = { rec | name : String }
         -- in explicit let annotation
         let getName : { r | name : name } -> name
-        -- in un-annotated type at let or module-level
-        setName new r = { r | name = new }
         ```
-        Allowed is only explicit record extension in module-level value/functions:
+        Allowed is only record extension in module-level value/functions, annotated or not:
         ```elm
         userId : { u | name : String, server : Domain } -> String
         ```
