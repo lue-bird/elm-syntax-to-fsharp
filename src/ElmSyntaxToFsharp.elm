@@ -7221,9 +7221,87 @@ condenseExpressionCall call =
                         , arguments = call.argument0 :: call.argument1Up
                         }
 
-        calledNotCall ->
+        FsharpExpressionUnit ->
             FsharpExpressionCall
-                { called = calledNotCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionFloat _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionInt64 _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionChar _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionStringLiteral _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionRecordAccess _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionTuple _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionIfElse _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionListLiteral _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionArrayLiteral _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionRecord _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionRecordUpdate _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionMatchWith _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
+        FsharpExpressionWithLetDeclarations _ ->
+            FsharpExpressionCall
+                { called = call.called
                 , arguments = call.argument0 :: call.argument1Up
                 }
 
@@ -8393,15 +8471,15 @@ createSynchronizationFromInferredTypeNotVariableVariableToSyntaxTypeVariable inf
         ElmSyntaxTypeInfer.TypeUnit ->
             FastDict.empty
 
-        ElmSyntaxTypeInfer.TypeFunction inferredTypeFunction_ ->
+        ElmSyntaxTypeInfer.TypeFunction inferredTypeFunction ->
             case syntaxType of
                 Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation syntaxInput syntaxOutput ->
                     createSynchronizationFromInferredTypeVariableToSyntaxTypeVariable
-                        inferredTypeFunction_.output
+                        inferredTypeFunction.output
                         syntaxOutput
                         |> FastDict.union
                             (createSynchronizationFromInferredTypeVariableToSyntaxTypeVariable
-                                inferredTypeFunction_.input
+                                inferredTypeFunction.input
                                 syntaxInput
                             )
 
@@ -15734,7 +15812,7 @@ elmKernelParserTypes =
         { signatures =
             FastDict.fromList
                 [ ( "isSubString"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
@@ -15746,22 +15824,22 @@ elmKernelParserTypes =
                         )
                   )
                 , ( "isSubChar"
-                  , inferredTypeFunction
-                        [ inferredTypeFunction [ typeChar ] typeBool, inferredTypeBasicsInt, typeString ]
+                  , inferredTypeFunctionCreate
+                        [ inferredTypeFunctionCreate [ typeChar ] typeBool, inferredTypeBasicsInt, typeString ]
                         inferredTypeBasicsInt
                   )
                 , ( "isAsciiCode"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         typeBool
                   )
                 , ( "chompBase10"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ inferredTypeBasicsInt, typeString ]
                         inferredTypeBasicsInt
                   )
                 , ( "consumeBase"
-                  , inferredTypeFunction [ inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
+                  , inferredTypeFunctionCreate [ inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTuple
                                 { part0 = inferredTypeBasicsInt
@@ -15771,7 +15849,7 @@ elmKernelParserTypes =
                         )
                   )
                 , ( "consumeBase16"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTuple
@@ -15782,7 +15860,7 @@ elmKernelParserTypes =
                         )
                   )
                 , ( "findSubString"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
@@ -15805,12 +15883,12 @@ elmKernelUrlTypes =
         { signatures =
             FastDict.fromList
                 [ ( "percentEncode"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ typeString ]
                         typeString
                   )
                 , ( "percentDecode"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeConstruct
@@ -15822,7 +15900,7 @@ elmKernelUrlTypes =
                         )
                   )
                 , ( "findSubString"
-                  , inferredTypeFunction
+                  , inferredTypeFunctionCreate
                         [ typeString, inferredTypeBasicsInt, inferredTypeBasicsInt, inferredTypeBasicsInt, typeString ]
                         (ElmSyntaxTypeInfer.TypeNotVariable
                             (ElmSyntaxTypeInfer.TypeTriple
@@ -15839,11 +15917,12 @@ elmKernelUrlTypes =
         }
 
 
-inferredTypeFunction :
+inferredTypeFunctionCreate :
     List ElmSyntaxTypeInfer.Type
     -> ElmSyntaxTypeInfer.Type
     -> ElmSyntaxTypeInfer.Type
-inferredTypeFunction inputs output =
+inferredTypeFunctionCreate inputs output =
+    -- IGNORE TCO
     case inputs of
         [] ->
             output
@@ -15853,7 +15932,7 @@ inferredTypeFunction inputs output =
                 (ElmSyntaxTypeInfer.TypeFunction
                     { input = input
                     , output =
-                        inferredTypeFunction remainingInputs output
+                        inferredTypeFunctionCreate remainingInputs output
                     }
                 )
 
