@@ -5399,6 +5399,20 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             )
                             FastDict.empty
 
+                allInferredTypeAliases :
+                    FastDict.Dict
+                        String
+                        (FastDict.Dict
+                            String
+                            { parameters : List String
+                            , type_ : ElmSyntaxTypeInfer.Type
+                            , recordFieldOrder : Maybe (List String)
+                            }
+                        )
+                allInferredTypeAliases =
+                    modulesInferred.types
+                        |> FastDict.map (\_ moduleTypes -> moduleTypes.typeAliases)
+
                 fsharpDeclarationsWithoutExtraRecordTypeAliases :
                     { errors : List String
                     , declarations :
@@ -5492,36 +5506,45 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             }
 
                                                         Just inferredTypeAliasDeclaration ->
-                                                            let
-                                                                fsharpTypeAliasDeclaration :
-                                                                    { name : String
-                                                                    , parameters : List String
-                                                                    , type_ : FsharpType
-                                                                    }
-                                                                fsharpTypeAliasDeclaration =
-                                                                    typeAliasDeclaration
-                                                                        { name = typeAliasName
-                                                                        , parameters = inferredTypeAliasDeclaration.parameters
-                                                                        , type_ = inferredTypeAliasDeclaration.type_
+                                                            if
+                                                                inferredTypeAliasDeclaration.type_
+                                                                    |> inferredTypeExpandInnerAliases
+                                                                        allInferredTypeAliases
+                                                                    |> inferredTypeContainsExtensibleRecord
+                                                            then
+                                                                soFar
+
+                                                            else
+                                                                let
+                                                                    fsharpTypeAliasDeclaration :
+                                                                        { name : String
+                                                                        , parameters : List String
+                                                                        , type_ : FsharpType
                                                                         }
-                                                            in
-                                                            { errors = soFar.errors
-                                                            , declarations =
-                                                                { valuesAndFunctions = soFar.declarations.valuesAndFunctions
-                                                                , choiceTypes = soFar.declarations.choiceTypes
-                                                                , typeAliases =
-                                                                    soFar.declarations.typeAliases
-                                                                        |> FastDict.insert
-                                                                            ({ moduleOrigin = moduleName
-                                                                             , name = fsharpTypeAliasDeclaration.name
-                                                                             }
-                                                                                |> referenceToFsharpName
-                                                                            )
-                                                                            { parameters = fsharpTypeAliasDeclaration.parameters
-                                                                            , type_ = fsharpTypeAliasDeclaration.type_
+                                                                    fsharpTypeAliasDeclaration =
+                                                                        typeAliasDeclaration
+                                                                            { name = typeAliasName
+                                                                            , parameters = inferredTypeAliasDeclaration.parameters
+                                                                            , type_ = inferredTypeAliasDeclaration.type_
                                                                             }
+                                                                in
+                                                                { errors = soFar.errors
+                                                                , declarations =
+                                                                    { valuesAndFunctions = soFar.declarations.valuesAndFunctions
+                                                                    , choiceTypes = soFar.declarations.choiceTypes
+                                                                    , typeAliases =
+                                                                        soFar.declarations.typeAliases
+                                                                            |> FastDict.insert
+                                                                                ({ moduleOrigin = moduleName
+                                                                                 , name = fsharpTypeAliasDeclaration.name
+                                                                                 }
+                                                                                    |> referenceToFsharpName
+                                                                                )
+                                                                                { parameters = fsharpTypeAliasDeclaration.parameters
+                                                                                , type_ = fsharpTypeAliasDeclaration.type_
+                                                                                }
+                                                                    }
                                                                 }
-                                                            }
 
                                                 Elm.Syntax.Declaration.CustomTypeDeclaration syntaxChoiceTypeDeclaration ->
                                                     let
@@ -8767,6 +8790,19 @@ fastDictAll keyValueToIsUsual fastDict =
             True
 
 
+fastDictAny :
+    (comparableKey -> value -> Bool)
+    -> FastDict.Dict comparableKey value
+    -> Bool
+fastDictAny keyValueToIsUsual fastDict =
+    fastDict
+        |> FastDict.foldl
+            (\key value soFar ->
+                soFar || keyValueToIsUsual key value
+            )
+            False
+
+
 syntaxTypeNodeApplySpecialization :
     FastDict.Dict String FsharpTypeVariableSpecialization
     -> Elm.Syntax.Node.Node Elm.Syntax.TypeAnnotation.TypeAnnotation
@@ -9495,6 +9531,63 @@ syntaxTypeExpandInnerAliases context syntaxType =
             Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation
                 (inType |> syntaxTypeNodeExpandInnerAliases context)
                 (outType |> syntaxTypeNodeExpandInnerAliases context)
+
+
+{-| Make sure to expand inner aliases first
+-}
+inferredTypeContainsExtensibleRecord : ElmSyntaxTypeInfer.Type -> Bool
+inferredTypeContainsExtensibleRecord inferredType =
+    case inferredType of
+        ElmSyntaxTypeInfer.TypeVariable _ ->
+            False
+
+        ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
+            inferredTypeNotVariableContainsExtensibleRecord
+                inferredTypeNotVariable
+
+
+{-| Make sure to expand inner aliases first
+-}
+inferredTypeNotVariableContainsExtensibleRecord : ElmSyntaxTypeInfer.TypeNotVariable -> Bool
+inferredTypeNotVariableContainsExtensibleRecord inferredTypeNotVariable =
+    -- IGNORE TCO
+    case inferredTypeNotVariable of
+        ElmSyntaxTypeInfer.TypeUnit ->
+            False
+
+        ElmSyntaxTypeInfer.TypeRecordExtension _ ->
+            True
+
+        ElmSyntaxTypeInfer.TypeFunction typeFunction ->
+            inferredTypeContainsExtensibleRecord
+                typeFunction.input
+                || inferredTypeContainsExtensibleRecord
+                    typeFunction.output
+
+        ElmSyntaxTypeInfer.TypeTuple parts ->
+            inferredTypeContainsExtensibleRecord
+                parts.part0
+                || inferredTypeContainsExtensibleRecord
+                    parts.part1
+
+        ElmSyntaxTypeInfer.TypeTriple parts ->
+            inferredTypeContainsExtensibleRecord
+                parts.part0
+                || inferredTypeContainsExtensibleRecord
+                    parts.part1
+                || inferredTypeContainsExtensibleRecord
+                    parts.part2
+
+        ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
+            typeConstruct.arguments
+                |> List.any inferredTypeContainsExtensibleRecord
+
+        ElmSyntaxTypeInfer.TypeRecord fields ->
+            fields
+                |> fastDictAny
+                    (\_ fieldValue ->
+                        fieldValue |> inferredTypeContainsExtensibleRecord
+                    )
 
 
 {-| Caution! This is only an approximation that's good enough for
