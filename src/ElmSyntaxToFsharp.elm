@@ -523,9 +523,6 @@ implicitImports =
                 , "always"
                 , "Never"
                 , "never"
-                , -- future keywords
-                  "constraint"
-                , "component"
                 ]
       }
     , { moduleName = "List"
@@ -6089,7 +6086,36 @@ fsharpKeywords =
         , "with"
         , "yield"
         , "const"
+        , -- reserved in F# because they are keywords in the OCaml language
+          "asr"
+        , "land"
+        , "lor"
+        , "lsl"
+        , "lsr"
+        , "lxor"
+        , "mod"
+        , "sig"
+        , -- reserved as keywords for future expansion of F#
+          "break"
+        , "checked"
+        , "component"
+        , "const"
+        , "constraint"
+        , "continue"
+        , "event"
+        , "external"
+        , "include"
+        , "mixin"
+        , "parallel"
+        , "process"
+        , "protected"
+        , "pure"
+        , "sealed"
+        , "tailcall"
+        , "trait"
+        , "virtual"
         , -- some exposed names
+          -- not actual keywords
           "float"
         , "single"
         , "double"
