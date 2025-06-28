@@ -261,24 +261,41 @@ module Elm =
         StringRopeOne((StringRope.toString string).TrimEnd())
 
     let String_right
-        (takenElementCount: int64)
+        (takenElementCountInt64: int64)
         (stringRope: StringRope)
         : StringRope =
         let string: string = StringRope.toString stringRope
 
+        let takenElementCount: int =
+            System.Int32.Clamp(
+                value = int takenElementCountInt64,
+                min = 0,
+                max = String.length string
+            )
+
+
         StringRopeOne(
             string.Substring(
-                String.length string - int takenElementCount,
-                int takenElementCount
+                String.length string - takenElementCount,
+                takenElementCount
             )
         )
 
-    let inline String_left
+    let String_left
         (skippedElementCount: int64)
-        (string: StringRope)
+        (stringRope: StringRope)
         : StringRope =
+        let string = StringRope.toString stringRope
+
         StringRopeOne(
-            (StringRope.toString string).Substring(0, int skippedElementCount)
+            string.Substring(
+                0,
+                System.Int32.Clamp(
+                    value = int skippedElementCount,
+                    min = 0,
+                    max = String.length string
+                )
+            )
         )
 
     let String_dropRight
@@ -288,19 +305,33 @@ module Elm =
         let string: string = StringRope.toString stringRope
 
         StringRopeOne(
-            string.Substring(0, String.length string - int skippedElementCount)
+            string.Substring(
+                0,
+                System.Int32.Clamp(
+                    value = String.length string - int skippedElementCount,
+                    min = 0,
+                    max = String.length string
+                )
+            )
         )
 
     let String_dropLeft
-        (skippedElementCount: int64)
+        (skippedElementCountInt64: int64)
         (stringRope: StringRope)
         : StringRope =
         let string: string = StringRope.toString stringRope
 
+        let skippedElementCount: int =
+            System.Int32.Clamp(
+                value = int skippedElementCountInt64,
+                min = 0,
+                max = String.length string
+            )
+
         StringRopeOne(
             string.Substring(
-                int skippedElementCount,
-                String.length string - int skippedElementCount
+                skippedElementCount,
+                String.length string - skippedElementCount
             )
         )
 
