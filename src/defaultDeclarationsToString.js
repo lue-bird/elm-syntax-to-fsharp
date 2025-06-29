@@ -22,5 +22,6 @@ module Elm =`,
     + "\"\"\""
 fs.writeFileSync(
     path.join(import.meta.dirname, "DefaultDeclarations.elm"),
-    elmString, { encoding: "utf-8" }
+    elmString,
+    { encoding: "utf-8" }
 )
