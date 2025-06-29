@@ -64,7 +64,7 @@ module Elm =
         System.Int64.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
-        System.Single.Clamp(value = n, min = minimum, max = maximum)
+        System.Double.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_logBase (newBase: float) (n: float) : float =
         System.Math.Log(n, newBase = newBase)
@@ -187,11 +187,13 @@ module Elm =
         (segment: StringRope)
         : StringRope =
         StringRopeOne(
-            String.replicate (int repetitions) (StringRope.toString segment)
+            String.replicate
+                (System.Int32.Max(0, int repetitions))
+                (StringRope.toString segment)
         )
 
-    let String_toList (string: StringRope) : List<char> =
-        List.ofArray ((StringRope.toString string).ToCharArray())
+    let inline String_toList (string: StringRope) : List<char> =
+        Seq.toList (StringRope.toString string)
 
     let inline String_fromList (chars: List<char>) : StringRope =
         StringRopeOne(new string (List.toArray chars))
@@ -359,8 +361,8 @@ module Elm =
         (string: StringRope)
         : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            Array.map
+        Seq.toList (
+            Seq.map
                 (fun segment -> StringRopeOne segment)
                 ((StringRope.toString string).Split(StringRope.toString separator))
         )
@@ -369,8 +371,8 @@ module Elm =
 
     let String_lines (string: StringRope) : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            (Array.map
+        Seq.toList (
+            (Seq.map
                 (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
                     .Split(newLineOptions, System.StringSplitOptions.None)))
@@ -406,8 +408,8 @@ module Elm =
 
     let String_words (string: StringRope) : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            (Array.map
+        Seq.toList (
+            (Seq.map
                 (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
                     .Split(
@@ -440,20 +442,18 @@ module Elm =
     let inline String_toLower (string: StringRope) : StringRope =
         StringRopeOne((StringRope.toString string).ToLowerInvariant())
 
-    let String_join
+    let inline String_join
         (separator: StringRope)
         (strings: List<StringRope>)
         : StringRope =
-        // can be optimized
         StringRopeOne(
             String.concat
                 (StringRope.toString separator)
-                (List.map StringRope.toString strings)
+                (Seq.map StringRope.toString strings)
         )
 
-    let String_concat (strings: List<StringRope>) : StringRope =
-        // can be optimized
-        StringRopeOne(System.String.Concat(List.map StringRope.toString strings))
+    let inline String_concat (strings: List<StringRope>) : StringRope =
+        StringRopeOne(System.String.Concat(Seq.map StringRope.toString strings))
 
     let inline String_padLeft
         (newMinimumLength: int64)
@@ -461,7 +461,8 @@ module Elm =
         (string: StringRope)
         : StringRope =
         StringRopeOne(
-            (StringRope.toString string).PadLeft(int newMinimumLength, padding)
+            (StringRope.toString string)
+                .PadLeft(System.Int32.Max(0, int newMinimumLength), padding)
         )
 
     let inline String_padRight
@@ -470,7 +471,8 @@ module Elm =
         (string: StringRope)
         : StringRope =
         StringRopeOne(
-            (StringRope.toString string).PadRight(int newMinimumLength, padding)
+            (StringRope.toString string)
+                .PadRight(System.Int32.Max(0, int newMinimumLength), padding)
         )
 
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
@@ -495,15 +497,24 @@ module Elm =
 
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
-                max 0 (int startInclusivePossiblyNegative + String.length string)
+                System.Int32.Max(
+                    0,
+                    int startInclusivePossiblyNegative + String.length string
+                )
             else
                 int startInclusivePossiblyNegative
 
         let realEndIndexExclusive: int =
             if (endExclusivePossiblyNegative < 0L) then
-                max 0 (int endExclusivePossiblyNegative + String.length string)
+                System.Int32.Max(
+                    0,
+                    int endExclusivePossiblyNegative + String.length string
+                )
             else
-                min (int endExclusivePossiblyNegative) (String.length string)
+                System.Int32.Min(
+                    int endExclusivePossiblyNegative,
+                    String.length string
+                )
 
         if (realStartIndex >= realEndIndexExclusive) then
             stringRopeEmpty
@@ -553,8 +564,8 @@ module Elm =
 
     let inline List_cons (newHead: 'a) (tail: List<'a>) : List<'a> = newHead :: tail
 
-    let inline List_repeat (repetitions: int64) (element: 'a) : List<'a> =
-        List.replicate (int repetitions) element
+    let inline List_repeat (count: int64) (element: 'a) : List<'a> =
+        List.replicate (System.Int32.Max(0, int count)) element
 
     let inline List_take
         (elementCountFromStart: int64)
@@ -926,25 +937,27 @@ module Elm =
         (count: int64)
         ([<InlineIfLambda>] indexToElement: int64 -> 'element)
         : array<'element> =
-        Array.init (max 0 (int count)) (fun index -> indexToElement index)
+        Array.init (System.Int32.Max(0, int count)) (fun index ->
+            indexToElement index)
 
     let inline Array_repeat (count: int64) (element: 'element) : array<'element> =
-        Array.replicate (max 0 (int count)) element
+        Array.replicate (System.Int32.Max(0, int count)) element
 
     let Array_set
         (index: int64)
         (replacementElement: 'element)
         (array: array<'element>)
         : array<'element> =
-        if index < 0 then array
-        else if index >= Array.length array then array
-        else Array.updateAt (int index) replacementElement array
+        if (index < 0) || (index >= Array.length array) then
+            array
+        else
+            Array.updateAt (int index) replacementElement array
 
     let Array_push
         (newLastElement: 'element)
         (array: array<'element>)
         : array<'element> =
-        Array.append array [| newLastElement |]
+        Array.insertAt (Array.length array) newLastElement array
 
     let inline Array_indexedMap
         ([<InlineIfLambda>] elementChange: int64 -> 'a -> 'b)
@@ -953,18 +966,11 @@ module Elm =
         Array.mapi (fun index element -> elementChange index element) array
 
     let Array_toIndexedList (array: array<'a>) : List<struct (int64 * 'a)> =
-        (Array.foldBack
-            (fun
-                (element: 'a)
-                (soFar:
-                    {| Index: int64
-                       List: List<struct (int64 * 'a)> |}) ->
-                {| Index = soFar.Index - 1L
-                   List = (struct (soFar.Index, element)) :: soFar.List |})
-            array
-            {| Index = int64 (Array.length array - 1)
-               List = [] |})
-            .List
+        Seq.toList (
+            Seq.mapi
+                (fun (index: int) (element: 'a) -> (struct (index, element)))
+                array
+        )
 
     let inline Array_foldl
         ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
@@ -987,15 +993,24 @@ module Elm =
         : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
-                max 0 (int startInclusivePossiblyNegative + Array.length array)
+                System.Int32.Max(
+                    0,
+                    int startInclusivePossiblyNegative + Array.length array
+                )
             else
                 int startInclusivePossiblyNegative
 
         let realEndIndexExclusive: int =
             if (endExclusivePossiblyNegative < 0L) then
-                max 0 (int endExclusivePossiblyNegative + Array.length array)
+                System.Int32.Max(
+                    0,
+                    int endExclusivePossiblyNegative + Array.length array
+                )
             else
-                min (int endExclusivePossiblyNegative) (Array.length array)
+                System.Int32.Min(
+                    int endExclusivePossiblyNegative,
+                    Array.length array
+                )
 
         if (realStartIndex >= realEndIndexExclusive) then
             Array.empty

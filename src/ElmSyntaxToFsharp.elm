@@ -11638,11 +11638,13 @@ defaultDeclarations =
         (segment: StringRope)
         : StringRope =
         StringRopeOne(
-            String.replicate (int repetitions) (StringRope.toString segment)
+            String.replicate
+                (System.Int32.Max(0, int repetitions))
+                (StringRope.toString segment)
         )
 
-    let String_toList (string: StringRope) : List<char> =
-        List.ofArray ((StringRope.toString string).ToCharArray())
+    let inline String_toList (string: StringRope) : List<char> =
+        Seq.toList (StringRope.toString string)
 
     let inline String_fromList (chars: List<char>) : StringRope =
         StringRopeOne(new string (List.toArray chars))
@@ -11810,8 +11812,8 @@ defaultDeclarations =
         (string: StringRope)
         : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            Array.map
+        Seq.toList (
+            Seq.map
                 (fun segment -> StringRopeOne segment)
                 ((StringRope.toString string).Split(StringRope.toString separator))
         )
@@ -11820,8 +11822,8 @@ defaultDeclarations =
 
     let String_lines (string: StringRope) : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            (Array.map
+        Seq.toList (
+            (Seq.map
                 (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
                     .Split(newLineOptions, System.StringSplitOptions.None)))
@@ -11857,8 +11859,8 @@ defaultDeclarations =
 
     let String_words (string: StringRope) : List<StringRope> =
         // can be optimized
-        List.ofArray (
-            (Array.map
+        Seq.toList (
+            (Seq.map
                 (fun line -> StringRopeOne line)
                 ((StringRope.toString string)
                     .Split(
@@ -11891,20 +11893,18 @@ defaultDeclarations =
     let inline String_toLower (string: StringRope) : StringRope =
         StringRopeOne((StringRope.toString string).ToLowerInvariant())
 
-    let String_join
+    let inline String_join
         (separator: StringRope)
         (strings: List<StringRope>)
         : StringRope =
-        // can be optimized
         StringRopeOne(
             String.concat
                 (StringRope.toString separator)
-                (List.map StringRope.toString strings)
+                (Seq.map StringRope.toString strings)
         )
 
-    let String_concat (strings: List<StringRope>) : StringRope =
-        // can be optimized
-        StringRopeOne(System.String.Concat(List.map StringRope.toString strings))
+    let inline String_concat (strings: List<StringRope>) : StringRope =
+        StringRopeOne(System.String.Concat(Seq.map StringRope.toString strings))
 
     let inline String_padLeft
         (newMinimumLength: int64)
@@ -11912,7 +11912,8 @@ defaultDeclarations =
         (string: StringRope)
         : StringRope =
         StringRopeOne(
-            (StringRope.toString string).PadLeft(int newMinimumLength, padding)
+            (StringRope.toString string)
+                .PadLeft(System.Int32.Max(0, int newMinimumLength), padding)
         )
 
     let inline String_padRight
@@ -11921,7 +11922,8 @@ defaultDeclarations =
         (string: StringRope)
         : StringRope =
         StringRopeOne(
-            (StringRope.toString string).PadRight(int newMinimumLength, padding)
+            (StringRope.toString string)
+                .PadRight(System.Int32.Max(0, int newMinimumLength), padding)
         )
 
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
@@ -11946,15 +11948,24 @@ defaultDeclarations =
 
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
-                max 0 (int startInclusivePossiblyNegative + String.length string)
+                System.Int32.Max(
+                    0,
+                    int startInclusivePossiblyNegative + String.length string
+                )
             else
                 int startInclusivePossiblyNegative
 
         let realEndIndexExclusive: int =
             if (endExclusivePossiblyNegative < 0L) then
-                max 0 (int endExclusivePossiblyNegative + String.length string)
+                System.Int32.Max(
+                    0,
+                    int endExclusivePossiblyNegative + String.length string
+                )
             else
-                min (int endExclusivePossiblyNegative) (String.length string)
+                System.Int32.Min(
+                    int endExclusivePossiblyNegative,
+                    String.length string
+                )
 
         if (realStartIndex >= realEndIndexExclusive) then
             stringRopeEmpty
@@ -12004,8 +12015,8 @@ defaultDeclarations =
 
     let inline List_cons (newHead: 'a) (tail: List<'a>) : List<'a> = newHead :: tail
 
-    let inline List_repeat (repetitions: int64) (element: 'a) : List<'a> =
-        List.replicate (int repetitions) element
+    let inline List_repeat (count: int64) (element: 'a) : List<'a> =
+        List.replicate (System.Int32.Max(0, int count)) element
 
     let inline List_take
         (elementCountFromStart: int64)
@@ -12050,15 +12061,13 @@ defaultDeclarations =
 
     let inline List_range (startFloat: int64) (endFloat: int64) : List<int64> =
         [ startFloat..endFloat ]
-    
+
     let inline List_indexedMap
         ([<InlineIfLambda>] indexAndElementToNewElement: int64 -> 'a -> 'b)
         (list: List<'a>)
         : List<'b> =
         List.mapi
-            (fun index element ->
-                indexAndElementToNewElement (int64 index) element
-            )
+            (fun index element -> indexAndElementToNewElement (int64 index) element)
             list
 
     let rec List_map4_into_reverse
@@ -12379,25 +12388,27 @@ defaultDeclarations =
         (count: int64)
         ([<InlineIfLambda>] indexToElement: int64 -> 'element)
         : array<'element> =
-        Array.init (max 0 (int count)) (fun index -> indexToElement index)
+        Array.init (System.Int32.Max(0, int count)) (fun index ->
+            indexToElement index)
 
     let inline Array_repeat (count: int64) (element: 'element) : array<'element> =
-        Array.replicate (max 0 (int count)) element
+        Array.replicate (System.Int32.Max(0, int count)) element
 
     let Array_set
         (index: int64)
         (replacementElement: 'element)
         (array: array<'element>)
         : array<'element> =
-        if index < 0 then array
-        else if index >= Array.length array then array
-        else Array.updateAt (int index) replacementElement array
+        if (index < 0) || (index >= Array.length array) then
+            array
+        else
+            Array.updateAt (int index) replacementElement array
 
     let Array_push
         (newLastElement: 'element)
         (array: array<'element>)
         : array<'element> =
-        Array.append array [| newLastElement |]
+        Array.insertAt (Array.length array) newLastElement array
 
     let inline Array_indexedMap
         ([<InlineIfLambda>] elementChange: int64 -> 'a -> 'b)
@@ -12406,18 +12417,11 @@ defaultDeclarations =
         Array.mapi (fun index element -> elementChange index element) array
 
     let Array_toIndexedList (array: array<'a>) : List<struct (int64 * 'a)> =
-        (Array.foldBack
-            (fun
-                (element: 'a)
-                (soFar:
-                    {| Index: int64
-                       List: List<struct (int64 * 'a)> |}) ->
-                {| Index = soFar.Index - 1L
-                   List = (struct (soFar.Index, element)) :: soFar.List |})
-            array
-            {| Index = int64 (Array.length array - 1)
-               List = [] |})
-            .List
+        Seq.toList (
+            Seq.mapi
+                (fun (index: int) (element: 'a) -> (struct (index, element)))
+                array
+        )
 
     let inline Array_foldl
         ([<InlineIfLambda>] reduce: 'a -> 'state -> 'state)
@@ -12440,15 +12444,24 @@ defaultDeclarations =
         : array<'a> =
         let realStartIndex: int =
             if (startInclusivePossiblyNegative < 0L) then
-                max 0 (int startInclusivePossiblyNegative + Array.length array)
+                System.Int32.Max(
+                    0,
+                    int startInclusivePossiblyNegative + Array.length array
+                )
             else
                 int startInclusivePossiblyNegative
 
         let realEndIndexExclusive: int =
             if (endExclusivePossiblyNegative < 0L) then
-                max 0 (int endExclusivePossiblyNegative + Array.length array)
+                System.Int32.Max(
+                    0,
+                    int endExclusivePossiblyNegative + Array.length array
+                )
             else
-                min (int endExclusivePossiblyNegative) (Array.length array)
+                System.Int32.Min(
+                    int endExclusivePossiblyNegative,
+                    Array.length array
+                )
 
         if (realStartIndex >= realEndIndexExclusive) then
             Array.empty
@@ -12531,23 +12544,26 @@ defaultDeclarations =
                 Map.empty
                 dict
         )
-        
+
     let lineSetIndentSizeFrom2To (newIndentSize: int) (line: string) : string =
         let lineWithoutIndentation: string = line.TrimStart(' ')
-        let lineIndentation: int = (String.length line - String.length lineWithoutIndentation) / 2
+
+        let lineIndentation: int =
+            (String.length line - String.length lineWithoutIndentation) / 2
 
         String.replicate (int newIndentSize * lineIndentation) " "
-            + lineWithoutIndentation
+        + lineWithoutIndentation
 
     let setIndentSizeFrom2To (newIndentSize: int) (printed: string) : string =
         if newIndentSize = 2 then
             printed
         else
-            String.concat "\\n"
+            String.concat
+                "\\n"
                 (Array.map
-                    (fun (line: string) -> lineSetIndentSizeFrom2To newIndentSize line)
-                    (printed.Split('\\n'))
-                )
+                    (fun (line: string) ->
+                        lineSetIndentSizeFrom2To newIndentSize line)
+                    (printed.Split('\\n')))
 
     let JsonEncode_encode
         (indentDepth: int64)
@@ -12561,7 +12577,8 @@ defaultDeclarations =
             printOptions.WriteIndented <- true
             // JsonSerializerOptions.IndentSize is only available since .net9.0
             StringRopeOne(
-                setIndentSizeFrom2To (int indentDepth)
+                setIndentSizeFrom2To
+                    (int indentDepth)
                     (json.ToJsonString(printOptions))
             )
 
@@ -15089,14 +15106,11 @@ defaultDeclarations =
         : System.Numerics.Vector3 =
         System.Numerics.Vector3(float32 x, float32 y, float32 z)
 
-    let MathVector3_i: System.Numerics.Vector3 =
-        System.Numerics.Vector3(1f, 0f, 0f)
+    let MathVector3_i: System.Numerics.Vector3 = System.Numerics.Vector3(1f, 0f, 0f)
 
-    let MathVector3_j: System.Numerics.Vector3 =
-        System.Numerics.Vector3(0f, 1f, 0f)
+    let MathVector3_j: System.Numerics.Vector3 = System.Numerics.Vector3(0f, 1f, 0f)
 
-    let MathVector3_k: System.Numerics.Vector3 =
-        System.Numerics.Vector3(0f, 0f, 1f)
+    let MathVector3_k: System.Numerics.Vector3 = System.Numerics.Vector3(0f, 0f, 1f)
 
     let MathVector3_getX (vector3: System.Numerics.Vector3) : float =
         float vector3.X
@@ -15234,45 +15248,25 @@ defaultDeclarations =
         (newX: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            float32 newX,
-            vector4.Y,
-            vector4.Z,
-            vector4.W
-        )
+        System.Numerics.Vector4(float32 newX, vector4.Y, vector4.Z, vector4.W)
 
     let inline MathVector4_setY
         (newY: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            float32 newY,
-            vector4.Z,
-            vector4.W
-        )
+        System.Numerics.Vector4(vector4.X, float32 newY, vector4.Z, vector4.W)
 
     let inline MathVector4_setZ
         (newZ: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            vector4.Y,
-            float32 newZ,
-            vector4.W
-        )
+        System.Numerics.Vector4(vector4.X, vector4.Y, float32 newZ, vector4.W)
 
     let inline MathVector4_setW
         (newW: float)
         (vector4: System.Numerics.Vector4)
         : System.Numerics.Vector4 =
-        System.Numerics.Vector4(
-            vector4.X,
-            vector4.Y,
-            vector4.Z,
-            float32 newW
-        )
+        System.Numerics.Vector4(vector4.X, vector4.Y, vector4.Z, float32 newW)
 
     let inline MathVector4_add
         (a: System.Numerics.Vector4)
