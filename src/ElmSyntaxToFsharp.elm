@@ -2737,14 +2737,14 @@ referenceToCoreFsharp reference =
                         ElmSyntaxTypeInfer.TypeNotVariable (ElmSyntaxTypeInfer.TypeFunction typeFunction) ->
                             case typeFunction.input |> inferredTypeCheckOrGuessIntOrFloat of
                                 FloatNotInt ->
-                                    Just { moduleOrigin = Nothing, name = "Basics_fabs" }
+                                    Just { moduleOrigin = Just "System.Double", name = "Abs" }
 
                                 IntNotFloat ->
-                                    Just { moduleOrigin = Nothing, name = "Basics_iabs" }
+                                    Just { moduleOrigin = Just "System.Int64", name = "Abs" }
 
                         _ ->
                             -- assume Int
-                            Just { moduleOrigin = Nothing, name = "Basics_iabs" }
+                            Just { moduleOrigin = Just "System.Int64", name = "Abs" }
 
                 "toFloat" ->
                     Just { moduleOrigin = Nothing, name = "float" }
@@ -11478,11 +11478,9 @@ defaultDeclarations =
         else if comparisonMagnitude < 0 then Basics_Order.LT
         else Basics_Order.GT
 
-    let inline Basics_ceiling (n: float) : int64 = int64 (System.Math.Ceiling(n))
-    let inline Basics_floor (n: float) : int64 = int64 (System.Math.Floor(n))
-    let inline Basics_round (n: float) : int64 = int64 (System.Math.Round(n))
-    let inline Basics_fabs (n: float) : float = System.Double.Abs(n)
-    let inline Basics_iabs (n: int64) : int64 = System.Int64.Abs(n)
+    let inline Basics_ceiling (n: float) : int64 = int64 (System.Double.Ceiling(n))
+    let inline Basics_floor (n: float) : int64 = int64 (System.Double.Floor(n))
+    let inline Basics_round (n: float) : int64 = int64 (System.Double.Round(n))
     let inline Basics_fnegate (n: float) : float = -n
     let inline Basics_inegate (n: int64) : int64 = -n
     let inline Basics_fadd (a: float) (b: float) : float = a + b
@@ -11518,7 +11516,7 @@ defaultDeclarations =
         System.Double.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_logBase (newBase: float) (n: float) : float =
-        System.Math.Log(n, newBase = newBase)
+        System.Double.Log(n, newBase = newBase)
 
     let inline Basics_atan2 (y: float) (x: float) : float =
         System.Double.Atan2(y, x)
@@ -11526,10 +11524,10 @@ defaultDeclarations =
     let inline Basics_radians (radians: float) : float = radians
 
     let inline Basics_degrees (angleInDegrees: float) : float =
-        (angleInDegrees * System.Math.PI) / 180.0
+        (angleInDegrees * System.Double.Pi) / 180.0
 
     let inline Basics_turns (angleInTurns: float) : float =
-        (System.Math.PI * 2.0) * angleInTurns
+        (System.Double.Pi * 2.0) * angleInTurns
 
     let Basics_fromPolar
         (struct (radius: float, theta: float))
@@ -11544,19 +11542,19 @@ defaultDeclarations =
         (bitPositionsToShiftBy: int64)
         (n: int64)
         : int64 =
-        n <<< int32 bitPositionsToShiftBy
+        int64 (int32 (n <<< int32 bitPositionsToShiftBy))
 
     let inline Bitwise_shiftRightBy
         (bitPositionsToShiftBy: int64)
         (n: int64)
         : int64 =
-        n >>> int32 bitPositionsToShiftBy
+        int64 (int32 (n >>> int32 bitPositionsToShiftBy))
 
     let inline Bitwise_shiftRightZfBy
         (bitPositionsToShiftBy: int64)
         (n: int64)
         : int64 =
-        int64 (int64 n >>> int32 bitPositionsToShiftBy)
+        int64 (uint32 n >>> int32 bitPositionsToShiftBy)
 
     let inline Basics_and (a: bool) (b: bool) : bool = a && b
     let inline Basics_or (a: bool) (b: bool) : bool = a || b
@@ -11566,8 +11564,8 @@ defaultDeclarations =
     type Basics_Never = JustOneMore of Basics_Never
     let rec Basics_never (JustOneMore ever: Basics_Never) = Basics_never ever
 
-    let inline Char_isOctDigit (ch: char) : bool =
-        let code = int ch
+    let Char_isOctDigit (ch: char) : bool =
+        let code: int = int ch
 
         code <= 0x37 && 0x30 <= code
 
@@ -13800,20 +13798,20 @@ defaultDeclarations =
         | [] -> value
 
         | second :: otherOthers ->
-            if (<=) countdown (Basics_fabs weight) then
+            if (<=) countdown (System.Double.Abs weight) then
                 value
 
             else
                 Random_getByWeight
                     second
                     otherOthers
-                    ((-) countdown (Basics_fabs weight))
+                    ((-) countdown (System.Double.Abs weight))
 
     let Random_float (a: float) (b: float) =
         fun (seed0: Random_Seed) ->
             let seed1: Random_Seed = Random_next seed0
 
-            let range: float = Basics_fabs((-) b a)
+            let range: float = System.Double.Abs((-) b a)
 
             let n1: int64 = Random_peel seed1
 
@@ -13834,7 +13832,7 @@ defaultDeclarations =
         (others: List<(struct (float * 'a))>)
         =
         let normalize ((struct (weight, _)): (struct (float * 'ignored))) =
-            Basics_fabs weight
+            System.Double.Abs weight
 
         let total: float =
             (+) (normalize first) (List.sum (List.map normalize others))
