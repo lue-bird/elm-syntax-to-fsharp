@@ -11515,7 +11515,7 @@ defaultDeclarations =
         System.Int64.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_fclamp (minimum: float) (maximum: float) (n: float) : float =
-        System.Single.Clamp(value = n, min = minimum, max = maximum)
+        System.Double.Clamp(value = n, min = minimum, max = maximum)
 
     let inline Basics_logBase (newBase: float) (n: float) : float =
         System.Math.Log(n, newBase = newBase)
