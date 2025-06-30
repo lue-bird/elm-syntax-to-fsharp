@@ -21,6 +21,7 @@ fable_modules
 bin
 
 # still working on
+social/announcement.md
 example-language-server
 example-compile-itself
 
