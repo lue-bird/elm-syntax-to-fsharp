@@ -4306,7 +4306,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                 inferredTypeWithInnerTypeAliasesExpanded =
                     config.inferred.type_
                         |> inferredTypeExpandInnerAliases
-                            config.typeAliases
+                            (\moduleName -> config.typeAliases |> FastDict.get moduleName)
 
                 specializedTypes : FastDict.Dict String (List FsharpTypeVariableSpecialization)
                 specializedTypes =
@@ -4816,20 +4816,6 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             )
                             FastDict.empty
 
-                allInferredTypeAliases :
-                    FastDict.Dict
-                        String
-                        (FastDict.Dict
-                            String
-                            { parameters : List String
-                            , type_ : ElmSyntaxTypeInfer.Type
-                            , recordFieldOrder : Maybe (List String)
-                            }
-                        )
-                allInferredTypeAliases =
-                    modulesInferred.types
-                        |> FastDict.map (\_ moduleTypes -> moduleTypes.typeAliases)
-
                 fsharpDeclarationsWithoutExtraRecordTypeAliases :
                     { errors : List String
                     , declarations :
@@ -4929,7 +4915,11 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             if
                                                                 inferredTypeAliasDeclaration.type_
                                                                     |> inferredTypeExpandInnerAliases
-                                                                        allInferredTypeAliases
+                                                                        (\moduleNameToAccess ->
+                                                                            modulesInferred.types
+                                                                                |> FastDict.get moduleNameToAccess
+                                                                                |> Maybe.map .typeAliases
+                                                                        )
                                                                     |> inferredTypeContainsExtensibleRecord
                                                             then
                                                                 soFar
@@ -6028,13 +6018,19 @@ expression context expressionTypedNode =
                                                                     (inferredTypeSpecializedVariablesFrom
                                                                         (annotation
                                                                             |> inferredTypeExpandInnerAliases
-                                                                                -- TODO optimize
-                                                                                (context.moduleInfo |> FastDict.map (\_ moduleInfo -> moduleInfo.typeAliases))
+                                                                                (\moduleName ->
+                                                                                    context.moduleInfo
+                                                                                        |> FastDict.get moduleName
+                                                                                        |> Maybe.map .typeAliases
+                                                                                )
                                                                         )
                                                                         (expressionTypedNode.type_
                                                                             |> inferredTypeExpandInnerAliases
-                                                                                -- TODO optimize
-                                                                                (context.moduleInfo |> FastDict.map (\_ moduleInfo -> moduleInfo.typeAliases))
+                                                                                (\moduleName ->
+                                                                                    context.moduleInfo
+                                                                                        |> FastDict.get moduleName
+                                                                                        |> Maybe.map .typeAliases
+                                                                                )
                                                                         )
                                                                     )
                                                         }
@@ -9028,24 +9024,26 @@ inferredTypeNotVariableContainsExtensibleRecord inferredTypeNotVariable =
 resolving type aliases for specialization but not much else.
 -}
 inferredTypeExpandInnerAliases :
-    FastDict.Dict
-        {- module origin -} String
-        (FastDict.Dict
-            String
-            { parameters : List String
-            , recordFieldOrder : Maybe (List String)
-            , type_ : ElmSyntaxTypeInfer.Type
-            }
-        )
+    (String
+     ->
+        Maybe
+            (FastDict.Dict
+                String
+                { parameters : List String
+                , recordFieldOrder : Maybe (List String)
+                , type_ : ElmSyntaxTypeInfer.Type
+                }
+            )
+    )
     -> ElmSyntaxTypeInfer.Type
     -> ElmSyntaxTypeInfer.Type
-inferredTypeExpandInnerAliases typeAliases syntaxType =
+inferredTypeExpandInnerAliases typeAliasesInModule syntaxType =
     case syntaxType of
         ElmSyntaxTypeInfer.TypeVariable variable ->
             ElmSyntaxTypeInfer.TypeVariable variable
 
         ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
-            inferredTypeNotVariableExpandInnerAliases typeAliases
+            inferredTypeNotVariableExpandInnerAliases typeAliasesInModule
                 inferredTypeNotVariable
 
 
@@ -9053,18 +9051,20 @@ inferredTypeExpandInnerAliases typeAliases syntaxType =
 resolving type aliases for specialization but not much else.
 -}
 inferredTypeNotVariableExpandInnerAliases :
-    FastDict.Dict
-        {- module origin -} String
-        (FastDict.Dict
-            String
-            { parameters : List String
-            , recordFieldOrder : Maybe (List String)
-            , type_ : ElmSyntaxTypeInfer.Type
-            }
-        )
+    (String
+     ->
+        Maybe
+            (FastDict.Dict
+                String
+                { parameters : List String
+                , recordFieldOrder : Maybe (List String)
+                , type_ : ElmSyntaxTypeInfer.Type
+                }
+            )
+    )
     -> ElmSyntaxTypeInfer.TypeNotVariable
     -> ElmSyntaxTypeInfer.Type
-inferredTypeNotVariableExpandInnerAliases typeAliases syntaxType =
+inferredTypeNotVariableExpandInnerAliases typeAliasesInModule syntaxType =
     -- IGNORE TCO
     case syntaxType of
         ElmSyntaxTypeInfer.TypeUnit ->
@@ -9074,25 +9074,25 @@ inferredTypeNotVariableExpandInnerAliases typeAliases syntaxType =
         ElmSyntaxTypeInfer.TypeFunction typeFunction ->
             ElmSyntaxTypeInfer.TypeNotVariable
                 (ElmSyntaxTypeInfer.TypeFunction
-                    { input = typeFunction.input |> inferredTypeExpandInnerAliases typeAliases
-                    , output = typeFunction.output |> inferredTypeExpandInnerAliases typeAliases
+                    { input = typeFunction.input |> inferredTypeExpandInnerAliases typeAliasesInModule
+                    , output = typeFunction.output |> inferredTypeExpandInnerAliases typeAliasesInModule
                     }
                 )
 
         ElmSyntaxTypeInfer.TypeTuple parts ->
             ElmSyntaxTypeInfer.TypeNotVariable
                 (ElmSyntaxTypeInfer.TypeTuple
-                    { part0 = parts.part0 |> inferredTypeExpandInnerAliases typeAliases
-                    , part1 = parts.part1 |> inferredTypeExpandInnerAliases typeAliases
+                    { part0 = parts.part0 |> inferredTypeExpandInnerAliases typeAliasesInModule
+                    , part1 = parts.part1 |> inferredTypeExpandInnerAliases typeAliasesInModule
                     }
                 )
 
         ElmSyntaxTypeInfer.TypeTriple parts ->
             ElmSyntaxTypeInfer.TypeNotVariable
                 (ElmSyntaxTypeInfer.TypeTriple
-                    { part0 = parts.part0 |> inferredTypeExpandInnerAliases typeAliases
-                    , part1 = parts.part1 |> inferredTypeExpandInnerAliases typeAliases
-                    , part2 = parts.part2 |> inferredTypeExpandInnerAliases typeAliases
+                    { part0 = parts.part0 |> inferredTypeExpandInnerAliases typeAliasesInModule
+                    , part1 = parts.part1 |> inferredTypeExpandInnerAliases typeAliasesInModule
+                    , part2 = parts.part2 |> inferredTypeExpandInnerAliases typeAliasesInModule
                     }
                 )
 
@@ -9102,7 +9102,7 @@ inferredTypeNotVariableExpandInnerAliases typeAliases syntaxType =
                     (fields
                         |> FastDict.map
                             (\_ value ->
-                                value |> inferredTypeExpandInnerAliases typeAliases
+                                value |> inferredTypeExpandInnerAliases typeAliasesInModule
                             )
                     )
                 )
@@ -9115,7 +9115,7 @@ inferredTypeNotVariableExpandInnerAliases typeAliases syntaxType =
                         typeRecordExtension.fields
                             |> FastDict.map
                                 (\_ value ->
-                                    value |> inferredTypeExpandInnerAliases typeAliases
+                                    value |> inferredTypeExpandInnerAliases typeAliasesInModule
                                 )
                     }
                 )
@@ -9127,12 +9127,11 @@ inferredTypeNotVariableExpandInnerAliases typeAliases syntaxType =
                     typeConstruct.arguments
                         |> List.map
                             (\argument ->
-                                argument |> inferredTypeExpandInnerAliases typeAliases
+                                argument |> inferredTypeExpandInnerAliases typeAliasesInModule
                             )
             in
             case
-                typeAliases
-                    |> FastDict.get typeConstruct.moduleOrigin
+                typeAliasesInModule typeConstruct.moduleOrigin
                     |> Maybe.andThen (\byName -> byName |> FastDict.get typeConstruct.name)
             of
                 Just aliasedType ->
