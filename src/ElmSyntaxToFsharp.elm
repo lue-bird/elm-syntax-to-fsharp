@@ -9035,8 +9035,8 @@ inferredTypeExpandInnerAliases :
     -> ElmSyntaxTypeInfer.Type
 inferredTypeExpandInnerAliases typeAliasesInModule syntaxType =
     case syntaxType of
-        ElmSyntaxTypeInfer.TypeVariable variable ->
-            ElmSyntaxTypeInfer.TypeVariable variable
+        ElmSyntaxTypeInfer.TypeVariable _ ->
+            syntaxType
 
         ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
             inferredTypeNotVariableExpandInnerAliases typeAliasesInModule
@@ -9064,8 +9064,7 @@ inferredTypeNotVariableExpandInnerAliases typeAliasesInModule syntaxType =
     -- IGNORE TCO
     case syntaxType of
         ElmSyntaxTypeInfer.TypeUnit ->
-            ElmSyntaxTypeInfer.TypeNotVariable
-                ElmSyntaxTypeInfer.TypeUnit
+            inferredTypeUnit
 
         ElmSyntaxTypeInfer.TypeFunction typeFunction ->
             ElmSyntaxTypeInfer.TypeNotVariable
@@ -9149,6 +9148,12 @@ inferredTypeNotVariableExpandInnerAliases typeAliasesInModule syntaxType =
                             , arguments = argumentsExpanded
                             }
                         )
+
+
+inferredTypeUnit : ElmSyntaxTypeInfer.Type
+inferredTypeUnit =
+    ElmSyntaxTypeInfer.TypeNotVariable
+        ElmSyntaxTypeInfer.TypeUnit
 
 
 {-| F# does not have a concept of the following elm types:
