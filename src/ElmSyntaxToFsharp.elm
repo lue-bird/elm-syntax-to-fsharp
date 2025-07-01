@@ -6042,9 +6042,9 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
 variableNameDisambiguateFromFsharpKeywords : String -> String
 variableNameDisambiguateFromFsharpKeywords variableName =
     if
-        (fsharpKeywords |> FastSet.member variableName)
-            || -- to avoid overlaps, push other variables further with -_
-               (variableName |> String.endsWith "_")
+        -- to avoid overlaps, push other variables further with -_
+        (variableName |> String.endsWith "_")
+            || (fsharpKeywords |> FastSet.member variableName)
     then
         variableName ++ "_"
 
