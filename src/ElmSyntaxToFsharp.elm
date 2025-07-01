@@ -5083,16 +5083,22 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                 let
                                                     currentModuleDeclarationSignatureTypesIncludingUnannotated : FastDict.Dict String ElmSyntaxTypeInfer.Type
                                                     currentModuleDeclarationSignatureTypesIncludingUnannotated =
-                                                        (declarationsInferredUnspecialized
-                                                            ++ specializedInferredDeclarations
-                                                        )
+                                                        specializedInferredDeclarations
                                                             |> List.foldl
                                                                 (\declarationInferred moduleTypesSoFar ->
                                                                     moduleTypesSoFar
                                                                         |> FastDict.insert declarationInferred.name
                                                                             declarationInferred.type_
                                                                 )
-                                                                currentModuleDeclarationTypesAndErrors.types.signatures
+                                                                (declarationsInferredUnspecialized
+                                                                    |> List.foldl
+                                                                        (\declarationInferred moduleTypesSoFar ->
+                                                                            moduleTypesSoFar
+                                                                                |> FastDict.insert declarationInferred.name
+                                                                                    declarationInferred.type_
+                                                                        )
+                                                                        currentModuleDeclarationTypesAndErrors.types.signatures
+                                                                )
 
                                                     currentModuleDeclarationTypesIncludingUnannotated : ElmSyntaxTypeInfer.ModuleTypes
                                                     currentModuleDeclarationTypesIncludingUnannotated =
@@ -5110,16 +5116,22 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             currentModuleDeclarationTypesIncludingUnannotated
                                                 , inferred =
                                                     { declarationsInferred =
-                                                        (declarationsInferredUnspecialized
-                                                            |> List.filter
-                                                                (\declarationInferredUnspecialized ->
-                                                                    Basics.not
-                                                                        (FastSet.member declarationInferredUnspecialized.name
-                                                                            specializedDeclarations.originalDeclarationNamesThatGotSplit
-                                                                        )
-                                                                )
-                                                        )
-                                                            ++ specializedInferredDeclarations
+                                                        case specializedInferredDeclarations of
+                                                            [] ->
+                                                                declarationsInferredUnspecialized
+
+                                                            specializedInferredDeclaration0 :: specializedInferredDeclaration1Up ->
+                                                                specializedInferredDeclaration0
+                                                                    :: specializedInferredDeclaration1Up
+                                                                    ++ (declarationsInferredUnspecialized
+                                                                            |> List.filter
+                                                                                (\declarationInferredUnspecialized ->
+                                                                                    Basics.not
+                                                                                        (FastSet.member declarationInferredUnspecialized.name
+                                                                                            specializedDeclarations.originalDeclarationNamesThatGotSplit
+                                                                                        )
+                                                                                )
+                                                                       )
                                                     , module_ = syntaxModule
                                                     , moduleOriginLookup = moduleOriginLookup
                                                     , declarationTypes = currentModuleDeclarationTypesIncludingUnannotated
@@ -6023,15 +6035,17 @@ valueOrFunctionDeclaration moduleContext syntaxDeclarationValueOrFunction =
         )
         (syntaxDeclarationValueOrFunction.parameters
             |> listMapAndCombineOk
-                (\parameter -> parameter |> typedPattern)
+                typedPattern
         )
 
 
 variableNameDisambiguateFromFsharpKeywords : String -> String
 variableNameDisambiguateFromFsharpKeywords variableName =
-    -- TODO consider also adding _ when (variableName |> String.endsWith "_")
-    -- to avoid accidental overlaps
-    if fsharpKeywords |> FastSet.member variableName then
+    if
+        (fsharpKeywords |> FastSet.member variableName)
+            || -- to avoid overlaps, push other variables further with -_
+               (variableName |> String.endsWith "_")
+    then
         variableName ++ "_"
 
     else
