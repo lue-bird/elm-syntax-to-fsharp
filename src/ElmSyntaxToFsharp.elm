@@ -7054,51 +7054,57 @@ type IntOrFloat
 
 inferredTypeCheckOrGuessIntOrFloat : ElmSyntaxTypeInfer.Type -> IntOrFloat
 inferredTypeCheckOrGuessIntOrFloat inferredType =
-    if inferredType == inferredTypeBasicsFloat then
-        FloatNotInt
+    case inferredType of
+        ElmSyntaxTypeInfer.TypeVariable inputTypeVariable ->
+            if inputTypeVariable.name |> String.startsWith "number" then
+                -- assume Float
+                FloatNotInt
 
-    else if inferredType == inferredTypeBasicsInt then
-        IntNotFloat
+            else
+                -- assume Int
+                IntNotFloat
 
-    else
-        case inferredType of
-            ElmSyntaxTypeInfer.TypeVariable inputTypeVariable ->
-                if inputTypeVariable.name |> String.startsWith "number" then
-                    -- assume Float
-                    FloatNotInt
+        ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
+            case inferredTypeNotVariable of
+                ElmSyntaxTypeInfer.TypeConstruct typeConstruct ->
+                    case typeConstruct.moduleOrigin of
+                        "Basics" ->
+                            case typeConstruct.name of
+                                "Float" ->
+                                    FloatNotInt
 
-                else
-                    -- assume Int
+                                "Int" ->
+                                    IntNotFloat
+
+                                _ ->
+                                    IntNotFloat
+
+                        _ ->
+                            IntNotFloat
+
+                ElmSyntaxTypeInfer.TypeUnit ->
+                    -- incorrect type inference, assume Float
                     IntNotFloat
 
-            ElmSyntaxTypeInfer.TypeNotVariable inferredTypeNotVariable ->
-                case inferredTypeNotVariable of
-                    ElmSyntaxTypeInfer.TypeConstruct _ ->
-                        IntNotFloat
+                ElmSyntaxTypeInfer.TypeTuple _ ->
+                    -- incorrect type inference, assume Float
+                    IntNotFloat
 
-                    ElmSyntaxTypeInfer.TypeUnit ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
+                ElmSyntaxTypeInfer.TypeTriple _ ->
+                    -- incorrect type inference, assume Float
+                    IntNotFloat
 
-                    ElmSyntaxTypeInfer.TypeTuple _ ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
+                ElmSyntaxTypeInfer.TypeRecord _ ->
+                    -- incorrect type inference, assume Float
+                    IntNotFloat
 
-                    ElmSyntaxTypeInfer.TypeTriple _ ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
+                ElmSyntaxTypeInfer.TypeRecordExtension _ ->
+                    -- incorrect type inference, assume Float
+                    IntNotFloat
 
-                    ElmSyntaxTypeInfer.TypeRecord _ ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
-
-                    ElmSyntaxTypeInfer.TypeRecordExtension _ ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
-
-                    ElmSyntaxTypeInfer.TypeFunction _ ->
-                        -- incorrect type inference, assume Float
-                        IntNotFloat
+                ElmSyntaxTypeInfer.TypeFunction _ ->
+                    -- incorrect type inference, assume Float
+                    IntNotFloat
 
 
 okReferenceIpow : Result error_ { moduleOrigin : Maybe String, name : String }
