@@ -4302,15 +4302,11 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
             -> List Elm.Syntax.Expression.Function
         specialize config =
             let
-                inferredTypeWithInnerTypeAliasesExpanded : ElmSyntaxTypeInfer.Type
-                inferredTypeWithInnerTypeAliasesExpanded =
+                specializedTypes : FastDict.Dict String (List FsharpTypeVariableSpecialization)
+                specializedTypes =
                     config.inferred.type_
                         |> inferredTypeExpandInnerAliases
                             (\moduleName -> config.typeAliases |> FastDict.get moduleName)
-
-                specializedTypes : FastDict.Dict String (List FsharpTypeVariableSpecialization)
-                specializedTypes =
-                    inferredTypeWithInnerTypeAliasesExpanded
                         |> inferredTypeWithExpandedInnerAliasesSplitIntoSpecializedFsharpTypes
                             { allElmRecords = allElmRecords }
             in
