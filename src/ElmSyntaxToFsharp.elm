@@ -94,6 +94,7 @@ type FsharpExpression
         { moduleOrigin : Maybe String
         , name : String
         }
+    | FsharpExpressionNegateOperation FsharpExpression
     | FsharpExpressionRecordAccess
         { record : FsharpExpression
         , field : String
@@ -1058,6 +1059,15 @@ fsharpExpressionUsedLocalReferences fsharpExpression =
         FsharpExpressionChar _ ->
             FastSet.empty
 
+        FsharpExpressionLambda lambda ->
+            fsharpExpressionUsedLocalReferences lambda.result
+
+        FsharpExpressionNegateOperation inNegation ->
+            fsharpExpressionUsedLocalReferences inNegation
+
+        FsharpExpressionRecordAccess recordAccess ->
+            fsharpExpressionUsedLocalReferences recordAccess.record
+
         FsharpExpressionCall call ->
             call.called
                 |> fsharpExpressionUsedLocalReferences
@@ -1126,9 +1136,6 @@ fsharpExpressionUsedLocalReferences fsharpExpression =
                             (\fsharpCase -> fsharpCase.result |> fsharpExpressionUsedLocalReferences)
                     )
 
-        FsharpExpressionLambda lambda ->
-            fsharpExpressionUsedLocalReferences lambda.result
-
         FsharpExpressionTuple parts ->
             parts.part0
                 |> fsharpExpressionUsedLocalReferences
@@ -1139,9 +1146,6 @@ fsharpExpressionUsedLocalReferences fsharpExpression =
                         |> listMapToFastSetsAndUnify
                             fsharpExpressionUsedLocalReferences
                     )
-
-        FsharpExpressionRecordAccess recordAccess ->
-            fsharpExpressionUsedLocalReferences recordAccess.record
 
 
 choiceTypeDeclaration :
@@ -6713,28 +6717,7 @@ expression context expressionTypedNode =
 
         ElmSyntaxTypeInfer.ExpressionNegation inNegationNode ->
             Result.map
-                (\inNegation ->
-                    case inNegation of
-                        FsharpExpressionInt64 int64 ->
-                            FsharpExpressionInt64 -int64
-
-                        FsharpExpressionFloat float ->
-                            FsharpExpressionFloat -float
-
-                        nonLiteralNumberInNegation ->
-                            FsharpExpressionCall
-                                { called =
-                                    FsharpExpressionReference
-                                        (case inNegationNode.type_ |> inferredTypeCheckOrGuessIntOrFloat of
-                                            FloatNotInt ->
-                                                referenceBasicsFnegate
-
-                                            IntNotFloat ->
-                                                referenceBasicsInegate
-                                        )
-                                , arguments = [ nonLiteralNumberInNegation ]
-                                }
-                )
+                FsharpExpressionNegateOperation
                 (inNegationNode |> expression context)
 
         ElmSyntaxTypeInfer.ExpressionRecordAccess recordAccess ->
@@ -6944,16 +6927,6 @@ expression context expressionTypedNode =
 okFsharpExpressionRecordEmpty : Result error_ FsharpExpression
 okFsharpExpressionRecordEmpty =
     Ok (FsharpExpressionRecord FastDict.empty)
-
-
-referenceBasicsInegate : { moduleOrigin : Maybe String, name : String }
-referenceBasicsInegate =
-    { moduleOrigin = Nothing, name = "Basics_inegate" }
-
-
-referenceBasicsFnegate : { moduleOrigin : Maybe String, name : String }
-referenceBasicsFnegate =
-    { moduleOrigin = Nothing, name = "Basics_fnegate" }
 
 
 fsharpExpressionReferenceListAppend : FsharpExpression
@@ -7297,6 +7270,12 @@ condenseExpressionCall call =
                 , arguments = call.argument0 :: call.argument1Up
                 }
 
+        FsharpExpressionNegateOperation _ ->
+            FsharpExpressionCall
+                { called = call.called
+                , arguments = call.argument0 :: call.argument1Up
+                }
+
         FsharpExpressionRecordAccess _ ->
             FsharpExpressionCall
                 { called = call.called
@@ -7389,6 +7368,9 @@ callAsArrayFromList reference argument =
                                     Nothing
 
                                 FsharpExpressionReference _ ->
+                                    Nothing
+
+                                FsharpExpressionNegateOperation _ ->
                                     Nothing
 
                                 FsharpExpressionRecordAccess _ ->
@@ -10182,6 +10164,9 @@ printFsharpExpressionParenthesizedIfWithLetDeclarations fsharpExpression =
         FsharpExpressionReference _ ->
             notParenthesizedPrint
 
+        FsharpExpressionNegateOperation _ ->
+            notParenthesizedPrint
+
         FsharpExpressionRecordAccess _ ->
             notParenthesizedPrint
 
@@ -10232,6 +10217,9 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
             False
 
         FsharpExpressionReference _ ->
+            False
+
+        FsharpExpressionNegateOperation _ ->
             False
 
         FsharpExpressionRecordAccess _ ->
@@ -10320,6 +10308,15 @@ printFsharpExpressionNotParenthesized fsharpExpression =
         FsharpExpressionArrayLiteral elements ->
             printFsharpExpressionArrayLiteral elements
 
+        FsharpExpressionNegateOperation inNegation ->
+            printExactlyMinus
+                |> Print.followedBy
+                    (Print.withIndentIncreasedBy 1
+                        (printFsharpExpressionParenthesizedIfSpaceSeparated
+                            inNegation
+                        )
+                    )
+
         FsharpExpressionRecordAccess syntaxRecordAccess ->
             printFsharpExpressionParenthesizedIfSpaceSeparated
                 syntaxRecordAccess.record
@@ -10330,6 +10327,11 @@ printFsharpExpressionNotParenthesized fsharpExpression =
 
         FsharpExpressionRecordUpdate syntaxRecordUpdate ->
             printFsharpExpressionRecordUpdate syntaxRecordUpdate
+
+
+printExactlyMinus : Print
+printExactlyMinus =
+    Print.exactly "-"
 
 
 printFsharpExpressionUnit : Print
