@@ -1032,9 +1032,9 @@ syntaxExpressionSubs (Elm.Syntax.Node.Node _ syntaxExpression) =
 
 
 fsharpExpressionUsedLocalReferences : FsharpExpression -> FastSet.Set String
-fsharpExpressionUsedLocalReferences syntaxExpression =
+fsharpExpressionUsedLocalReferences fsharpExpression =
     -- IGNORE TCO
-    case syntaxExpression of
+    case fsharpExpression of
         FsharpExpressionReference reference ->
             case reference.moduleOrigin of
                 Just _ ->
@@ -1043,87 +1043,105 @@ fsharpExpressionUsedLocalReferences syntaxExpression =
                 Nothing ->
                     FastSet.singleton reference.name
 
-        expressionNotReference ->
-            expressionNotReference
-                |> fsharpExpressionSubs
-                |> listMapToFastSetsAndUnify
-                    fsharpExpressionUsedLocalReferences
-
-
-{-| All surface-level child [expression](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Expression)s.
-Order is not specified
--}
-fsharpExpressionSubs : FsharpExpression -> List FsharpExpression
-fsharpExpressionSubs fsharpExpression =
-    case fsharpExpression of
         FsharpExpressionUnit ->
-            []
+            FastSet.empty
 
         FsharpExpressionInt64 _ ->
-            []
+            FastSet.empty
 
         FsharpExpressionFloat _ ->
-            []
+            FastSet.empty
 
         FsharpExpressionStringLiteral _ ->
-            []
+            FastSet.empty
 
         FsharpExpressionChar _ ->
-            []
-
-        FsharpExpressionReference _ ->
-            []
+            FastSet.empty
 
         FsharpExpressionCall call ->
             call.called
-                :: call.arguments
+                |> fsharpExpressionUsedLocalReferences
+                |> FastSet.union
+                    (call.arguments
+                        |> listMapToFastSetsAndUnify
+                            fsharpExpressionUsedLocalReferences
+                    )
 
         FsharpExpressionListLiteral elements ->
             elements
+                |> listMapToFastSetsAndUnify
+                    fsharpExpressionUsedLocalReferences
 
         FsharpExpressionArrayLiteral elements ->
             elements
+                |> listMapToFastSetsAndUnify
+                    fsharpExpressionUsedLocalReferences
 
         FsharpExpressionRecord fields ->
-            fields |> FastDict.values
+            fields
+                |> fastDictMapToFastSetsAndUnify
+                    (\_ fieldValue -> fieldValue |> fsharpExpressionUsedLocalReferences)
 
         FsharpExpressionRecordUpdate recordUpdate ->
-            recordUpdate.fields |> FastDict.values
+            recordUpdate.fields
+                |> fastDictMapToFastSetsAndUnify
+                    (\_ fieldValue -> fieldValue |> fsharpExpressionUsedLocalReferences)
+                |> FastSet.insert recordUpdate.originalRecordVariable
 
         FsharpExpressionIfElse ifThenElse ->
-            [ ifThenElse.condition
-            , ifThenElse.onTrue
-            , ifThenElse.onFalse
-            ]
+            ifThenElse.condition
+                |> fsharpExpressionUsedLocalReferences
+                |> FastSet.union
+                    (ifThenElse.onTrue
+                        |> fsharpExpressionUsedLocalReferences
+                    )
+                |> FastSet.union
+                    (ifThenElse.onFalse
+                        |> fsharpExpressionUsedLocalReferences
+                    )
 
         FsharpExpressionWithLetDeclarations letIn ->
-            List.foldl
-                (\declaration soFar ->
-                    case declaration of
-                        FsharpLetDeclarationValueOrFunction letValueOrFunction ->
-                            letValueOrFunction.result :: soFar
+            (letIn.declaration0 :: letIn.declaration1Up)
+                |> List.foldl
+                    (\declaration soFar ->
+                        soFar
+                            |> FastSet.union
+                                (case declaration of
+                                    FsharpLetDeclarationValueOrFunction letValueOrFunction ->
+                                        letValueOrFunction.result |> fsharpExpressionUsedLocalReferences
 
-                        FsharpLetDestructuring letDestructuring ->
-                            letDestructuring.expression :: soFar
-                )
-                [ letIn.result ]
-                (letIn.declaration0 :: letIn.declaration1Up)
+                                    FsharpLetDestructuring letDestructuring ->
+                                        letDestructuring.expression |> fsharpExpressionUsedLocalReferences
+                                )
+                    )
+                    (letIn.result |> fsharpExpressionUsedLocalReferences)
 
         FsharpExpressionMatchWith matchWith ->
             matchWith.matched
-                :: matchWith.case0.result
-                :: (matchWith.case1Up |> List.map .result)
+                |> fsharpExpressionUsedLocalReferences
+                |> FastSet.union (matchWith.case0.result |> fsharpExpressionUsedLocalReferences)
+                |> FastSet.union
+                    (matchWith.case1Up
+                        |> listMapToFastSetsAndUnify
+                            (\fsharpCase -> fsharpCase.result |> fsharpExpressionUsedLocalReferences)
+                    )
 
         FsharpExpressionLambda lambda ->
-            [ lambda.result ]
+            fsharpExpressionUsedLocalReferences lambda.result
 
         FsharpExpressionTuple parts ->
             parts.part0
-                :: parts.part1
-                :: parts.part2Up
+                |> fsharpExpressionUsedLocalReferences
+                |> FastSet.union
+                    (parts.part1 |> fsharpExpressionUsedLocalReferences)
+                |> FastSet.union
+                    (parts.part2Up
+                        |> listMapToFastSetsAndUnify
+                            fsharpExpressionUsedLocalReferences
+                    )
 
         FsharpExpressionRecordAccess recordAccess ->
-            [ recordAccess.record ]
+            fsharpExpressionUsedLocalReferences recordAccess.record
 
 
 choiceTypeDeclaration :
@@ -7130,6 +7148,20 @@ listMapToFastSetsAndUnify elementToSet list =
                 FastSet.union
                     (element |> elementToSet)
                     soFar
+            )
+            FastSet.empty
+
+
+fastDictMapToFastSetsAndUnify :
+    (key -> value -> FastSet.Set comparableFastSetElement)
+    -> FastDict.Dict key value
+    -> FastSet.Set comparableFastSetElement
+fastDictMapToFastSetsAndUnify entryToSet list =
+    list
+        |> FastDict.foldl
+            (\key value soFar ->
+                FastSet.union soFar
+                    (entryToSet key value)
             )
             FastSet.empty
 
