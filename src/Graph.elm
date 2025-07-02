@@ -7,14 +7,13 @@ module Graph exposing
 
 Reference: <https://hackage.haskell.org/package/containers-0.7/docs/src/Data.Graph.html>
 
-This implementation attempts to adapt the concepts and structure from the
-Haskell Graph into the Elm ecosystem.
+This is edited from https://dark.elm.dmy.fr/packages/guida-lang/graph/latest/
 
 
 @docs Graph, Bounds, Edge, Vertex, Array
 
 
-# Strongly Connected Components
+## strongly-connected components
 
 @docs SCC, stronglyConnCompR
 
@@ -25,40 +24,35 @@ import Set exposing (Set)
 import Tree exposing (Tree)
 
 
-type Array e
-    = Array ( Int, Int ) (Dict Int e)
+type alias Array e =
+    { bounds : Bounds
+    , byIndex : Dict Int e
+    }
 
 
 arrayFind : Int -> Array e -> Maybe e
-arrayFind i (Array _ arr) =
-    Dict.get i arr
+arrayFind i arr =
+    Dict.get i arr.byIndex
 
 
-arrayBounds : Array e_ -> ( Int, Int )
-arrayBounds (Array bounds _) =
-    bounds
-
-
-createArray : ( Int, Int ) -> List ( Int, e ) -> Array e
+createArray : Bounds -> List ( Int, e ) -> Array e
 createArray bounds indexedList =
-    let
-        ( l, u ) =
-            bounds
-    in
-    Array bounds
-        (indexedList
-            |> List.filter (\( i, _ ) -> i >= l && i <= u + 1)
+    { bounds = bounds
+    , byIndex =
+        indexedList
+            |> List.filter (\( i, _ ) -> i >= bounds.min && i <= bounds.max + 1)
             |> Dict.fromList
-        )
+    }
 
 
-arrayAccum : (e -> a -> e) -> e -> ( Int, Int ) -> List ( Int, a ) -> Array e
-arrayAccum f initial ( l, u ) ies =
+arrayAccum : (e -> a -> e) -> e -> Bounds -> List ( Int, a ) -> Array e
+arrayAccum f initial bounds ies =
     let
         initialArr : Dict Int e
         initialArr =
-            List.repeat ((u + 1) - l) ()
-                |> List.indexedMap (\i _ -> ( l + i, initial ))
+            -- TODO custom function
+            List.repeat ((bounds.max + 1) - bounds.min) ()
+                |> List.indexedMap (\i _ -> ( bounds.min + i, initial ))
                 |> Dict.fromList
     in
     List.foldl
@@ -68,7 +62,7 @@ arrayAccum f initial ( l, u ) ies =
         initialArr
         ies
         |> Dict.toList
-        |> createArray ( l, u )
+        |> createArray bounds
 
 
 {-| Strongly connected component.
@@ -85,8 +79,16 @@ This interface is used when you expect to apply 'SCC' to
 (some of) the result of 'SCC', so you don't want to lose the
 dependency information.
 
-    stronglyConnCompR [ ( "a", 0, [ 1 ] ), ( "b", 1, [ 2, 3 ] ), ( "c", 2, [ 1 ] ), ( "d", 3, [ 3 ] ) ]
-        == [ CyclicSCC [ ( "d", 3, [ 3 ] ) ], CyclicSCC [ ( "b", 1, [ 2, 3 ] ), ( "c", 2, [ 1 ] ) ], AcyclicSCC ( "a", 0, [ 1 ] ) ]
+    stronglyConnCompR
+        [ ( "a", 0, [ 1 ] )
+        , ( "b", 1, [ 2, 3 ] )
+        , ( "c", 2, [ 1 ] )
+        , ( "d", 3, [ 3 ] )
+        ]
+        == [ CyclicSCC [ ( "d", 3, [ 3 ] ) ]
+           , CyclicSCC [ ( "b", 1, [ 2, 3 ] ), ( "c", 2, [ 1 ] ) ]
+           , AcyclicSCC ( "a", 0, [ 1 ] )
+           ]
 
 -}
 stronglyConnCompR : List ( node, comparable, List comparable ) -> List (SCC ( node, comparable, List comparable ))
@@ -151,10 +153,10 @@ type alias Graph =
     Array (List Vertex)
 
 
-{-| The bounds of an @Array@.
+{-| The bounds of a [`Graph`](#Graph).
 -}
 type alias Bounds =
-    ( Vertex, Vertex )
+    { min : Vertex, max : Vertex }
 
 
 {-| An edge from the first vertex to the second.
@@ -165,25 +167,21 @@ type alias Edge =
 
 {-| (O(V)). Returns the list of vertices in the graph.
 
-==== **Examples**
+    vertices (buildG (0,-1) []) == []
 
-> vertices (buildG (0,-1) []) == []
-
-> vertices (buildG (0,2) [(0,1),(1,2)]) == [0,1,2]
+    vertices (buildG (0,2) [(0,1),(1,2)]) == [0,1,2]
 
 -}
 vertices : Graph -> List Vertex
-vertices (Array ( lo, hi ) _) =
-    List.range lo hi
+vertices graph =
+    List.range graph.bounds.min graph.bounds.max
 
 
 {-| (O(V+E)). Returns the list of edges in the graph.
 
-==== **Examples**
+    edges (buildG (0,-1) []) == []
 
-> edges (buildG (0,-1) []) == []
-
-> edges (buildG (0,2) [(0,1),(1,2)]) == [(0,1),(1,2)]
+    edges (buildG (0,2) [(0,1),(1,2)]) == [(0,1),(1,2)]
 
 -}
 edges : Graph -> List Edge
@@ -201,11 +199,9 @@ edges g =
 Warning: This function will cause a runtime exception if a vertex in the edge
 list is not within the given @Bounds@.
 
-==== **Examples**
-
-> buildG (0,-1) [] == array (0,-1) []
-> buildG (0,2) [(0,1), (1,2)] == array (0,2) [(0,[1]),(1,[2]),(2,[])]
-> buildG (0,2) [(0,1), (0,2), (1,2)] == array (0,2) [(0,[2,1]),(1,[2]),(2,[])]
+    buildG (0,-1) [] == array (0,-1) []
+    buildG (0,2) [(0,1), (1,2)] == array (0,2) [(0,[1]),(1,[2]),(2,[])]
+    buildG (0,2) [(0,1), (0,2), (1,2)] == array (0,2) [(0,[2,1]),(1,[2]),(2,[])]
 
 -}
 buildG : Bounds -> List Edge -> Graph
@@ -219,14 +215,12 @@ buildG boundsOfEdges edgesToBuildFrom =
 
 {-| (O(V+E)). The graph obtained by reversing all edges.
 
-==== **Examples**
-
-> transposeG (buildG (0,2) [(0,1), (1,2)]) == array (0,2) [(0,[]),(1,[0]),(2,[1])]
+    transposeG (buildG (0,2) [(0,1), (1,2)]) == array (0,2) [(0,[]),(1,[0]),(2,[1])]
 
 -}
 transposeG : Graph -> Graph
 transposeG g =
-    buildG (arrayBounds g) (reverseE g)
+    buildG (.bounds g) (reverseE g)
 
 
 reverseE : Graph -> List Edge
@@ -243,15 +237,12 @@ representation of that list. The @Graph@ result represents the /shape/ of the
 graph, and the functions describe a) how to retrieve the label and adjacent
 vertices of a given vertex, and b) how to retrieve a vertex given a key.
 
-@(graph, nodeFromVertex, vertexFromKey) = graphFromEdges edgeList@
+`(graph, nodeFromVertex, vertexFromKey) = graphFromEdges edgeList`
 
-  - @graph :: Graph@ is the raw, array based adjacency list for the graph.
-  - @nodeFromVertex :: Vertex -> (node, key, [key])@ returns the node
-    associated with the given 0-based @Int@ vertex; see /warning/ below. This
-    runs in (O(1)) time.
-  - @vertexFromKey :: key -> Maybe Vertex@ returns the @Int@ vertex for the
-    key if it exists in the graph, @Nothing@ otherwise. This runs in
-    (O(\\log V)) time.
+  - `graph` is the raw, array based adjacency list for the graph.
+  - `nodeFromVertex` returns the node
+    associated with the given 0-based int vertex; see /warning/ below. This
+    runs in (O(1)) time
 
 To safely use this API you must either extract the list of vertices directly
 from the graph or first call @vertexFromKey k@ to check if a vertex
@@ -265,31 +256,31 @@ graph; they are ignored.
 Warning: The @nodeFromVertex@ function will cause a runtime exception if the
 given @Vertex@ does not exist.
 
-==== **Examples**
 
 An empty graph.
 
-> (graph, nodeFromVertex, vertexFromKey) = graphFromEdges []
-> graph = array (0,-1) []
+    let
+        (graph, vertexMap) =
+            graphFromEdges []
+    in
+    graph == array (0,-1) []
 
-A graph where the out-list references unspecified nodes (@'c'@), these are
+A graph where the out-list references unspecified nodes (`'c'`), these are
 ignored.
 
-> (graph, _, _) = graphFromEdges [("a", 'a', ['b']), ("b", 'b', ['c'])]
-> array (0,1) [(0,[1]),(1,[])]
+    let
+        (graph, _) =
+            graphFromEdges [("a", 'a', ['b']), ("b", 'b', ['c'])]
+    in
+    graph == array (0,1) [(0,[1]),(1,[])]
 
 A graph with 3 vertices: ("a") -> ("b") -> ("c")
 
-> (graph, nodeFromVertex, vertexFromKey) = graphFromEdges [("a", 'a', ['b']), ("b", 'b', ['c']), ("c", 'c', [])]
-> graph == array (0,2) [(0,[1]),(1,[2]),(2,[])]
-> nodeFromVertex 0 == Just ("a",'a',['b'])
-> vertexFromKey 'a' == Just 0
-
-Get the label for a given key.
-
-> let getNodePart (n, _, _) = n
-> (graph, nodeFromVertex, vertexFromKey) = graphFromEdges [("a", 'a', ['b']), ("b", 'b', ['c']), ("c", 'c', [])]
-> Maybe.andThen (Maybe.map getNodePart << nodeFromVertex) (vertexFromKey 'a') == Just "A"
+    let
+        (graph, _) =
+            graphFromEdges [("a", 'a', ['b']), ("b", 'b', ['c']), ("c", 'c', [])]
+    in
+    graph == array (0,2) [(0,[1]),(1,[2]),(2,[])]
 
 -}
 graphFromEdges :
@@ -300,13 +291,13 @@ graphFromEdges :
         )
 graphFromEdges edges0 =
     let
-        maxV : Int
-        maxV =
+        maxVertexIndex : Int
+        maxVertexIndex =
             List.length edges0 - 1
 
-        bounds0 : ( Int, Int )
+        bounds0 : Bounds
         bounds0 =
-            ( 0, maxV )
+            { min = 0, max = maxVertexIndex }
 
         sortedEdges : List ( node, comparable, List comparable )
         sortedEdges =
@@ -317,7 +308,7 @@ graphFromEdges edges0 =
         edges1 =
             List.indexedMap Tuple.pair sortedEdges
 
-        graph : Array (List Int)
+        graph : Graph
         graph =
             edges1
                 |> List.map
@@ -336,10 +327,10 @@ graphFromEdges edges0 =
         vertexMap =
             createArray bounds0 edges1
 
-        keyVertex : comparable -> Maybe Int
+        keyVertex : comparable -> Maybe Vertex
         keyVertex k =
             let
-                findVertex : Int -> Int -> Maybe Int
+                findVertex : Int -> Int -> Maybe Vertex
                 findVertex lo hi =
                     if lo > hi then
                         Nothing
@@ -365,7 +356,7 @@ graphFromEdges edges0 =
                                     GT ->
                                         findVertex (mid + 1) hi
             in
-            findVertex 0 maxV
+            findVertex 0 maxVertexIndex
     in
     ( graph, vertexMap )
 
