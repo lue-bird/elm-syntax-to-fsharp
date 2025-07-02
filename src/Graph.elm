@@ -35,16 +35,6 @@ arrayFind i arr =
     Dict.get i arr.byIndex
 
 
-createArray : Bounds -> List ( Int, e ) -> Array e
-createArray bounds indexedList =
-    { bounds = bounds
-    , byIndex =
-        indexedList
-            |> List.filter (\( i, _ ) -> i >= bounds.min && i <= bounds.max + 1)
-            |> Dict.fromList
-    }
-
-
 arrayAccum : (e -> a -> e) -> e -> Bounds -> List ( Int, a ) -> Array e
 arrayAccum f initial bounds ies =
     { bounds = bounds
@@ -327,22 +317,30 @@ graphFromEdges edges0 =
 
         graph : Graph
         graph =
-            edges1
-                |> List.map
-                    (\( v, ( _, _, ks ) ) ->
-                        ( v, List.filterMap keyVertex ks )
-                    )
-                |> createArray bounds0
+            { bounds = bounds0
+            , byIndex =
+                edges1
+                    |> List.map
+                        (\( v, ( _, _, ks ) ) ->
+                            ( v, List.filterMap keyVertex ks )
+                        )
+                    |> Dict.fromList
+            }
 
         keyMap : Array comparable
         keyMap =
-            edges1
-                |> List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
-                |> createArray bounds0
+            { bounds = bounds0
+            , byIndex =
+                edges1
+                    |> List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
+                    |> Dict.fromList
+            }
 
         vertexMap : Array ( node, comparable, List comparable )
         vertexMap =
-            createArray bounds0 edges1
+            { bounds = bounds0
+            , byIndex = edges1 |> Dict.fromList
+            }
 
         keyVertex : comparable -> Maybe Vertex
         keyVertex k =
