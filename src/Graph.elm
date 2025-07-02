@@ -146,19 +146,34 @@ stronglyConnCompR edges0 =
                                         AcyclicSCC vertexKey
 
                         treeSubsNotEmpty ->
+                            let
+                                treeSubsSCC : List ( node, comparable, List comparable )
+                                treeSubsSCC =
+                                    List.foldr dec [] treeSubsNotEmpty
+                            in
                             CyclicSCC
-                                (List.filterMap identity
-                                    (arrayFind v vertexMap
-                                        :: List.foldr dec [] treeSubsNotEmpty
-                                    )
+                                (case arrayFind v vertexMap of
+                                    Nothing ->
+                                        treeSubsSCC
+
+                                    Just vKey ->
+                                        vKey :: treeSubsSCC
                                 )
 
-                dec : Tree Vertex -> List (Maybe ( node, comparable, List comparable )) -> List (Maybe ( node, comparable, List comparable ))
+                dec : Tree Vertex -> List ( node, comparable, List comparable ) -> List ( node, comparable, List comparable )
                 dec node vs =
-                    -- TODO avoid constructing maybes, don't cons if Nothing
                     -- IGNORE TCO
-                    arrayFind (Tree.element node) vertexMap
-                        :: List.foldr dec vs (Tree.subs node)
+                    let
+                        treeSubsSCC : List ( node, comparable, List comparable )
+                        treeSubsSCC =
+                            List.foldr dec vs (Tree.subs node)
+                    in
+                    case arrayFind (Tree.element node) vertexMap of
+                        Nothing ->
+                            treeSubsSCC
+
+                        Just elementKey ->
+                            elementKey :: treeSubsSCC
             in
             List.map decode (scc graph)
 
