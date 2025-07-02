@@ -15,7 +15,6 @@ If you need more fine-grained helpers,
 -}
 
 import Bitwise
-import Data.Graph
 import Elm.Syntax.Declaration
 import Elm.Syntax.Expression
 import Elm.Syntax.File
@@ -26,6 +25,7 @@ import Elm.Syntax.TypeAnnotation
 import ElmSyntaxTypeInfer
 import FastDict
 import FastSet
+import Graph
 import Print exposing (Print)
 import Unicode
 
@@ -4273,14 +4273,14 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 )
                         )
                     )
-                |> Data.Graph.stronglyConnCompR
+                |> Graph.stronglyConnCompR
                 |> List.concatMap
                     (\edge0 ->
                         case edge0 of
-                            Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                            Graph.AcyclicSCC ( n, _, _ ) ->
                                 [ n ]
 
-                            Data.Graph.CyclicSCC triples ->
+                            Graph.CyclicSCC triples ->
                                 -- we assume the given module do not have cyclic imports
                                 List.map (\( n, _, _ ) -> n) triples
                     )
@@ -6491,21 +6491,6 @@ fastDictMapToFastSetsAndUnify entryToSet list =
             FastSet.empty
 
 
-listMapAndToFastSet :
-    (a -> comparable)
-    -> List a
-    -> FastSet.Set comparable
-listMapAndToFastSet elementToSetElement list =
-    list
-        |> List.foldl
-            (\element soFar ->
-                soFar
-                    |> FastSet.insert
-                        (element |> elementToSetElement)
-            )
-            FastSet.empty
-
-
 condenseExpressionCall :
     { called : FsharpExpression
     , argument0 : FsharpExpression
@@ -7586,14 +7571,14 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclar
                         |> FastSet.toList
                     )
                 )
-            |> Data.Graph.stronglyConnCompR
+            |> Graph.stronglyConnCompR
             |> List.map
                 (\edge0 ->
                     case edge0 of
-                        Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                        Graph.AcyclicSCC ( n, _, _ ) ->
                             FsharpValueOrFunctionDependencySingle n
 
-                        Data.Graph.CyclicSCC triples ->
+                        Graph.CyclicSCC triples ->
                             FsharpValueOrFunctionDependencyRecursiveBucket
                                 (List.map (\( n, _, _ ) -> n) triples)
                 )
@@ -7670,14 +7655,14 @@ fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
                             )
                         )
                 )
-            |> Data.Graph.stronglyConnCompR
+            |> Graph.stronglyConnCompR
             |> List.map
                 (\edge0 ->
                     case edge0 of
-                        Data.Graph.AcyclicSCC ( n, _, _ ) ->
+                        Graph.AcyclicSCC ( n, _, _ ) ->
                             FsharpValueOrFunctionDependencySingle n
 
-                        Data.Graph.CyclicSCC triples ->
+                        Graph.CyclicSCC triples ->
                             FsharpValueOrFunctionDependencyRecursiveBucket
                                 (List.map (\( n, _, _ ) -> n) triples)
                 )
@@ -15339,17 +15324,6 @@ typeNotVariableBasicsInt =
         , name = "Int"
         , arguments = []
         }
-
-
-inferredTypeBasicsFloat : ElmSyntaxTypeInfer.Type
-inferredTypeBasicsFloat =
-    ElmSyntaxTypeInfer.TypeNotVariable typeNotVariableBasicsFloat
-
-
-typeNotVariableBasicsFloat : ElmSyntaxTypeInfer.TypeNotVariable
-typeNotVariableBasicsFloat =
-    ElmSyntaxTypeInfer.TypeConstruct
-        { moduleOrigin = "Basics", name = "Float", arguments = [] }
 
 
 typeString : ElmSyntaxTypeInfer.Type
