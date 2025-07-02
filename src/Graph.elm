@@ -358,37 +358,6 @@ graphFromEdges edges0 =
                         )
                         FastDict.empty
             }
-
-        keyVertex : comparable -> Maybe Vertex
-        keyVertex k =
-            let
-                findVertex : Int -> Int -> Maybe Vertex
-                findVertex lo hi =
-                    if lo > hi then
-                        Nothing
-
-                    else
-                        let
-                            mid : Int
-                            mid =
-                                lo + (hi - lo) // 2
-                        in
-                        case arrayFind mid keyMap of
-                            Nothing ->
-                                Nothing
-
-                            Just v ->
-                                case compare k v of
-                                    LT ->
-                                        findVertex lo (mid - 1)
-
-                                    EQ ->
-                                        Just mid
-
-                                    GT ->
-                                        findVertex (mid + 1) hi
-            in
-            findVertex 0 maxVertexIndex
     in
     ( { bounds = bounds0
       , byIndex =
@@ -397,7 +366,10 @@ graphFromEdges edges0 =
                     (\( v, ( _, _, ks ) ) soFar ->
                         soFar
                             |> FastDict.insert v
-                                (List.filterMap keyVertex ks)
+                                (List.filterMap
+                                    (\k -> k |> keyToVertexIn keyMap)
+                                    ks
+                                )
                     )
                     FastDict.empty
       }
@@ -405,6 +377,38 @@ graphFromEdges edges0 =
       , byIndex = edges1 |> FastDict.fromList
       }
     )
+
+
+keyToVertexIn : Array comparable -> comparable -> Maybe Vertex
+keyToVertexIn keyMap k =
+    let
+        findVertex : Int -> Int -> Maybe Vertex
+        findVertex lo hi =
+            if lo > hi then
+                Nothing
+
+            else
+                let
+                    mid : Int
+                    mid =
+                        lo + (hi - lo) // 2
+                in
+                case arrayFind mid keyMap of
+                    Nothing ->
+                        Nothing
+
+                    Just v ->
+                        case compare k v of
+                            LT ->
+                                findVertex lo (mid - 1)
+
+                            EQ ->
+                                Just mid
+
+                            GT ->
+                                findVertex (mid + 1) hi
+    in
+    findVertex 0 keyMap.bounds.max
 
 
 {-| (O(V+E)). A spanning forest of the graph, obtained from a depth-first
