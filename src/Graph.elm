@@ -116,8 +116,13 @@ stronglyConnCompR edges0 =
                     graphFromEdges edges0
 
                 mentionsItself : Int -> Bool
-                mentionsItself v =
-                    List.member v (Maybe.withDefault [] (arrayFind v graph))
+                mentionsItself from =
+                    case arrayFind from graph of
+                        Nothing ->
+                            False
+
+                        Just tos ->
+                            List.member from tos
 
                 decode : Tree Vertex -> SCC ( node, comparable, List comparable )
                 decode tree =
@@ -150,6 +155,7 @@ stronglyConnCompR edges0 =
 
                 dec : Tree Vertex -> List (Maybe ( node, comparable, List comparable )) -> List (Maybe ( node, comparable, List comparable ))
                 dec node vs =
+                    -- TODO avoid constructing maybes, don't cons if Nothing
                     -- IGNORE TCO
                     arrayFind (Tree.element node) vertexMap
                         :: List.foldr dec vs (Tree.subs node)
@@ -204,9 +210,13 @@ vertices graph =
 edges : Graph -> List Edge
 edges g =
     List.concatMap
-        (\v ->
-            List.map (Tuple.pair v)
-                (Maybe.withDefault [] (arrayFind v g))
+        (\from ->
+            case arrayFind from g of
+                Nothing ->
+                    []
+
+                Just tos ->
+                    List.map (\to -> ( from, to )) tos
         )
         (vertices g)
 
@@ -237,7 +247,7 @@ buildG boundsOfEdges edgesToBuildFrom =
 -}
 transposeG : Graph -> Graph
 transposeG g =
-    buildG (.bounds g) (reverseE g)
+    buildG g.bounds (reverseE g)
 
 
 reverseE : Graph -> List Edge
@@ -342,7 +352,8 @@ graphFromEdges edges0 =
             { bounds = bounds0
             , byIndex =
                 edges1
-                    |> List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
+                    |> -- TODO optimize
+                       List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
                     |> FastDict.fromList
             }
 
