@@ -10,7 +10,7 @@ Reference: <https://hackage.haskell.org/package/containers-0.7/docs/src/Data.Gra
 This is edited from https://dark.elm.dmy.fr/packages/guida-lang/graph/latest/
 
 
-@docs Graph, Bounds, Edge, Vertex, Array
+@docs Graph, Edge, Vertex, Array
 
 
 ## strongly-connected components
