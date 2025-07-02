@@ -367,7 +367,7 @@ graphFromEdges edges0 =
                         soFar
                             |> FastDict.insert v
                                 (List.filterMap
-                                    (\k -> k |> keyToVertexIn keyMap)
+                                    (\k -> k |> keyToVertexInArray keyMap)
                                     ks
                                 )
                     )
@@ -379,36 +379,36 @@ graphFromEdges edges0 =
     )
 
 
-keyToVertexIn : Array comparable -> comparable -> Maybe Vertex
-keyToVertexIn keyMap k =
-    let
-        findVertex : Int -> Int -> Maybe Vertex
-        findVertex lo hi =
-            if lo > hi then
+keyToVertexInArray : Array comparable -> comparable -> Maybe Vertex
+keyToVertexInArray keyMap k =
+    arrayFindBetween 0 keyMap.bounds.max k keyMap
+
+
+arrayFindBetween : Int -> Int -> comparable -> Array comparable -> Maybe Int
+arrayFindBetween lo hi k keyMap =
+    if lo > hi then
+        Nothing
+
+    else
+        let
+            mid : Int
+            mid =
+                lo + (hi - lo) // 2
+        in
+        case arrayFind mid keyMap of
+            Nothing ->
                 Nothing
 
-            else
-                let
-                    mid : Int
-                    mid =
-                        lo + (hi - lo) // 2
-                in
-                case arrayFind mid keyMap of
-                    Nothing ->
-                        Nothing
+            Just v ->
+                case compare k v of
+                    LT ->
+                        arrayFindBetween lo (mid - 1) k keyMap
 
-                    Just v ->
-                        case compare k v of
-                            LT ->
-                                findVertex lo (mid - 1)
+                    EQ ->
+                        Just mid
 
-                            EQ ->
-                                Just mid
-
-                            GT ->
-                                findVertex (mid + 1) hi
-    in
-    findVertex 0 keyMap.bounds.max
+                    GT ->
+                        arrayFindBetween (mid + 1) hi k keyMap
 
 
 {-| (O(V+E)). A spanning forest of the graph, obtained from a depth-first
