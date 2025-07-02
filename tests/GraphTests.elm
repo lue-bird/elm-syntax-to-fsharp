@@ -10,16 +10,16 @@ suite =
     Test.describe "Graph"
         [ Test.test "stronglyConnCompR"
             (\_ ->
-                Graph.stronglyConnCompR
+                Graph.stronglyConnComponents
                     [ ( "a", 0, [ 1 ] )
                     , ( "b", 1, [ 2, 3 ] )
                     , ( "c", 2, [ 1 ] )
                     , ( "d", 3, [ 3 ] )
                     ]
                     |> Expect.equal
-                        [ Graph.CyclicSCC [ ( "d", 3, [ 3 ] ) ]
-                        , Graph.CyclicSCC [ ( "b", 1, [ 2, 3 ] ), ( "c", 2, [ 1 ] ) ]
-                        , Graph.AcyclicSCC ( "a", 0, [ 1 ] )
+                        [ Graph.CyclicSCC [ "d" ]
+                        , Graph.CyclicSCC [ "b", "c" ]
+                        , Graph.AcyclicSCC "a"
                         ]
             )
         ]

@@ -1,6 +1,7 @@
 module Graph exposing
     ( Graph, Edge, Vertex, Array
-    , SCC(..), stronglyConnCompR
+    , SCC(..)
+    , stronglyConnComponents
     )
 
 {-| An Elm graph type implementation, inspired by Haskell's Data.Graph.
@@ -91,20 +92,20 @@ This interface is used when you expect to apply 'SCC' to
 (some of) the result of 'SCC', so you don't want to lose the
 dependency information.
 
-    stronglyConnCompR
+    stronglyConnComponents
         [ ( "a", 0, [ 1 ] )
         , ( "b", 1, [ 2, 3 ] )
         , ( "c", 2, [ 1 ] )
         , ( "d", 3, [ 3 ] )
         ]
-        == [ CyclicSCC [ ( "d", 3, [ 3 ] ) ]
-           , CyclicSCC [ ( "b", 1, [ 2, 3 ] ), ( "c", 2, [ 1 ] ) ]
-           , AcyclicSCC ( "a", 0, [ 1 ] )
+        == [ CyclicSCC [ "d" ]
+           , CyclicSCC [ "b", "c" ]
+           , AcyclicSCC "a"
            ]
 
 -}
-stronglyConnCompR : List ( node, comparable, List comparable ) -> List (SCC ( node, comparable, List comparable ))
-stronglyConnCompR edges0 =
+stronglyConnComponents : List ( node, comparable, List comparable ) -> List (SCC node)
+stronglyConnComponents edges0 =
     case edges0 of
         [] ->
             []
@@ -123,7 +124,7 @@ stronglyConnCompR edges0 =
                         Just tos ->
                             List.member from tos
 
-                decode : Tree Vertex -> SCC ( node, comparable, List comparable )
+                decode : Tree Vertex -> SCC node
                 decode tree =
                     let
                         v : Vertex
@@ -137,16 +138,16 @@ stronglyConnCompR edges0 =
                                     -- bad state
                                     CyclicSCC []
 
-                                Just vertexKey ->
+                                Just ( vertexKeyNode, _, _ ) ->
                                     if mentionsItself v then
-                                        CyclicSCC [ vertexKey ]
+                                        CyclicSCC [ vertexKeyNode ]
 
                                     else
-                                        AcyclicSCC vertexKey
+                                        AcyclicSCC vertexKeyNode
 
                         treeSubsNotEmpty ->
                             let
-                                treeSubsSCC : List ( node, comparable, List comparable )
+                                treeSubsSCC : List node
                                 treeSubsSCC =
                                     List.foldr dec [] treeSubsNotEmpty
                             in
@@ -155,15 +156,15 @@ stronglyConnCompR edges0 =
                                     Nothing ->
                                         treeSubsSCC
 
-                                    Just vKey ->
-                                        vKey :: treeSubsSCC
+                                    Just ( vKeyNode, _, _ ) ->
+                                        vKeyNode :: treeSubsSCC
                                 )
 
-                dec : Tree Vertex -> List ( node, comparable, List comparable ) -> List ( node, comparable, List comparable )
+                dec : Tree Vertex -> List node -> List node
                 dec node vs =
                     -- IGNORE TCO
                     let
-                        treeSubsSCC : List ( node, comparable, List comparable )
+                        treeSubsSCC : List node
                         treeSubsSCC =
                             List.foldr dec vs (treeSubs node)
                     in
@@ -171,8 +172,8 @@ stronglyConnCompR edges0 =
                         Nothing ->
                             treeSubsSCC
 
-                        Just elementKey ->
-                            elementKey :: treeSubsSCC
+                        Just ( elementKeyNode, _, _ ) ->
+                            elementKeyNode :: treeSubsSCC
             in
             List.map decode (scc graph)
 

@@ -4273,16 +4273,17 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 )
                         )
                     )
-                |> Graph.stronglyConnCompR
-                |> List.concatMap
+                |> Graph.stronglyConnComponents
+                |> -- TODO optimize
+                   List.concatMap
                     (\edge0 ->
                         case edge0 of
-                            Graph.AcyclicSCC ( n, _, _ ) ->
+                            Graph.AcyclicSCC n ->
                                 [ n ]
 
-                            Graph.CyclicSCC triples ->
+                            Graph.CyclicSCC recursive ->
                                 -- we assume the given module do not have cyclic imports
-                                List.map (\( n, _, _ ) -> n) triples
+                                recursive
                     )
 
         specialize :
@@ -7566,17 +7567,7 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclar
                         |> FastSet.toList
                     )
                 )
-            |> Graph.stronglyConnCompR
-            |> List.map
-                (\edge0 ->
-                    case edge0 of
-                        Graph.AcyclicSCC ( n, _, _ ) ->
-                            Graph.AcyclicSCC n
-
-                        Graph.CyclicSCC triples ->
-                            Graph.CyclicSCC
-                                (List.map (\( n, _, _ ) -> n) triples)
-                )
+            |> Graph.stronglyConnComponents
     }
 
 
@@ -7650,17 +7641,7 @@ fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
                             )
                         )
                 )
-            |> Graph.stronglyConnCompR
-            |> List.map
-                (\edge0 ->
-                    case edge0 of
-                        Graph.AcyclicSCC ( n, _, _ ) ->
-                            Graph.AcyclicSCC n
-
-                        Graph.CyclicSCC triples ->
-                            Graph.CyclicSCC
-                                (List.map (\( n, _, _ ) -> n) triples)
-                )
+            |> Graph.stronglyConnComponents
     }
 
 
