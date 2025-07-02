@@ -354,11 +354,13 @@ graphFromEdges edges0 =
             { bounds = bounds0
             , byIndex =
                 edges1
-                    |> List.map
-                        (\( v, ( _, _, ks ) ) ->
-                            ( v, List.filterMap keyVertex ks )
+                    |> List.foldl
+                        (\( v, ( _, _, ks ) ) soFar ->
+                            soFar
+                                |> FastDict.insert v
+                                    (List.filterMap keyVertex ks)
                         )
-                    |> FastDict.fromList
+                        FastDict.empty
             }
 
         keyMap : Array comparable
@@ -366,9 +368,11 @@ graphFromEdges edges0 =
             { bounds = bounds0
             , byIndex =
                 edges1
-                    |> -- TODO optimize
-                       List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
-                    |> FastDict.fromList
+                    |> List.foldl
+                        (\( v, ( _, k, _ ) ) soFar ->
+                            soFar |> FastDict.insert v k
+                        )
+                        FastDict.empty
             }
 
         vertexMap : Array ( node, comparable, List comparable )
