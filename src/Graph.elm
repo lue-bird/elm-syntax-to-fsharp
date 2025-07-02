@@ -340,28 +340,12 @@ graphFromEdges edges0 =
         bounds0 =
             { min = 0, max = maxVertexIndex }
 
-        sortedEdges : List ( node, comparable, List comparable )
-        sortedEdges =
-            edges0
-                |> List.sortWith (\( _, k1, _ ) ( _, k2, _ ) -> compare k1 k2)
-
         edges1 : List ( Int, ( node, comparable, List comparable ) )
         edges1 =
-            List.indexedMap Tuple.pair sortedEdges
-
-        graph : Graph
-        graph =
-            { bounds = bounds0
-            , byIndex =
-                edges1
-                    |> List.foldl
-                        (\( v, ( _, _, ks ) ) soFar ->
-                            soFar
-                                |> FastDict.insert v
-                                    (List.filterMap keyVertex ks)
-                        )
-                        FastDict.empty
-            }
+            List.indexedMap Tuple.pair
+                (edges0
+                    |> List.sortWith (\( _, k1, _ ) ( _, k2, _ ) -> compare k1 k2)
+                )
 
         keyMap : Array comparable
         keyMap =
@@ -373,12 +357,6 @@ graphFromEdges edges0 =
                             soFar |> FastDict.insert v k
                         )
                         FastDict.empty
-            }
-
-        vertexMap : Array ( node, comparable, List comparable )
-        vertexMap =
-            { bounds = bounds0
-            , byIndex = edges1 |> FastDict.fromList
             }
 
         keyVertex : comparable -> Maybe Vertex
@@ -412,7 +390,21 @@ graphFromEdges edges0 =
             in
             findVertex 0 maxVertexIndex
     in
-    ( graph, vertexMap )
+    ( { bounds = bounds0
+      , byIndex =
+            edges1
+                |> List.foldl
+                    (\( v, ( _, _, ks ) ) soFar ->
+                        soFar
+                            |> FastDict.insert v
+                                (List.filterMap keyVertex ks)
+                    )
+                    FastDict.empty
+      }
+    , { bounds = bounds0
+      , byIndex = edges1 |> FastDict.fromList
+      }
+    )
 
 
 {-| (O(V+E)). A spanning forest of the graph, obtained from a depth-first
