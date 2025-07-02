@@ -13,8 +13,7 @@
         "lue-bird/elm-syntax-type-infer": "2.0.6 <= v < 3.0.0",
         "miniBill/elm-fast-dict": "1.2.3 <= v < 2.0.0",
         "miniBill/elm-unicode": "1.1.1 <= v < 2.0.0",
-        "stil4m/elm-syntax": "7.3.6 <= v < 8.0.0",
-        "zwilias/elm-rosetree": "1.5.0 <= v < 2.0.0"
+        "stil4m/elm-syntax": "7.3.6 <= v < 8.0.0"
     },
     "test-dependencies": {
         "elm-explorations/test": "2.2.0 <= v < 3.0.0"

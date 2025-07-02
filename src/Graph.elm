@@ -118,9 +118,9 @@ stronglyConnCompR edges0 =
                     let
                         v : Vertex
                         v =
-                            Tree.label tree
+                            Tree.element tree
                     in
-                    case ( Tree.children tree, mentionsItself v, arrayFind v vertexMap ) of
+                    case ( Tree.subs tree, mentionsItself v, arrayFind v vertexMap ) of
                         ( [], True, Nothing ) ->
                             CyclicSCC []
 
@@ -141,8 +141,8 @@ stronglyConnCompR edges0 =
                 dec : Tree Vertex -> List (Maybe ( node, comparable, List comparable )) -> List (Maybe ( node, comparable, List comparable ))
                 dec node vs =
                     -- IGNORE TCO
-                    arrayFind (Tree.label node) vertexMap
-                        :: List.foldr dec vs (Tree.children node)
+                    arrayFind (Tree.element node) vertexMap
+                        :: List.foldr dec vs (Tree.subs node)
             in
             List.map decode (scc graph)
 
@@ -398,9 +398,14 @@ thus more efficient.
 
 -}
 depthFirstSpanningTreeFromVertices : Graph -> List Vertex -> List (Tree Vertex)
-depthFirstSpanningTreeFromVertices g vs0 =
+depthFirstSpanningTreeFromVertices graph vs0 =
     let
-        go : List Vertex -> IntSet -> List ( Tree Vertex, List Vertex ) -> List (Tree Vertex) -> List (Tree Vertex)
+        go :
+            List Vertex
+            -> IntSet
+            -> List ( Tree Vertex, List Vertex )
+            -> List (Tree Vertex)
+            -> List (Tree Vertex)
         go vrtcs visited stack acc =
             case vrtcs of
                 [] ->
@@ -411,7 +416,7 @@ depthFirstSpanningTreeFromVertices g vs0 =
                         ( firstTree, firstVs ) :: ( secondTree, secondVs ) :: rest ->
                             go firstVs
                                 visited
-                                (( Tree.appendChild firstTree secondTree
+                                (( Tree.addAsLastSub firstTree secondTree
                                  , secondVs
                                  )
                                     :: rest
@@ -426,9 +431,9 @@ depthFirstSpanningTreeFromVertices g vs0 =
                         go vs visited stack acc
 
                     else
-                        go (Maybe.withDefault [] (arrayFind v g))
+                        go (Maybe.withDefault [] (arrayFind v graph))
                             (FastSet.insert v visited)
-                            (( Tree.singleton v, vs ) :: stack)
+                            (( Tree.one v, vs ) :: stack)
                             acc
     in
     go vs0 FastSet.empty [] []
@@ -442,7 +447,7 @@ type alias IntSet =
 
 postorder : Tree a -> List a -> List a
 postorder node list =
-    postorderF (Tree.children node) (Tree.label node :: list)
+    postorderF (Tree.subs node) (Tree.element node :: list)
 
 
 postorderF : List (Tree a) -> List a -> List a
