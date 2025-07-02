@@ -1,5 +1,5 @@
 module Graph exposing
-    ( Graph, Bounds, Edge, Vertex, Array
+    ( Graph, Edge, Vertex, Array
     , SCC(..), stronglyConnCompR
     )
 
@@ -24,7 +24,7 @@ import FastSet
 
 
 type alias Array e =
-    { bounds : Bounds
+    { max : Int
     , byIndex : FastDict.Dict Int e
     }
 
@@ -34,9 +34,9 @@ arrayFind i arr =
     FastDict.get i arr.byIndex
 
 
-arrayAccum : (e -> a -> e) -> e -> Bounds -> List ( Int, a ) -> Array e
-arrayAccum f initial bounds ies =
-    { bounds = bounds
+arrayAccum : (e -> a -> e) -> e -> Int -> List ( Int, a ) -> Array e
+arrayAccum f initial max ies =
+    { max = max
     , byIndex =
         List.foldl
             (\( i, a ) acc ->
@@ -47,7 +47,7 @@ arrayAccum f initial bounds ies =
                     acc
             )
             (-- FastDict.empty is also possible but not conclusively faster
-             fastDictRangeToConstant bounds.min bounds.max initial
+             fastDictRangeToConstant 0 max initial
             )
             ies
     }
@@ -190,12 +190,6 @@ type alias Graph =
     Array (List Vertex)
 
 
-{-| The bounds of a [`Graph`](#Graph).
--}
-type alias Bounds =
-    { min : Vertex, max : Vertex }
-
-
 {-| An edge from the first vertex to the second.
 -}
 type alias Edge =
@@ -211,7 +205,7 @@ type alias Edge =
 -}
 vertices : Graph -> List Vertex
 vertices graph =
-    List.range graph.bounds.min graph.bounds.max
+    List.range 0 graph.max
 
 
 {-| (O(V+E)). Returns the list of edges in the graph.
@@ -236,32 +230,22 @@ edges g =
 
 
 {-| (O(V+E)). Build a graph from a list of edges.
-
-Warning: This function will cause a runtime exception if a vertex in the edge
-list is not within the given @Bounds@.
-
-    buildG (0,-1) [] == array (0,-1) []
-    buildG (0,2) [(0,1), (1,2)] == array (0,2) [(0,[1]),(1,[2]),(2,[])]
-    buildG (0,2) [(0,1), (0,2), (1,2)] == array (0,2) [(0,[2,1]),(1,[2]),(2,[])]
-
+Each vertex must be at most the first given integer
 -}
-buildG : Bounds -> List Edge -> Graph
-buildG boundsOfEdges edgesToBuildFrom =
+buildG : Int -> List Edge -> Graph
+buildG max edgesToBuildFrom =
     arrayAccum
         (\soFar vertex -> vertex :: soFar)
         []
-        boundsOfEdges
+        max
         edgesToBuildFrom
 
 
-{-| (O(V+E)). The graph obtained by reversing all edges.
-
-    transposeG (buildG (0,2) [(0,1), (1,2)]) == array (0,2) [(0,[]),(1,[0]),(2,[1])]
-
+{-| (O(V+E)). The graph obtained by reversing all edges
 -}
 transposeG : Graph -> Graph
 transposeG g =
-    buildG g.bounds (reverseE g)
+    buildG g.max (reverseE g)
 
 
 reverseE : Graph -> List Edge
@@ -336,10 +320,6 @@ graphFromEdges edges0 =
         maxVertexIndex =
             List.length edges0 - 1
 
-        bounds0 : Bounds
-        bounds0 =
-            { min = 0, max = maxVertexIndex }
-
         edges1 : List ( Int, ( node, comparable, List comparable ) )
         edges1 =
             List.indexedMap Tuple.pair
@@ -349,7 +329,7 @@ graphFromEdges edges0 =
 
         keyMap : Array comparable
         keyMap =
-            { bounds = bounds0
+            { max = maxVertexIndex
             , byIndex =
                 edges1
                     |> List.foldl
@@ -359,7 +339,7 @@ graphFromEdges edges0 =
                         FastDict.empty
             }
     in
-    ( { bounds = bounds0
+    ( { max = maxVertexIndex
       , byIndex =
             edges1
                 |> List.foldl
@@ -373,7 +353,7 @@ graphFromEdges edges0 =
                     )
                     FastDict.empty
       }
-    , { bounds = bounds0
+    , { max = maxVertexIndex
       , byIndex = edges1 |> FastDict.fromList
       }
     )
@@ -381,7 +361,7 @@ graphFromEdges edges0 =
 
 keyToVertexInArray : Array comparable -> comparable -> Maybe Vertex
 keyToVertexInArray keyMap k =
-    arrayFindBetween 0 keyMap.bounds.max k keyMap
+    arrayFindBetween 0 keyMap.max k keyMap
 
 
 arrayFindBetween : Int -> Int -> comparable -> Array comparable -> Maybe Int
