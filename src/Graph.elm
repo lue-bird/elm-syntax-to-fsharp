@@ -19,20 +19,20 @@ This is edited from https://dark.elm.dmy.fr/packages/guida-lang/graph/latest/
 
 -}
 
-import Dict exposing (Dict)
-import Set exposing (Set)
+import FastDict
+import FastSet
 import Tree exposing (Tree)
 
 
 type alias Array e =
     { bounds : Bounds
-    , byIndex : Dict Int e
+    , byIndex : FastDict.Dict Int e
     }
 
 
 arrayFind : Int -> Array e -> Maybe e
 arrayFind i arr =
-    Dict.get i arr.byIndex
+    FastDict.get i arr.byIndex
 
 
 arrayAccum : (e -> a -> e) -> e -> Bounds -> List ( Int, a ) -> Array e
@@ -41,15 +41,15 @@ arrayAccum f initial bounds ies =
     , byIndex =
         List.foldl
             (\( i, a ) acc ->
-                Dict.update i
+                FastDict.update i
                     (\atIndexOrNothing ->
                         Just (f (atIndexOrNothing |> Maybe.withDefault initial) a)
                     )
                     acc
             )
-            (-- Dict.empty is also possible but not conclusively faster
+            (-- FastDict.empty is also possible but not conclusively faster
              listRangeMap bounds.min bounds.max (\n -> ( n, initial ))
-                |> Dict.fromList
+                |> FastDict.fromList
             )
             ies
     }
@@ -324,7 +324,7 @@ graphFromEdges edges0 =
                         (\( v, ( _, _, ks ) ) ->
                             ( v, List.filterMap keyVertex ks )
                         )
-                    |> Dict.fromList
+                    |> FastDict.fromList
             }
 
         keyMap : Array comparable
@@ -333,13 +333,13 @@ graphFromEdges edges0 =
             , byIndex =
                 edges1
                     |> List.map (\( v, ( _, k, _ ) ) -> ( v, k ))
-                    |> Dict.fromList
+                    |> FastDict.fromList
             }
 
         vertexMap : Array ( node, comparable, List comparable )
         vertexMap =
             { bounds = bounds0
-            , byIndex = edges1 |> Dict.fromList
+            , byIndex = edges1 |> FastDict.fromList
             }
 
         keyVertex : comparable -> Maybe Vertex
@@ -422,22 +422,22 @@ depthFirstSpanningTreeFromVertices g vs0 =
                             go firstVs visited rest (firstTree :: acc)
 
                 v :: vs ->
-                    if Set.member v visited then
+                    if FastSet.member v visited then
                         go vs visited stack acc
 
                     else
                         go (Maybe.withDefault [] (arrayFind v g))
-                            (Set.insert v visited)
+                            (FastSet.insert v visited)
                             (( Tree.singleton v, vs ) :: stack)
                             acc
     in
-    go vs0 Set.empty [] []
+    go vs0 FastSet.empty [] []
 
 
 {-| Portable implementation using IntSet.
 -}
 type alias IntSet =
-    Set Int
+    FastSet.Set Int
 
 
 postorder : Tree a -> List a -> List a
