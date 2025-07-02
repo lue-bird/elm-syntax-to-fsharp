@@ -6229,9 +6229,8 @@ expression context expressionTypedNode =
 
                                     ElmSyntaxTypeInfer.LetDestructuring syntaxLetDestructuring ->
                                         syntaxLetDestructuring.pattern
-                                            |> patternBindings
-                                            |> listMapAndToFastSet
-                                                variableNameDisambiguateFromFsharpKeywords
+                                            |> patternBindingsAsFsharpVariables
+                                            |> FastSet.fromList
                             )
             in
             Result.map3
@@ -6363,44 +6362,47 @@ inferredTypeExpandFunction inferredType =
 
 {-| Recursively find all introduced variables
 in the [pattern](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Pattern)
-(like `a` and `b` in `( Just a, { b } )`)
+(like `a` and `b` in `( Just a, { b } )`),
+each variableNameDisambiguateFromFsharpKeywords
 -}
-patternBindings :
+patternBindingsAsFsharpVariables :
     ElmSyntaxTypeInfer.TypedNode ElmSyntaxTypeInfer.Pattern
     -> List String
-patternBindings syntaxPattern =
+patternBindingsAsFsharpVariables syntaxPattern =
     -- IGNORE TCO
     case syntaxPattern.value of
         ElmSyntaxTypeInfer.PatternVariable name ->
-            [ name ]
+            [ name |> variableNameDisambiguateFromFsharpKeywords ]
 
         ElmSyntaxTypeInfer.PatternAs patternAs ->
-            patternAs.variable.value
-                :: (patternAs.pattern |> patternBindings)
+            (patternAs.variable.value |> variableNameDisambiguateFromFsharpKeywords)
+                :: (patternAs.pattern |> patternBindingsAsFsharpVariables)
 
         ElmSyntaxTypeInfer.PatternParenthesized inParens ->
-            inParens |> patternBindings
+            inParens |> patternBindingsAsFsharpVariables
 
         ElmSyntaxTypeInfer.PatternListExact elements ->
-            elements |> List.concatMap patternBindings
+            elements |> List.concatMap patternBindingsAsFsharpVariables
 
         ElmSyntaxTypeInfer.PatternTuple parts ->
-            (parts.part0 |> patternBindings)
-                ++ (parts.part1 |> patternBindings)
+            (parts.part0 |> patternBindingsAsFsharpVariables)
+                ++ (parts.part1 |> patternBindingsAsFsharpVariables)
 
         ElmSyntaxTypeInfer.PatternTriple parts ->
-            (parts.part0 |> patternBindings)
-                ++ (parts.part1 |> patternBindings)
-                ++ (parts.part2 |> patternBindings)
+            (parts.part0 |> patternBindingsAsFsharpVariables)
+                ++ (parts.part1 |> patternBindingsAsFsharpVariables)
+                ++ (parts.part2 |> patternBindingsAsFsharpVariables)
 
         ElmSyntaxTypeInfer.PatternRecord fields ->
-            fields |> List.map .value
+            fields
+                |> List.map (\field -> field.value |> variableNameDisambiguateFromFsharpKeywords)
 
         ElmSyntaxTypeInfer.PatternVariant patternVariant ->
-            patternVariant.values |> List.concatMap patternBindings
+            patternVariant.values |> List.concatMap patternBindingsAsFsharpVariables
 
         ElmSyntaxTypeInfer.PatternListCons listCons ->
-            (listCons.head |> patternBindings) ++ (listCons.head |> patternBindings)
+            (listCons.head |> patternBindingsAsFsharpVariables)
+                ++ (listCons.head |> patternBindingsAsFsharpVariables)
 
         ElmSyntaxTypeInfer.PatternIgnored ->
             []
