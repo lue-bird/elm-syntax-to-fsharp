@@ -120,21 +120,25 @@ stronglyConnCompR edges0 =
                         v =
                             Tree.element tree
                     in
-                    case ( Tree.subs tree, mentionsItself v, arrayFind v vertexMap ) of
-                        ( [], True, Nothing ) ->
-                            CyclicSCC []
+                    case Tree.subs tree of
+                        [] ->
+                            case arrayFind v vertexMap of
+                                Nothing ->
+                                    -- bad state
+                                    CyclicSCC []
 
-                        ( [], True, Just vertexKey ) ->
-                            CyclicSCC [ vertexKey ]
+                                Just vertexKey ->
+                                    if mentionsItself v then
+                                        CyclicSCC [ vertexKey ]
 
-                        ( [], False, Just vertex ) ->
-                            AcyclicSCC vertex
+                                    else
+                                        AcyclicSCC vertexKey
 
-                        ( ts, _, _ ) ->
+                        treeSubsNotEmpty ->
                             CyclicSCC
                                 (List.filterMap identity
                                     (arrayFind v vertexMap
-                                        :: List.foldr dec [] ts
+                                        :: List.foldr dec [] treeSubsNotEmpty
                                     )
                                 )
 
