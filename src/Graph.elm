@@ -47,22 +47,39 @@ createArray bounds indexedList =
 
 arrayAccum : (e -> a -> e) -> e -> Bounds -> List ( Int, a ) -> Array e
 arrayAccum f initial bounds ies =
-    let
-        initialArr : Dict Int e
-        initialArr =
-            -- TODO custom function
-            List.repeat ((bounds.max + 1) - bounds.min) ()
-                |> List.indexedMap (\i _ -> ( bounds.min + i, initial ))
+    { bounds = bounds
+    , byIndex =
+        List.foldl
+            (\( i, a ) acc ->
+                Dict.update i
+                    (\atIndexOrNothing ->
+                        Just (f (atIndexOrNothing |> Maybe.withDefault initial) a)
+                    )
+                    acc
+            )
+            (-- Dict.empty is also possible but not conclusively faster
+             listRangeMap bounds.min bounds.max (\n -> ( n, initial ))
                 |> Dict.fromList
-    in
-    List.foldl
-        (\( i, a ) acc ->
-            Dict.update i (Maybe.map (\v -> f v a)) acc
-        )
-        initialArr
-        ies
-        |> Dict.toList
-        |> createArray bounds
+            )
+            ies
+    }
+
+
+listRangeMap : Int -> Int -> (Int -> a) -> List a
+listRangeMap startInclusive endInclusive numberToElement =
+    listRangeMapAppendTo [] startInclusive endInclusive numberToElement
+
+
+listRangeMapAppendTo : List a -> Int -> Int -> (Int -> a) -> List a
+listRangeMapAppendTo list startInclusive endInclusive numberToElement =
+    if startInclusive <= endInclusive then
+        listRangeMapAppendTo (numberToElement endInclusive :: list)
+            startInclusive
+            (endInclusive - 1)
+            numberToElement
+
+    else
+        list
 
 
 {-| Strongly connected component.
