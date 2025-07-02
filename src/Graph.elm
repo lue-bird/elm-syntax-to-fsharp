@@ -21,7 +21,6 @@ This is edited from https://dark.elm.dmy.fr/packages/guida-lang/graph/latest/
 
 import FastDict
 import FastSet
-import Tree exposing (Tree)
 
 
 type alias Array e =
@@ -129,9 +128,9 @@ stronglyConnCompR edges0 =
                     let
                         v : Vertex
                         v =
-                            Tree.element tree
+                            treeElement tree
                     in
-                    case Tree.subs tree of
+                    case treeSubs tree of
                         [] ->
                             case arrayFind v vertexMap of
                                 Nothing ->
@@ -166,9 +165,9 @@ stronglyConnCompR edges0 =
                     let
                         treeSubsSCC : List ( node, comparable, List comparable )
                         treeSubsSCC =
-                            List.foldr dec vs (Tree.subs node)
+                            List.foldr dec vs (treeSubs node)
                     in
-                    case arrayFind (Tree.element node) vertexMap of
+                    case arrayFind (treeElement node) vertexMap of
                         Nothing ->
                             treeSubsSCC
 
@@ -452,7 +451,7 @@ depthFirstSpanningTreeFromVertices graph vs0 =
                         ( firstTree, firstVs ) :: ( secondTree, secondVs ) :: rest ->
                             go firstVs
                                 visited
-                                (( Tree.addAsLastSub firstTree secondTree
+                                (( treeAddAsLastSub firstTree secondTree
                                  , secondVs
                                  )
                                     :: rest
@@ -469,7 +468,7 @@ depthFirstSpanningTreeFromVertices graph vs0 =
                     else
                         go (Maybe.withDefault [] (arrayFind v graph))
                             (FastSet.insert v visited)
-                            (( Tree.one v, vs ) :: stack)
+                            (( treeOne v, vs ) :: stack)
                             acc
     in
     go vs0 FastSet.empty [] []
@@ -483,7 +482,7 @@ type alias IntSet =
 
 postorder : Tree a -> List a -> List a
 postorder node list =
-    postorderF (Tree.subs node) (Tree.element node :: list)
+    postorderF (treeSubs node) (treeElement node :: list)
 
 
 postorderF : List (Tree a) -> List a -> List a
@@ -501,8 +500,8 @@ postOrd graph =
 {-| The strongly connected components of a graph, in reverse topological order.
 
     scc (buildG ( 0, 3 ) [ ( 3, 1 ), ( 1, 2 ), ( 2, 0 ), ( 0, 1 ) ])
-        == [ Tree.tree 0 [ Tree.tree 1 [ Tree.tree 2 [] ] ]
-           , Tree.tree 3 []
+        == [ tree 0 [ tree 1 [ tree 2 [] ] ]
+           , tree 3 []
            ]
 
 -}
@@ -510,3 +509,31 @@ scc : Graph -> List (Tree Vertex)
 scc g =
     depthFirstSpanningTreeFromVertices g
         (List.reverse (postOrd (transposeG g)))
+
+
+
+--
+
+
+type Tree element
+    = Tree element (List (Tree element))
+
+
+treeOne : element -> Tree element
+treeOne onlyElement =
+    Tree onlyElement []
+
+
+treeElement : Tree element -> element
+treeElement (Tree innerElement _) =
+    innerElement
+
+
+treeSubs : Tree element -> List (Tree element)
+treeSubs (Tree _ innerSubs) =
+    innerSubs
+
+
+treeAddAsLastSub : Tree element -> Tree element -> Tree element
+treeAddAsLastSub newLastSub (Tree innerElement innerSubs) =
+    Tree innerElement (innerSubs ++ [ newLastSub ])
