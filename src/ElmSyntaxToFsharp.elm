@@ -7536,11 +7536,6 @@ printExactlyColonSpace =
     Print.exactly ": "
 
 
-type FsharpValueOrFunctionDependencyBucket element
-    = FsharpValueOrFunctionDependencySingle element
-    | FsharpValueOrFunctionDependencyRecursiveBucket (List element)
-
-
 fsharpValueOrFunctionDeclarationsGroupByDependencies :
     List
         { name : String
@@ -7551,7 +7546,7 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies :
     ->
         { mostToLeastDependedOn :
             List
-                (FsharpValueOrFunctionDependencyBucket
+                (Graph.SCC
                     { name : String
                     , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                     , result : FsharpExpression
@@ -7576,10 +7571,10 @@ fsharpValueOrFunctionDeclarationsGroupByDependencies fsharpValueOrFunctionDeclar
                 (\edge0 ->
                     case edge0 of
                         Graph.AcyclicSCC ( n, _, _ ) ->
-                            FsharpValueOrFunctionDependencySingle n
+                            Graph.AcyclicSCC n
 
                         Graph.CyclicSCC triples ->
-                            FsharpValueOrFunctionDependencyRecursiveBucket
+                            Graph.CyclicSCC
                                 (List.map (\( n, _, _ ) -> n) triples)
                 )
     }
@@ -7615,7 +7610,7 @@ fsharpTypeDeclarationsGroupByDependencies :
     ->
         { mostToLeastDependedOn :
             List
-                (FsharpValueOrFunctionDependencyBucket
+                (Graph.SCC
                     FsharpChoiceTypeOrTypeAliasDeclaration
                 )
         }
@@ -7660,10 +7655,10 @@ fsharpTypeDeclarationsGroupByDependencies fsharpTypeDeclarations =
                 (\edge0 ->
                     case edge0 of
                         Graph.AcyclicSCC ( n, _, _ ) ->
-                            FsharpValueOrFunctionDependencySingle n
+                            Graph.AcyclicSCC n
 
                         Graph.CyclicSCC triples ->
-                            FsharpValueOrFunctionDependencyRecursiveBucket
+                            Graph.CyclicSCC
                                 (List.map (\( n, _, _ ) -> n) triples)
                 )
     }
@@ -10258,7 +10253,7 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
 
         ordered :
             { mostToLeastDependedOn :
-                List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+                List (Graph.SCC FsharpLetDeclaration)
             }
         ordered =
             { mostToLeastDependedOn =
@@ -10268,12 +10263,12 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
                     |> List.map
                         (\fsharpValueOrFunctionDependencyBucket ->
                             case fsharpValueOrFunctionDependencyBucket of
-                                FsharpValueOrFunctionDependencySingle fsharpValueOrFunction ->
-                                    FsharpValueOrFunctionDependencySingle
+                                Graph.AcyclicSCC fsharpValueOrFunction ->
+                                    Graph.AcyclicSCC
                                         (FsharpLetDeclarationValueOrFunction fsharpValueOrFunction)
 
-                                FsharpValueOrFunctionDependencyRecursiveBucket recursiveBucket ->
-                                    FsharpValueOrFunctionDependencyRecursiveBucket
+                                Graph.CyclicSCC recursiveBucket ->
+                                    Graph.CyclicSCC
                                         (recursiveBucket
                                             |> List.map FsharpLetDeclarationValueOrFunction
                                         )
@@ -10286,7 +10281,7 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
         |> Print.listMapAndIntersperseAndFlatten
             (\dependencyGroup ->
                 case dependencyGroup of
-                    FsharpValueOrFunctionDependencySingle fsharpLetDeclaration ->
+                    Graph.AcyclicSCC fsharpLetDeclaration ->
                         printExactlyLetSpace
                             |> Print.followedBy
                                 (case fsharpLetDeclaration of
@@ -10298,7 +10293,7 @@ printFsharpExpressionWithLetDeclarations syntaxLetIn =
                                 )
                             |> Print.followedBy printLinebreakIndentedLinebreakIndented
 
-                    FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
+                    Graph.CyclicSCC recursiveGroup ->
                         printExactlyLetSpaceRecSpace
                             |> Print.followedBy
                                 (recursiveGroup
@@ -10336,11 +10331,11 @@ fsharpLetDeclarationsInsertFsharpLetDestructurings :
         }
     ->
         { mostToLeastDependedOn :
-            List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+            List (Graph.SCC FsharpLetDeclaration)
         }
     ->
         { mostToLeastDependedOn :
-            List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+            List (Graph.SCC FsharpLetDeclaration)
         }
 fsharpLetDeclarationsInsertFsharpLetDestructurings fsharpLetDestructuringsToInsert existingLetDeclarations =
     fsharpLetDestructuringsToInsert
@@ -10360,11 +10355,11 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring :
     }
     ->
         { mostToLeastDependedOn :
-            List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+            List (Graph.SCC FsharpLetDeclaration)
         }
     ->
         { mostToLeastDependedOn :
-            List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+            List (Graph.SCC FsharpLetDeclaration)
         }
 fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert existingLetDeclarations =
     let
@@ -10376,7 +10371,7 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
         withLetDestructuring :
             { destructuringHasBeenInserted : Bool
             , leastToMostDependedOn :
-                List (FsharpValueOrFunctionDependencyBucket FsharpLetDeclaration)
+                List (Graph.SCC FsharpLetDeclaration)
             }
         withLetDestructuring =
             existingLetDeclarations.mostToLeastDependedOn
@@ -10394,11 +10389,11 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
                                 existingLetDeclarationUsedLocalReferences : FastSet.Set String
                                 existingLetDeclarationUsedLocalReferences =
                                     case existingLetDeclarationDependencyBucket of
-                                        FsharpValueOrFunctionDependencySingle existingLetDeclaration ->
+                                        Graph.AcyclicSCC existingLetDeclaration ->
                                             existingLetDeclaration
                                                 |> fsharpLetDeclarationUsedLocalReferences
 
-                                        FsharpValueOrFunctionDependencyRecursiveBucket recursiveBucketMembers ->
+                                        Graph.CyclicSCC recursiveBucketMembers ->
                                             recursiveBucketMembers
                                                 |> listMapToFastSetsAndUnify
                                                     fsharpLetDeclarationUsedLocalReferences
@@ -10407,7 +10402,7 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
                                 { destructuringHasBeenInserted = True
                                 , leastToMostDependedOn =
                                     existingLetDeclarationDependencyBucket
-                                        :: FsharpValueOrFunctionDependencySingle
+                                        :: Graph.AcyclicSCC
                                             (FsharpLetDestructuring fsharpLetDestructuringToInsert)
                                         :: soFar.leastToMostDependedOn
                                 }
@@ -10426,7 +10421,7 @@ fsharpLetDeclarationsInsertFsharpLetDestructuring fsharpLetDestructuringToInsert
             withLetDestructuring.leastToMostDependedOn |> List.reverse
 
         else
-            FsharpValueOrFunctionDependencySingle
+            Graph.AcyclicSCC
                 (FsharpLetDestructuring fsharpLetDestructuringToInsert)
                 :: withLetDestructuring.leastToMostDependedOn
                 |> List.reverse
@@ -10613,7 +10608,7 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
         valueAndFunctionDeclarationsOrdered :
             { mostToLeastDependedOn :
                 List
-                    (FsharpValueOrFunctionDependencyBucket
+                    (Graph.SCC
                         { name : String
                         , parameters : List { pattern : FsharpPattern, type_ : FsharpType }
                         , result : FsharpExpression
@@ -10636,7 +10631,7 @@ fsharpDeclarationsToModuleString fsharpDeclarations =
         typeDeclarationsOrdered :
             { mostToLeastDependedOn :
                 List
-                    (FsharpValueOrFunctionDependencyBucket
+                    (Graph.SCC
                         FsharpChoiceTypeOrTypeAliasDeclaration
                     )
             }
@@ -10691,7 +10686,7 @@ module Elm =
                     |> Print.listMapAndIntersperseAndFlatten
                         (\typeAliasDeclarationGroup ->
                             case typeAliasDeclarationGroup of
-                                FsharpValueOrFunctionDependencySingle single ->
+                                Graph.AcyclicSCC single ->
                                     case single of
                                         FsharpChoiceTypeDeclaration fsharpChoiceTypeDeclaration ->
                                             structLinebreakIndentedTypeSpace
@@ -10705,7 +10700,7 @@ module Elm =
                                                 |> Print.followedBy
                                                     (printFsharpTypeAliasDeclaration aliasDeclaration)
 
-                                FsharpValueOrFunctionDependencyRecursiveBucket recursiveBucket ->
+                                Graph.CyclicSCC recursiveBucket ->
                                     case recursiveBucket of
                                         [] ->
                                             Print.empty
@@ -10751,13 +10746,13 @@ module Elm =
                     |> Print.listMapAndIntersperseAndFlatten
                         (\dependencyGroup ->
                             case dependencyGroup of
-                                FsharpValueOrFunctionDependencySingle fsharpValueOrFunction ->
+                                Graph.AcyclicSCC fsharpValueOrFunction ->
                                     printExactlyLetSpace
                                         |> Print.followedBy
                                             (fsharpValueOrFunction |> printFsharpValueOrFunctionDeclaration)
                                         |> Print.followedBy printLinebreakLinebreakIndented
 
-                                FsharpValueOrFunctionDependencyRecursiveBucket recursiveGroup ->
+                                Graph.CyclicSCC recursiveGroup ->
                                     case recursiveGroup of
                                         [] ->
                                             Print.empty
