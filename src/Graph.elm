@@ -48,25 +48,31 @@ arrayAccum f initial bounds ies =
                     acc
             )
             (-- FastDict.empty is also possible but not conclusively faster
-             listRangeMap bounds.min bounds.max (\n -> ( n, initial ))
-                |> FastDict.fromList
+             fastDictRangeToConstant bounds.min bounds.max initial
             )
             ies
     }
 
 
-listRangeMap : Int -> Int -> (Int -> a) -> List a
-listRangeMap startInclusive endInclusive numberToElement =
-    listRangeMapAppendTo [] startInclusive endInclusive numberToElement
+fastDictRangeToConstant : Int -> Int -> a -> FastDict.Dict Int a
+fastDictRangeToConstant startInclusive endInclusive constantValue =
+    fastDictRangeToConstantInto FastDict.empty
+        startInclusive
+        endInclusive
+        constantValue
 
 
-listRangeMapAppendTo : List a -> Int -> Int -> (Int -> a) -> List a
-listRangeMapAppendTo list startInclusive endInclusive numberToElement =
+fastDictRangeToConstantInto : FastDict.Dict Int a -> Int -> Int -> a -> FastDict.Dict Int a
+fastDictRangeToConstantInto list startInclusive endInclusive constantValue =
     if startInclusive <= endInclusive then
-        listRangeMapAppendTo (numberToElement endInclusive :: list)
+        fastDictRangeToConstantInto
+            (FastDict.insert endInclusive
+                constantValue
+                list
+            )
             startInclusive
             (endInclusive - 1)
-            numberToElement
+            constantValue
 
     else
         list
