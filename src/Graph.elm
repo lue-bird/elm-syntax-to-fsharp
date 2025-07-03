@@ -414,50 +414,55 @@ thus more efficient.
 -}
 depthFirstSpanningTreeFromVertices : Graph -> List Vertex -> List (Tree Vertex)
 depthFirstSpanningTreeFromVertices graph vs0 =
-    let
-        go :
-            List Vertex
-            -> IntSet
-            -> List ( Tree Vertex, List Vertex )
-            -> List (Tree Vertex)
-            -> List (Tree Vertex)
-        go vrtcs visited stack acc =
-            case vrtcs of
+    depthFirstSpanningTreeFromVerticesStep graph vs0 FastSet.empty [] []
+
+
+depthFirstSpanningTreeFromVerticesStep :
+    Graph
+    -> List Vertex
+    -> FastSet.Set Vertex
+    -> List ( Tree Vertex, List Vertex )
+    -> List (Tree Vertex)
+    -> List (Tree Vertex)
+depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack acc =
+    case fromVertices of
+        [] ->
+            case stack of
                 [] ->
-                    case stack of
-                        [] ->
-                            List.reverse acc
+                    List.reverse acc
 
-                        ( firstTree, firstVs ) :: ( secondTree, secondVs ) :: rest ->
-                            go firstVs
-                                visited
-                                (( treeAddAsLastSub firstTree secondTree
-                                 , secondVs
-                                 )
-                                    :: rest
-                                )
-                                acc
+                ( firstTree, firstVs ) :: ( secondTree, secondVs ) :: rest ->
+                    depthFirstSpanningTreeFromVerticesStep graph
+                        firstVs
+                        visited
+                        (( treeAddAsLastSub firstTree secondTree
+                         , secondVs
+                         )
+                            :: rest
+                        )
+                        acc
 
-                        ( firstTree, firstVs ) :: rest ->
-                            go firstVs visited rest (firstTree :: acc)
+                ( firstTree, firstVs ) :: rest ->
+                    depthFirstSpanningTreeFromVerticesStep graph
+                        firstVs
+                        visited
+                        rest
+                        (firstTree :: acc)
 
-                v :: vs ->
-                    if FastSet.member v visited then
-                        go vs visited stack acc
+        v :: vs ->
+            if FastSet.member v visited then
+                depthFirstSpanningTreeFromVerticesStep graph
+                    vs
+                    visited
+                    stack
+                    acc
 
-                    else
-                        go (Maybe.withDefault [] (arrayFind v graph))
-                            (FastSet.insert v visited)
-                            (( treeOne v, vs ) :: stack)
-                            acc
-    in
-    go vs0 FastSet.empty [] []
-
-
-{-| Portable implementation using IntSet.
--}
-type alias IntSet =
-    FastSet.Set Int
+            else
+                depthFirstSpanningTreeFromVerticesStep graph
+                    (Maybe.withDefault [] (arrayFind v graph))
+                    (FastSet.insert v visited)
+                    (( treeOne v, vs ) :: stack)
+                    acc
 
 
 postorder : Tree a -> List a -> List a
