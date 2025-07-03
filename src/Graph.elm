@@ -23,26 +23,35 @@ import FastDict
 import FastSet
 
 
-type alias Array e =
+type alias Array element =
     { max : Int
-    , byIndex : FastDict.Dict Int e
+    , byIndex : FastDict.Dict Int element
     }
 
 
-arrayFind : Int -> Array e -> Maybe e
+arrayFind : Int -> Array element -> Maybe element
 arrayFind i arr =
     FastDict.get i arr.byIndex
 
 
-arrayAccum : (e -> a -> e) -> e -> Int -> List ( Int, a ) -> Array e
-arrayAccum f initial max ies =
+arrayAccum :
+    (element -> folded -> element)
+    -> element
+    -> Int
+    -> List ( Int, folded )
+    -> Array element
+arrayAccum reduce initial max ies =
     { max = max
     , byIndex =
         List.foldl
-            (\( i, a ) soFar ->
-                FastDict.update i
+            (\( index, foldedForIndexSoFar ) soFar ->
+                FastDict.update index
                     (\atIndexOrNothing ->
-                        Just (f (atIndexOrNothing |> Maybe.withDefault initial) a)
+                        Just
+                            (reduce
+                                (atIndexOrNothing |> Maybe.withDefault initial)
+                                foldedForIndexSoFar
+                            )
                     )
                     soFar
             )
@@ -79,9 +88,9 @@ fastDictRangeToConstantInto list startInclusive endInclusive constantValue =
 
 {-| Strongly connected component.
 -}
-type SCC vertex
-    = AcyclicSCC vertex
-    | CyclicSCC (List vertex)
+type SCC node
+    = AcyclicSCC node
+    | CyclicSCC (List node)
 
 
 {-| The strongly connected components of a directed graph,
@@ -471,14 +480,14 @@ depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack soFar =
 
 
 postorderHelp : List (Tree a) -> List a -> List a
-postorderHelp ts list =
+postorderHelp remaining soFar =
     -- IGNORE TCO
     List.foldr
-        (\node soFar ->
-            postorderHelp (treeSubs node) (treeElement node :: soFar)
+        (\node withRemainingSoFar ->
+            postorderHelp (treeSubs node) (treeElement node :: withRemainingSoFar)
         )
-        list
-        ts
+        soFar
+        remaining
 
 
 postorder : Graph -> List Vertex
@@ -495,9 +504,9 @@ postorder graph =
 
 -}
 scc : Graph -> List (Tree Vertex)
-scc g =
-    depthFirstSpanningTreeFromVertices g
-        (List.reverse (postorder (transposeG g)))
+scc graph =
+    depthFirstSpanningTreeFromVertices graph
+        (List.reverse (postorder (transposeG graph)))
 
 
 
