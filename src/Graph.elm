@@ -454,37 +454,36 @@ depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack soFar =
                         []
                         (firstTree :: soFar)
 
-        v :: vs ->
-            if FastSet.member v visited then
+        fromVerticesHead :: fromVerticesTail ->
+            if FastSet.member fromVerticesHead visited then
                 depthFirstSpanningTreeFromVerticesStep graph
-                    vs
+                    fromVerticesTail
                     visited
                     stack
                     soFar
 
             else
                 depthFirstSpanningTreeFromVerticesStep graph
-                    (Maybe.withDefault [] (arrayFind v graph))
-                    (FastSet.insert v visited)
-                    (( treeOne v, vs ) :: stack)
+                    (Maybe.withDefault [] (arrayFind fromVerticesHead graph))
+                    (FastSet.insert fromVerticesHead visited)
+                    (( treeOne fromVerticesHead, fromVerticesTail ) :: stack)
                     soFar
 
 
-postorder : Tree a -> List a -> List a
-postorder node list =
-    postorderF (treeSubs node) (treeElement node :: list)
-
-
-postorderF : List (Tree a) -> List a -> List a
-postorderF ts list =
-    List.foldr (\node soFar -> soFar |> postorder node)
+postorderHelp : List (Tree a) -> List a -> List a
+postorderHelp ts list =
+    -- IGNORE TCO
+    List.foldr
+        (\node soFar ->
+            postorderHelp (treeSubs node) (treeElement node :: soFar)
+        )
         list
         ts
 
 
-postOrd : Graph -> List Vertex
-postOrd graph =
-    postorderF (depthFirstSpanningTree graph) []
+postorder : Graph -> List Vertex
+postorder graph =
+    postorderHelp (depthFirstSpanningTree graph) []
 
 
 {-| The strongly connected components of a graph, in reverse topological order.
@@ -498,7 +497,7 @@ postOrd graph =
 scc : Graph -> List (Tree Vertex)
 scc g =
     depthFirstSpanningTreeFromVertices g
-        (List.reverse (postOrd (transposeG g)))
+        (List.reverse (postorder (transposeG g)))
 
 
 
