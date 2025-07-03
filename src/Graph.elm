@@ -278,9 +278,6 @@ for examples.
 Note: The out-list may contain keys that don't correspond to nodes of the
 graph; they are ignored.
 
-Warning: The @nodeFromVertex@ function will cause a runtime exception if the
-given @Vertex@ does not exist.
-
 
 An empty graph.
 
@@ -314,24 +311,31 @@ graphFromEdges :
         ( Graph
         , Array ( node, comparable, List comparable )
         )
-graphFromEdges edges0 =
+graphFromEdges edgesUnsorted =
     let
         maxVertexIndex : Int
         maxVertexIndex =
-            List.length edges0 - 1
+            List.length edgesUnsorted - 1
 
-        edges1 : List ( Int, ( node, comparable, List comparable ) )
-        edges1 =
-            List.indexedMap Tuple.pair
-                (edges0
-                    |> List.sortWith (\( _, k1, _ ) ( _, k2, _ ) -> compare k1 k2)
-                )
+        edgesSortedIndexed : List ( Int, ( node, comparable, List comparable ) )
+        edgesSortedIndexed =
+            edgesUnsorted
+                |> List.sortWith
+                    (\( _, k1, _ ) ( _, k2, _ ) -> compare k1 k2)
+                |> List.foldr
+                    (\edge soFar ->
+                        { index = soFar.index - 1
+                        , indexed = ( soFar.index, edge ) :: soFar.indexed
+                        }
+                    )
+                    { index = maxVertexIndex, indexed = [] }
+                |> .indexed
 
         keyMap : Array comparable
         keyMap =
             { max = maxVertexIndex
             , byIndex =
-                edges1
+                edgesSortedIndexed
                     |> List.foldl
                         (\( v, ( _, k, _ ) ) soFar ->
                             soFar |> FastDict.insert v k
@@ -341,7 +345,7 @@ graphFromEdges edges0 =
     in
     ( { max = maxVertexIndex
       , byIndex =
-            edges1
+            edgesSortedIndexed
                 |> List.foldl
                     (\( v, ( _, _, ks ) ) soFar ->
                         soFar
@@ -354,7 +358,7 @@ graphFromEdges edges0 =
                     FastDict.empty
       }
     , { max = maxVertexIndex
-      , byIndex = edges1 |> FastDict.fromList
+      , byIndex = edgesSortedIndexed |> FastDict.fromList
       }
     )
 
