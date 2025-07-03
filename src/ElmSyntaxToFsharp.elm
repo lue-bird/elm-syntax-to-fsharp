@@ -326,187 +326,131 @@ syntaxExpressionContainedConstructedRecords :
             {- sorted field names -} (List String)
 syntaxExpressionContainedConstructedRecords syntaxExpressionNode =
     -- IGNORE TCO
-    FastSet.union
-        (case syntaxExpressionNode |> Elm.Syntax.Node.value of
-            Elm.Syntax.Expression.RecordExpr fields ->
-                FastSet.singleton
-                    (fields
-                        |> List.map
-                            (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ name, _ )) ->
-                                name
-                            )
-                        |> List.sort
-                    )
+    case syntaxExpressionNode |> Elm.Syntax.Node.value of
+        Elm.Syntax.Expression.RecordExpr fields ->
+            FastSet.insert
+                (fields
+                    |> List.map
+                        (\(Elm.Syntax.Node.Node _ ( Elm.Syntax.Node.Node _ name, _ )) ->
+                            name
+                        )
+                    |> List.sort
+                )
+                (fields
+                    |> listMapToFastSetsAndUnify
+                        (\(Elm.Syntax.Node.Node _ ( _, fieldValue )) ->
+                            fieldValue |> syntaxExpressionContainedConstructedRecords
+                        )
+                )
 
-            Elm.Syntax.Expression.UnitExpr ->
-                FastSet.empty
+        Elm.Syntax.Expression.UnitExpr ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.Floatable _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Floatable _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.Integer _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Integer _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.Hex _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Hex _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.CharLiteral _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.CharLiteral _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.Literal _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Literal _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.FunctionOrValue _ _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.FunctionOrValue _ _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.RecordAccess _ _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.PrefixOperator _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.TupledExpression _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.RecordAccessFunction _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.IfBlock _ _ _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Operator _ ->
+            -- invalid syntax
+            FastSet.empty
 
-            Elm.Syntax.Expression.ListExpr _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.GLSLExpression _ ->
+            FastSet.empty
 
-            Elm.Syntax.Expression.RecordUpdateExpression _ _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.ParenthesizedExpression inParens ->
+            syntaxExpressionContainedConstructedRecords inParens
 
-            Elm.Syntax.Expression.Application _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.RecordAccess record _ ->
+            syntaxExpressionContainedConstructedRecords record
 
-            Elm.Syntax.Expression.LambdaExpression _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.Negation inNegation ->
+            syntaxExpressionContainedConstructedRecords inNegation
 
-            Elm.Syntax.Expression.CaseExpression _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.LambdaExpression lambda ->
+            syntaxExpressionContainedConstructedRecords lambda.expression
 
-            Elm.Syntax.Expression.LetExpression _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.OperatorApplication _ _ left right ->
+            FastSet.union
+                (left |> syntaxExpressionContainedConstructedRecords)
+                (right |> syntaxExpressionContainedConstructedRecords)
 
-            Elm.Syntax.Expression.OperatorApplication _ _ _ _ ->
-                FastSet.empty
+        Elm.Syntax.Expression.IfBlock condition onTrue onFalse ->
+            (condition |> syntaxExpressionContainedConstructedRecords)
+                |> FastSet.union (onTrue |> syntaxExpressionContainedConstructedRecords)
+                |> FastSet.union (onFalse |> syntaxExpressionContainedConstructedRecords)
 
-            Elm.Syntax.Expression.PrefixOperator _ ->
-                FastSet.empty
-
-            Elm.Syntax.Expression.Operator _ ->
-                FastSet.empty
-
-            Elm.Syntax.Expression.Negation _ ->
-                FastSet.empty
-
-            Elm.Syntax.Expression.ParenthesizedExpression _ ->
-                FastSet.empty
-
-            Elm.Syntax.Expression.RecordAccessFunction _ ->
-                FastSet.empty
-
-            Elm.Syntax.Expression.GLSLExpression _ ->
-                FastSet.empty
-        )
-        (syntaxExpressionNode
-            |> syntaxExpressionSubs
-            |> listMapToFastSetsAndUnify
-                syntaxExpressionContainedConstructedRecords
-        )
-
-
-{-| All surface-level child [expression](https://dark.elm.dmy.fr/packages/stil4m/elm-syntax/latest/Elm-Syntax-Expression)s
--}
-syntaxExpressionSubs :
-    Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression
-    -> List (Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression)
-syntaxExpressionSubs (Elm.Syntax.Node.Node _ syntaxExpression) =
-    case syntaxExpression of
-        Elm.Syntax.Expression.Application expressions ->
-            expressions
+        Elm.Syntax.Expression.TupledExpression parts ->
+            parts
+                |> listMapToFastSetsAndUnify
+                    syntaxExpressionContainedConstructedRecords
 
         Elm.Syntax.Expression.ListExpr elements ->
             elements
+                |> listMapToFastSetsAndUnify
+                    syntaxExpressionContainedConstructedRecords
 
-        Elm.Syntax.Expression.RecordExpr fields ->
-            List.map (\(Elm.Syntax.Node.Node _ ( _, expr )) -> expr) fields
+        Elm.Syntax.Expression.Application applicationParts ->
+            applicationParts
+                |> listMapToFastSetsAndUnify
+                    syntaxExpressionContainedConstructedRecords
 
-        Elm.Syntax.Expression.RecordUpdateExpression _ setters ->
-            List.map (\(Elm.Syntax.Node.Node _ ( _, expr )) -> expr) setters
-
-        Elm.Syntax.Expression.ParenthesizedExpression expr ->
-            [ expr ]
-
-        Elm.Syntax.Expression.OperatorApplication _ _ left right ->
-            [ left, right ]
-
-        Elm.Syntax.Expression.IfBlock cond then_ else_ ->
-            [ cond, then_, else_ ]
-
-        Elm.Syntax.Expression.LetExpression letIn ->
-            List.foldr
-                (\declaration soFar ->
-                    case Elm.Syntax.Node.value declaration of
-                        Elm.Syntax.Expression.LetFunction function ->
-                            (function.declaration
-                                |> Elm.Syntax.Node.value
-                                |> .expression
-                            )
-                                :: soFar
-
-                        Elm.Syntax.Expression.LetDestructuring _ expr ->
-                            expr :: soFar
-                )
-                [ letIn.expression ]
-                letIn.declarations
+        Elm.Syntax.Expression.RecordUpdateExpression _ fields ->
+            fields
+                |> listMapToFastSetsAndUnify
+                    (\(Elm.Syntax.Node.Node _ ( _, fieldValue )) ->
+                        fieldValue |> syntaxExpressionContainedConstructedRecords
+                    )
 
         Elm.Syntax.Expression.CaseExpression caseOf ->
             caseOf.expression
-                :: List.map (\( _, caseExpression ) -> caseExpression) caseOf.cases
+                |> syntaxExpressionContainedConstructedRecords
+                |> FastSet.union
+                    (caseOf.cases
+                        |> listMapToFastSetsAndUnify
+                            (\( _, fieldValue ) ->
+                                fieldValue |> syntaxExpressionContainedConstructedRecords
+                            )
+                    )
 
-        Elm.Syntax.Expression.LambdaExpression lambda ->
-            [ lambda.expression ]
+        Elm.Syntax.Expression.LetExpression letIn ->
+            letIn.expression
+                |> syntaxExpressionContainedConstructedRecords
+                |> FastSet.union
+                    (letIn.declarations
+                        |> listMapToFastSetsAndUnify
+                            (\declaration ->
+                                case Elm.Syntax.Node.value declaration of
+                                    Elm.Syntax.Expression.LetFunction function ->
+                                        -- TODO let annotation as well?
+                                        function.declaration
+                                            |> Elm.Syntax.Node.value
+                                            |> .expression
+                                            |> syntaxExpressionContainedConstructedRecords
 
-        Elm.Syntax.Expression.TupledExpression expressions ->
-            expressions
-
-        Elm.Syntax.Expression.Negation expr ->
-            [ expr ]
-
-        Elm.Syntax.Expression.RecordAccess expr _ ->
-            [ expr ]
-
-        Elm.Syntax.Expression.PrefixOperator _ ->
-            []
-
-        Elm.Syntax.Expression.Operator _ ->
-            []
-
-        Elm.Syntax.Expression.Integer _ ->
-            []
-
-        Elm.Syntax.Expression.Hex _ ->
-            []
-
-        Elm.Syntax.Expression.Floatable _ ->
-            []
-
-        Elm.Syntax.Expression.Literal _ ->
-            []
-
-        Elm.Syntax.Expression.CharLiteral _ ->
-            []
-
-        Elm.Syntax.Expression.UnitExpr ->
-            []
-
-        Elm.Syntax.Expression.FunctionOrValue _ _ ->
-            []
-
-        Elm.Syntax.Expression.RecordAccessFunction _ ->
-            []
-
-        Elm.Syntax.Expression.GLSLExpression _ ->
-            []
+                                    Elm.Syntax.Expression.LetDestructuring _ destructuredExpression ->
+                                        destructuredExpression |> syntaxExpressionContainedConstructedRecords
+                            )
+                    )
 
 
 fsharpExpressionUsedLocalReferences : FsharpExpression -> FastSet.Set String
