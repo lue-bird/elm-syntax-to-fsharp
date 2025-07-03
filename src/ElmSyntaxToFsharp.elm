@@ -54,8 +54,8 @@ type FsharpType
 -}
 type FsharpPattern
     = FsharpPatternIgnore
-    | FsharpPatternInt Int
-    | FsharpPatternChar Char
+    | FsharpPatternInt64 Int
+    | FsharpPatternInt32 Int
     | FsharpPatternStringLiteral String
     | FsharpPatternVariable String
     | FsharpPatternAs
@@ -86,7 +86,7 @@ type FsharpExpression
     = FsharpExpressionUnit
     | FsharpExpressionFloat Float
     | FsharpExpressionInt64 Int
-    | FsharpExpressionChar Char
+    | FsharpExpressionInt32 Int
     | FsharpExpressionStringLiteral String
     | FsharpExpressionReference
         { moduleOrigin : Maybe String
@@ -538,7 +538,7 @@ fsharpExpressionUsedLocalReferences fsharpExpression =
         FsharpExpressionStringLiteral _ ->
             FastSet.empty
 
-        FsharpExpressionChar _ ->
+        FsharpExpressionInt32 _ ->
             FastSet.empty
 
         FsharpExpressionLambda lambda ->
@@ -1240,9 +1240,14 @@ floatLiteral float =
         asString ++ ".0"
 
 
-intLiteral : Int -> String
-intLiteral int =
+int64Literal : Int -> String
+int64Literal int =
     (int |> String.fromInt) ++ "L"
+
+
+int32Literal : Int -> String
+int32Literal =
+    String.fromInt
 
 
 fsharpReferenceToString :
@@ -1535,39 +1540,6 @@ characterIsNotPrint character =
                         False
 
 
-charLiteral : Char -> String
-charLiteral charContent =
-    "'"
-        ++ quotedCharToEscaped charContent
-        ++ "'"
-
-
-quotedCharToEscaped : Char -> String
-quotedCharToEscaped character =
-    case character of
-        '\'' ->
-            "\\'"
-
-        '\\' ->
-            "\\\\"
-
-        '\t' ->
-            "\\t"
-
-        '\n' ->
-            "\\n"
-
-        '\u{000D}' ->
-            "\\r"
-
-        otherCharacter ->
-            if characterIsNotPrint otherCharacter then
-                "\\u" ++ characterHex otherCharacter
-
-            else
-                String.fromChar otherCharacter
-
-
 charCodeIsLower : Int -> Bool
 charCodeIsLower code =
     0x61 <= code && code <= 0x7A
@@ -1617,7 +1589,7 @@ pattern patternInferred =
 
         ElmSyntaxTypeInfer.PatternChar charValue ->
             Ok
-                { pattern = FsharpPatternChar charValue
+                { pattern = FsharpPatternInt32 (charValue |> Char.toCode)
                 , introducedVariables = FastSet.empty
                 }
 
@@ -1635,7 +1607,7 @@ pattern patternInferred =
 
         ElmSyntaxTypeInfer.PatternInt intValue ->
             Ok
-                { pattern = FsharpPatternInt intValue.value
+                { pattern = FsharpPatternInt64 intValue.value
                 , introducedVariables = FastSet.empty
                 }
 
@@ -1931,7 +1903,7 @@ typeConstructReferenceToCoreFsharp reference =
 
         "Char" ->
             -- "Char" is the only possible reference.name
-            Just { moduleOrigin = Nothing, name = "char" }
+            Just { moduleOrigin = Nothing, name = "int" }
 
         "List" ->
             -- "List" is the only possible reference.name
@@ -2469,40 +2441,40 @@ referenceToCoreFsharp reference =
                     justFsharpReferenceInt64
 
                 "fromCode" ->
-                    Just { moduleOrigin = Nothing, name = "char" }
+                    Just { moduleOrigin = Nothing, name = "int" }
 
                 "toLower" ->
-                    Just { moduleOrigin = Just "System.Char", name = "ToLowerInvariant" }
+                    Just { moduleOrigin = Nothing, name = "Char_toLower" }
 
                 "toUpper" ->
-                    Just { moduleOrigin = Just "System.Char", name = "ToUpperInvariant" }
+                    Just { moduleOrigin = Nothing, name = "Char_toUpper" }
 
                 "toLocaleLower" ->
-                    Just { moduleOrigin = Just "System.Char", name = "ToLower" }
+                    Just { moduleOrigin = Nothing, name = "Char_toLocaleLower" }
 
                 "toLocaleUpper" ->
-                    Just { moduleOrigin = Just "System.Char", name = "ToUpper" }
+                    Just { moduleOrigin = Nothing, name = "Char_toLocaleUpper" }
 
                 "isLower" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterLower" }
+                    Just { moduleOrigin = Nothing, name = "Char_isLower" }
 
                 "isUpper" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterUpper" }
+                    Just { moduleOrigin = Nothing, name = "Char_isUpper" }
 
                 "isHexDigit" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiHexDigit" }
+                    Just { moduleOrigin = Nothing, name = "Char_isHexDigit" }
 
                 "isOctDigit" ->
-                    Just { moduleOrigin = Just "System.Char", name = "Char_isOctDigit" }
+                    Just { moduleOrigin = Nothing, name = "Char_isOctDigit" }
 
                 "isDigit" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiDigit" }
+                    Just { moduleOrigin = Nothing, name = "Char_isDigit" }
 
                 "isAlpha" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetter" }
+                    Just { moduleOrigin = Nothing, name = "Char_isAlpha" }
 
                 "isAlphaNum" ->
-                    Just { moduleOrigin = Just "System.Char", name = "IsAsciiLetterOrDigit" }
+                    Just { moduleOrigin = Nothing, name = "Char_isAlphaNum" }
 
                 _ ->
                     Nothing
@@ -3775,11 +3747,11 @@ printFsharpPatternNotParenthesized fsharpPattern =
         FsharpPatternIgnore ->
             printExactlyUnderscore
 
-        FsharpPatternInt int ->
-            Print.exactly (int |> intLiteral)
+        FsharpPatternInt64 int64 ->
+            Print.exactly (int64 |> int64Literal)
 
-        FsharpPatternChar charValue ->
-            Print.exactly (charLiteral charValue)
+        FsharpPatternInt32 int32Value ->
+            Print.exactly (int32Value |> int32Literal)
 
         FsharpPatternStringLiteral string ->
             printFsharpStringLiteral string
@@ -5627,7 +5599,7 @@ expression context expressionTypedNode =
             Ok (FsharpExpressionFloat floatValue)
 
         ElmSyntaxTypeInfer.ExpressionChar charValue ->
-            Ok (FsharpExpressionChar charValue)
+            Ok (FsharpExpressionInt32 (charValue |> Char.toCode))
 
         ElmSyntaxTypeInfer.ExpressionString stringValue ->
             Ok
@@ -6590,7 +6562,7 @@ condenseExpressionCall call =
                 , arguments = call.argument0 :: call.argument1Up
                 }
 
-        FsharpExpressionChar _ ->
+        FsharpExpressionInt32 _ ->
             FsharpExpressionCall
                 { called = call.called
                 , arguments = call.argument0 :: call.argument1Up
@@ -6693,7 +6665,7 @@ callAsArrayFromList reference argument =
                                 FsharpExpressionInt64 _ ->
                                     Nothing
 
-                                FsharpExpressionChar _ ->
+                                FsharpExpressionInt32 _ ->
                                     Nothing
 
                                 FsharpExpressionStringLiteral _ ->
@@ -9465,7 +9437,7 @@ printFsharpExpressionParenthesizedIfWithLetDeclarations fsharpExpression =
         FsharpExpressionInt64 _ ->
             notParenthesizedPrint
 
-        FsharpExpressionChar _ ->
+        FsharpExpressionInt32 _ ->
             notParenthesizedPrint
 
         FsharpExpressionStringLiteral _ ->
@@ -9514,7 +9486,7 @@ fsharpExpressionIsSpaceSeparated fsharpExpression =
         FsharpExpressionUnit ->
             False
 
-        FsharpExpressionChar _ ->
+        FsharpExpressionInt32 _ ->
             False
 
         FsharpExpressionInt64 _ ->
@@ -9585,11 +9557,11 @@ printFsharpExpressionNotParenthesized fsharpExpression =
         FsharpExpressionIfElse ifElse ->
             printFsharpExpressionIfElse ifElse
 
-        FsharpExpressionChar charValue ->
-            Print.exactly (charLiteral charValue)
+        FsharpExpressionInt32 charValue ->
+            Print.exactly (int32Literal charValue)
 
         FsharpExpressionInt64 int ->
-            Print.exactly (int |> intLiteral)
+            Print.exactly (int |> int64Literal)
 
         FsharpExpressionFloat float ->
             Print.exactly (float |> floatLiteral)
@@ -9923,10 +9895,10 @@ patternIsSpaceSeparated fsharpPattern =
         FsharpPatternIgnore ->
             False
 
-        FsharpPatternInt _ ->
+        FsharpPatternInt64 _ ->
             False
 
-        FsharpPatternChar _ ->
+        FsharpPatternInt32 _ ->
             False
 
         FsharpPatternStringLiteral _ ->
@@ -10467,10 +10439,10 @@ fsharpPatternContainedVariables fsharpPattern =
         FsharpPatternIgnore ->
             FastSet.empty
 
-        FsharpPatternInt _ ->
+        FsharpPatternInt64 _ ->
             FastSet.empty
 
-        FsharpPatternChar _ ->
+        FsharpPatternInt32 _ ->
             FastSet.empty
 
         FsharpPatternStringLiteral _ ->
@@ -10922,10 +10894,36 @@ defaultDeclarations =
     type Basics_Never = JustOneMore of Basics_Never
     let rec Basics_never (JustOneMore ever: Basics_Never) = Basics_never ever
 
-    let Char_isOctDigit (ch: char) : bool =
-        let code: int = int ch
-
-        code <= 0x37 && 0x30 <= code
+    let inline Char_isOctDigit (rune: int) : bool =
+        rune <= 0x37 && 0x30 <= rune
+    let inline Char_isHexDigit (rune: int) : bool =
+        (0x30 <= rune && rune <= 0x39)
+        || (0x41 <= rune && rune <= 0x46)
+        || (0x61 <= rune && rune <= 0x66)
+    let inline Char_isDigit (rune: int) : bool =
+        rune <= 0x39 && 0x30 <= rune
+    let inline Char_isUpper (rune: int) : bool =
+        rune <= 0x5A && 0x41 <= rune
+    let inline Char_isLower (rune: int) : bool =
+        0x61 <= rune && rune <= 0x7A
+    let inline Char_isAlpha (rune: int) : bool =
+        Char_isLower rune || Char_isUpper rune
+    let inline Char_isAlphaNum (rune: int) : bool =
+        Char_isAlpha rune || Char_isDigit rune
+    let inline Char_toLocaleLower (rune: int) : int =
+        (System.Text.Rune.ToLower(
+            System.Text.Rune rune, 
+            System.Globalization.CultureInfo.CurrentCulture
+        )).Value
+    let inline Char_toLocaleUpper (rune: int) : int =
+        (System.Text.Rune.ToUpper(
+            System.Text.Rune rune, 
+            System.Globalization.CultureInfo.CurrentCulture
+        )).Value
+    let inline Char_toLower (rune: int) : int =
+        (System.Text.Rune.ToLowerInvariant(System.Text.Rune rune)).Value
+    let inline Char_toUpper (rune: int) : int =
+        (System.Text.Rune.ToUpperInvariant(System.Text.Rune rune)).Value
 
     [<CustomEquality; CustomComparison>]
     type StringRope =
@@ -10999,11 +10997,30 @@ defaultDeclarations =
                 (StringRope.toString segment)
         )
 
-    let inline String_toList (string: StringRope) : List<char> =
-        Seq.toList (StringRope.toString string)
+    let String_toList (stringRope: StringRope) : List<int> =
+        Seq.toList
+            (Seq.map (fun (rune: System.Text.Rune) -> rune.Value)
+                ((StringRope.toString stringRope).EnumerateRunes())
+            )
+    
+    let runesToString (runes: seq<System.Text.Rune>) : string =
+        let stringBuilder: System.Text.StringBuilder =  System.Text.StringBuilder()
 
-    let inline String_fromList (chars: List<char>) : StringRope =
-        StringRopeOne(new string (List.toArray chars))
+        for rune in runes do
+            let _ =
+                if rune.Utf16SequenceLength = 1 then
+                    stringBuilder.Append(rune.Value)
+                else
+                    stringBuilder.Append(rune.ToString())
+            
+            ()
+        
+        stringBuilder.ToString()
+
+    let inline String_fromList (runes: List<int>) : StringRope =
+        StringRopeOne(runesToString(
+            Seq.map (fun (code: int) -> System.Text.Rune code) runes
+        ))
 
     let inline String_contains
         (substringRope: StringRope)
@@ -11018,47 +11035,60 @@ defaultDeclarations =
         (StringRope.toString string).EndsWith(StringRope.toString ending)
 
     let inline String_any
-        ([<InlineIfLambda>] charIsNeedle: char -> bool)
-        (string: StringRope)
+        ([<InlineIfLambda>] runeIsNeedle: int -> bool)
+        (stringRope: StringRope)
         : bool =
-        // can be optimized
-        String.exists charIsNeedle (StringRope.toString string)
+        Seq.exists (fun (rune: System.Text.Rune) -> runeIsNeedle rune.Value)
+            ((StringRope.toString stringRope).EnumerateRunes())
 
     let inline String_all
-        ([<InlineIfLambda>] charIsExpected: char -> bool)
-        (string: StringRope)
+        ([<InlineIfLambda>] runeIsExpected: int -> bool)
+        (stringRope: StringRope)
         : bool =
-        // can be optimized
-        String.forall charIsExpected (StringRope.toString string)
+        Seq.forall (fun (rune: System.Text.Rune) -> runeIsExpected rune.Value)
+            ((StringRope.toString stringRope).EnumerateRunes())
 
     let inline String_map
-        ([<InlineIfLambda>] charChange: char -> char)
+        ([<InlineIfLambda>] runeChange: int -> int)
         (string: StringRope)
         : StringRope =
-        StringRopeOne(String.map charChange (StringRope.toString string))
+        StringRopeOne(
+            runesToString(
+                Seq.map (fun (rune: System.Text.Rune) -> System.Text.Rune(runeChange rune.Value))
+                    ((StringRope.toString string).EnumerateRunes())
+            )
+        )
 
     let inline String_filter
-        ([<InlineIfLambda>] charShouldBeKept: char -> bool)
+        ([<InlineIfLambda>] charShouldBeKept: int -> bool)
         (string: StringRope)
         : StringRope =
-        StringRopeOne(String.filter charShouldBeKept (StringRope.toString string))
+        StringRopeOne(
+            runesToString(
+                Seq.filter (fun (rune: System.Text.Rune) -> charShouldBeKept rune.Value)
+                    ((StringRope.toString string).EnumerateRunes())
+            )
+        )
 
     let inline String_foldl
-        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
+        ([<InlineIfLambda>] reduce: int -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
         Seq.fold
-            (fun soFar char -> reduce char soFar)
+            (fun (soFar: 'folded) (rune: System.Text.Rune) -> reduce rune.Value soFar)
             initialFolded
-            (StringRope.toString string)
+            ((StringRope.toString string).EnumerateRunes())
 
     let inline String_foldr
-        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
+        ([<InlineIfLambda>] reduce: int -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
-        Seq.foldBack reduce (StringRope.toString string) initialFolded
+        Seq.foldBack
+            (fun (rune: System.Text.Rune) (soFar: 'folded) -> reduce rune.Value soFar)
+            ((StringRope.toString string).EnumerateRunes())
+            initialFolded
 
     let inline String_trim (string: StringRope) : StringRope =
         StringRopeOne((StringRope.toString string).Trim())
@@ -11147,21 +11177,32 @@ defaultDeclarations =
     let inline String_append (early: StringRope) (late: StringRope) : StringRope =
         StringRopeAppend(early, late)
 
-    let inline String_fromChar (char: char) : StringRope =
-        StringRopeOne(string char)
+    let inline String_fromChar (rune: int) : StringRope =
+        StringRopeOne((System.Text.Rune rune).ToString())
 
-    let inline String_cons (newHeadChar: char) (late: StringRope) : StringRope =
-        StringRopeAppend(StringRopeOne(string newHeadChar), late)
+    let inline String_cons (newHeadChar: int) (late: StringRope) : StringRope =
+        StringRopeAppend(String_fromChar newHeadChar, late)
 
     let String_uncons
         (stringRope: StringRope)
-        : ValueOption<struct (char * StringRope)> =
+        : ValueOption<struct (int * StringRope)> =
         let string: string = StringRope.toString stringRope
 
-        if System.String.IsNullOrEmpty(string) then
+        match String.length string with
+        | 0 ->
             ValueNone
-        else
-            ValueSome(struct (string[0], StringRopeOne(string[1..])))
+        | 1 ->
+            ValueSome(struct (int (string[0]), stringRopeEmpty))
+        | _ ->
+            if System.Char.IsSurrogate(string[0]) then
+                ValueSome(
+                    struct (
+                      System.Char.ConvertToUtf32(string[0], string[1])
+                    , StringRopeOne(string[2..])
+                    )
+                )
+            else
+                ValueSome(struct (int (string[0]), StringRopeOne(string[1..])))
 
     let String_split
         (separator: StringRope)
@@ -11264,22 +11305,22 @@ defaultDeclarations =
 
     let inline String_padLeft
         (newMinimumLength: int64)
-        (padding: char)
+        (padding: int)
         (string: StringRope)
         : StringRope =
         StringRopeOne(
             (StringRope.toString string)
-                .PadLeft(System.Int32.Max(0, int newMinimumLength), padding)
+                .PadLeft(System.Int32.Max(0, int newMinimumLength), char padding)
         )
 
     let inline String_padRight
         (newMinimumLength: int64)
-        (padding: char)
+        (padding: int)
         (string: StringRope)
         : StringRope =
         StringRopeOne(
             (StringRope.toString string)
-                .PadRight(System.Int32.Max(0, int newMinimumLength), padding)
+                .PadRight(System.Int32.Max(0, int newMinimumLength), char padding)
         )
 
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
@@ -12512,9 +12553,9 @@ defaultDeclarations =
             let isSimple =
                 match String_uncons f with
                 | ValueNone -> false
-                | ValueSome(char, rest) ->
-                    System.Char.IsLetter(char)
-                    && String_all System.Char.IsLetter rest
+                | ValueSome(head, rest) ->
+                    Char_isAlpha head
+                    && String_all Char_isAlphaNum rest
 
             let fieldName =
                 if isSimple then
@@ -12824,21 +12865,23 @@ defaultDeclarations =
         (struct ((if isGood then offset else -1), row, col))
 
     let ElmKernelParser_isSubChar
-        (predicate: char -> bool)
+        (predicate: int -> bool)
         (offset: int64)
         (stringRope: StringRope)
         : int64 =
         let string = StringRope.toString stringRope
+        let offsetInt: int = int offset
 
-        if String.length string <= int offset then
+        if String.length string <= offsetInt then
             -1
-        else if (int (string[int offset]) &&& 0xF800) = 0xD800 then
-            (if predicate (char (string.Substring(int offset, 2))) then
+        else if System.Char.IsSurrogate(string[offsetInt]) then
+            (if predicate (System.Char.ConvertToUtf32(string[offsetInt], string[offsetInt + 1])) then
                  offset + 2L
              else
-                 -1L)
-        else if predicate (string[int offset]) then
-            (if (string[int offset] = '\\n') then -2L else offset + 1L)
+                 -1L
+            )
+        else if predicate (int (string[offsetInt])) then
+            (if (string[offsetInt] = '\\n') then -2L else offset + 1L)
         else
             -1
 

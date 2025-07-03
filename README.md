@@ -89,7 +89,7 @@ let main args =
 where `Elm.YourModule_yourFunction` is the transpiled elm function `Your.Module.yourFunction`. (If the value/function contains `number` type variables or extensible records, search for `Elm.YourModule_yourFunction__` to see the different specialized options)
 
 You will find these types:
-  - elm `Float` → F# `float`, `Char` → `char`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Char` → `Map<float, char>`, `Result Float Char` → `Result<char, float>`, `Order` → `Elm.Basics_Order` (enum)
+  - elm `Float` → F# `float`, `Bool` → `bool`, `()` → `unit` (create and match with `()`), `List Float` -> `List<float>`, `Array Float` → `array<float>`, `Set Float` -> `Set<float>`, `Dict Float Char` → `Map<float, char>`, `Result Float Char` → `Result<char, float>`, `Order` → `Elm.Basics_Order` (enum)
   - elm `Int`s will be of type `int64`.
     You can create them explicitly by appending L to an int literal (`42L`)
     or simply using any `int` (F# implicitly converts them)
@@ -97,6 +97,9 @@ You will find these types:
   - elm `String`s will be of type `Elm.StringRope`.
     You can create them with `Elm.StringRopeOne yourFsharpString`
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
+  - elm `Char`s will be of type `int`.
+    You can create them with e.g. `int 'a'` or the char code.
+    They represent the [value of a unicode scalar/"rune"](https://learn.microsoft.com/en-us/dotnet/api/system.text.rune.value?view=net-9.0) which is comprised of 1-2 UTF-16 `char`s
   - elm records like `{ a : Float, b : Float }` will be provided as
     constructed type aliases for each field combination: `Elm.Generated_A_B<float, float>`.
     While the type might look weird, values can be created and used like any regular record with uppercase field names, e.g. `{ A = 1.1; B = 2.2 }`

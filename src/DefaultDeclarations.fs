@@ -113,10 +113,36 @@ module Elm =
     type Basics_Never = JustOneMore of Basics_Never
     let rec Basics_never (JustOneMore ever: Basics_Never) = Basics_never ever
 
-    let Char_isOctDigit (ch: char) : bool =
-        let code: int = int ch
-
-        code <= 0x37 && 0x30 <= code
+    let inline Char_isOctDigit (rune: int) : bool =
+        rune <= 0x37 && 0x30 <= rune
+    let inline Char_isHexDigit (rune: int) : bool =
+        (0x30 <= rune && rune <= 0x39)
+        || (0x41 <= rune && rune <= 0x46)
+        || (0x61 <= rune && rune <= 0x66)
+    let inline Char_isDigit (rune: int) : bool =
+        rune <= 0x39 && 0x30 <= rune
+    let inline Char_isUpper (rune: int) : bool =
+        rune <= 0x5A && 0x41 <= rune
+    let inline Char_isLower (rune: int) : bool =
+        0x61 <= rune && rune <= 0x7A
+    let inline Char_isAlpha (rune: int) : bool =
+        Char_isLower rune || Char_isUpper rune
+    let inline Char_isAlphaNum (rune: int) : bool =
+        Char_isAlpha rune || Char_isDigit rune
+    let inline Char_toLocaleLower (rune: int) : int =
+        (System.Text.Rune.ToLower(
+            System.Text.Rune rune, 
+            System.Globalization.CultureInfo.CurrentCulture
+        )).Value
+    let inline Char_toLocaleUpper (rune: int) : int =
+        (System.Text.Rune.ToUpper(
+            System.Text.Rune rune, 
+            System.Globalization.CultureInfo.CurrentCulture
+        )).Value
+    let inline Char_toLower (rune: int) : int =
+        (System.Text.Rune.ToLowerInvariant(System.Text.Rune rune)).Value
+    let inline Char_toUpper (rune: int) : int =
+        (System.Text.Rune.ToUpperInvariant(System.Text.Rune rune)).Value
 
     [<CustomEquality; CustomComparison>]
     type StringRope =
@@ -190,11 +216,30 @@ module Elm =
                 (StringRope.toString segment)
         )
 
-    let inline String_toList (string: StringRope) : List<char> =
-        Seq.toList (StringRope.toString string)
+    let String_toList (stringRope: StringRope) : List<int> =
+        Seq.toList
+            (Seq.map (fun (rune: System.Text.Rune) -> rune.Value)
+                ((StringRope.toString stringRope).EnumerateRunes())
+            )
+    
+    let runesToString (runes: seq<System.Text.Rune>) : string =
+        let stringBuilder: System.Text.StringBuilder =  System.Text.StringBuilder()
 
-    let inline String_fromList (chars: List<char>) : StringRope =
-        StringRopeOne(new string (List.toArray chars))
+        for rune in runes do
+            let _ =
+                if rune.Utf16SequenceLength = 1 then
+                    stringBuilder.Append(rune.Value)
+                else
+                    stringBuilder.Append(rune.ToString())
+            
+            ()
+        
+        stringBuilder.ToString()
+
+    let inline String_fromList (runes: List<int>) : StringRope =
+        StringRopeOne(runesToString(
+            Seq.map (fun (code: int) -> System.Text.Rune code) runes
+        ))
 
     let inline String_contains
         (substringRope: StringRope)
@@ -209,47 +254,60 @@ module Elm =
         (StringRope.toString string).EndsWith(StringRope.toString ending)
 
     let inline String_any
-        ([<InlineIfLambda>] charIsNeedle: char -> bool)
-        (string: StringRope)
+        ([<InlineIfLambda>] runeIsNeedle: int -> bool)
+        (stringRope: StringRope)
         : bool =
-        // can be optimized
-        String.exists charIsNeedle (StringRope.toString string)
+        Seq.exists (fun (rune: System.Text.Rune) -> runeIsNeedle rune.Value)
+            ((StringRope.toString stringRope).EnumerateRunes())
 
     let inline String_all
-        ([<InlineIfLambda>] charIsExpected: char -> bool)
-        (string: StringRope)
+        ([<InlineIfLambda>] runeIsExpected: int -> bool)
+        (stringRope: StringRope)
         : bool =
-        // can be optimized
-        String.forall charIsExpected (StringRope.toString string)
+        Seq.forall (fun (rune: System.Text.Rune) -> runeIsExpected rune.Value)
+            ((StringRope.toString stringRope).EnumerateRunes())
 
     let inline String_map
-        ([<InlineIfLambda>] charChange: char -> char)
+        ([<InlineIfLambda>] runeChange: int -> int)
         (string: StringRope)
         : StringRope =
-        StringRopeOne(String.map charChange (StringRope.toString string))
+        StringRopeOne(
+            runesToString(
+                Seq.map (fun (rune: System.Text.Rune) -> System.Text.Rune(runeChange rune.Value))
+                    ((StringRope.toString string).EnumerateRunes())
+            )
+        )
 
     let inline String_filter
-        ([<InlineIfLambda>] charShouldBeKept: char -> bool)
+        ([<InlineIfLambda>] charShouldBeKept: int -> bool)
         (string: StringRope)
         : StringRope =
-        StringRopeOne(String.filter charShouldBeKept (StringRope.toString string))
+        StringRopeOne(
+            runesToString(
+                Seq.filter (fun (rune: System.Text.Rune) -> charShouldBeKept rune.Value)
+                    ((StringRope.toString string).EnumerateRunes())
+            )
+        )
 
     let inline String_foldl
-        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
+        ([<InlineIfLambda>] reduce: int -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
         Seq.fold
-            (fun soFar char -> reduce char soFar)
+            (fun (soFar: 'folded) (rune: System.Text.Rune) -> reduce rune.Value soFar)
             initialFolded
-            (StringRope.toString string)
+            ((StringRope.toString string).EnumerateRunes())
 
     let inline String_foldr
-        ([<InlineIfLambda>] reduce: char -> 'folded -> 'folded)
+        ([<InlineIfLambda>] reduce: int -> 'folded -> 'folded)
         (initialFolded: 'folded)
         (string: StringRope)
         : 'folded =
-        Seq.foldBack reduce (StringRope.toString string) initialFolded
+        Seq.foldBack
+            (fun (rune: System.Text.Rune) (soFar: 'folded) -> reduce rune.Value soFar)
+            ((StringRope.toString string).EnumerateRunes())
+            initialFolded
 
     let inline String_trim (string: StringRope) : StringRope =
         StringRopeOne((StringRope.toString string).Trim())
@@ -338,21 +396,32 @@ module Elm =
     let inline String_append (early: StringRope) (late: StringRope) : StringRope =
         StringRopeAppend(early, late)
 
-    let inline String_fromChar (char: char) : StringRope =
-        StringRopeOne(string char)
+    let inline String_fromChar (rune: int) : StringRope =
+        StringRopeOne((System.Text.Rune rune).ToString())
 
-    let inline String_cons (newHeadChar: char) (late: StringRope) : StringRope =
-        StringRopeAppend(StringRopeOne(string newHeadChar), late)
+    let inline String_cons (newHeadChar: int) (late: StringRope) : StringRope =
+        StringRopeAppend(String_fromChar newHeadChar, late)
 
     let String_uncons
         (stringRope: StringRope)
-        : ValueOption<struct (char * StringRope)> =
+        : ValueOption<struct (int * StringRope)> =
         let string: string = StringRope.toString stringRope
 
-        if System.String.IsNullOrEmpty(string) then
+        match String.length string with
+        | 0 ->
             ValueNone
-        else
-            ValueSome(struct (string[0], StringRopeOne(string[1..])))
+        | 1 ->
+            ValueSome(struct (int (string[0]), stringRopeEmpty))
+        | _ ->
+            if System.Char.IsSurrogate(string[0]) then
+                ValueSome(
+                    struct (
+                      System.Char.ConvertToUtf32(string[0], string[1])
+                    , StringRopeOne(string[2..])
+                    )
+                )
+            else
+                ValueSome(struct (int (string[0]), StringRopeOne(string[1..])))
 
     let String_split
         (separator: StringRope)
@@ -455,22 +524,22 @@ module Elm =
 
     let inline String_padLeft
         (newMinimumLength: int64)
-        (padding: char)
+        (padding: int)
         (string: StringRope)
         : StringRope =
         StringRopeOne(
             (StringRope.toString string)
-                .PadLeft(System.Int32.Max(0, int newMinimumLength), padding)
+                .PadLeft(System.Int32.Max(0, int newMinimumLength), char padding)
         )
 
     let inline String_padRight
         (newMinimumLength: int64)
-        (padding: char)
+        (padding: int)
         (string: StringRope)
         : StringRope =
         StringRopeOne(
             (StringRope.toString string)
-                .PadRight(System.Int32.Max(0, int newMinimumLength), padding)
+                .PadRight(System.Int32.Max(0, int newMinimumLength), char padding)
         )
 
     let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
@@ -1703,9 +1772,9 @@ module Elm =
             let isSimple =
                 match String_uncons f with
                 | ValueNone -> false
-                | ValueSome(char, rest) ->
-                    System.Char.IsLetter(char)
-                    && String_all System.Char.IsLetter rest
+                | ValueSome(head, rest) ->
+                    Char_isAlpha head
+                    && String_all Char_isAlphaNum rest
 
             let fieldName =
                 if isSimple then
@@ -2015,21 +2084,23 @@ module Elm =
         (struct ((if isGood then offset else -1), row, col))
 
     let ElmKernelParser_isSubChar
-        (predicate: char -> bool)
+        (predicate: int -> bool)
         (offset: int64)
         (stringRope: StringRope)
         : int64 =
         let string = StringRope.toString stringRope
+        let offsetInt: int = int offset
 
-        if String.length string <= int offset then
+        if String.length string <= offsetInt then
             -1
-        else if (int (string[int offset]) &&& 0xF800) = 0xD800 then
-            (if predicate (char (string.Substring(int offset, 2))) then
+        else if System.Char.IsSurrogate(string[offsetInt]) then
+            (if predicate (System.Char.ConvertToUtf32(string[offsetInt], string[offsetInt + 1])) then
                  offset + 2L
              else
-                 -1L)
-        else if predicate (string[int offset]) then
-            (if (string[int offset] = '\n') then -2L else offset + 1L)
+                 -1L
+            )
+        else if predicate (int (string[offsetInt])) then
+            (if (string[offsetInt] = '\n') then -2L else offset + 1L)
         else
             -1
 
