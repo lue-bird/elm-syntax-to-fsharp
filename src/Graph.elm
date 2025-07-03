@@ -208,33 +208,6 @@ vertices graph =
     List.range 0 graph.max
 
 
-{-| (O(V+E)). Returns the list of edges in the graph.
-
-    edges (buildG (0,-1) []) == []
-
-    edges (buildG (0,2) [(0,1),(1,2)]) == [(0,1),(1,2)]
-
--}
-edges : Graph -> List Edge
-edges g =
-    List.foldr
-        (\from soFar ->
-            case arrayFind from g of
-                Nothing ->
-                    soFar
-
-                Just tos ->
-                    List.foldr
-                        (\to soFarWithTos ->
-                            ( from, to ) :: soFarWithTos
-                        )
-                        soFar
-                        tos
-        )
-        []
-        (vertices g)
-
-
 {-| (O(V+E)). Build a graph from a list of edges.
 Each vertex must be at most the first given integer
 -}
@@ -254,9 +227,31 @@ transposeG g =
     buildG g.max (reverseEdges g)
 
 
+{-| (O(V+E)). Returns the list of edges in the graph, connections flipped.
+
+    reverseEdges (buildG ( 0, -1 ) []) == []
+
+    reverseEdges (buildG ( 0, 2 ) [ ( 0, 1 ),( 1, 2 ) ]) == [ ( 1, 0 ),( 2, 1 ) ]
+
+-}
 reverseEdges : Graph -> List Edge
 reverseEdges g =
-    List.map (\( v, w ) -> ( w, v )) (edges g)
+    List.foldr
+        (\from soFar ->
+            case arrayFind from g of
+                Nothing ->
+                    soFar
+
+                Just tos ->
+                    List.foldr
+                        (\to soFarWithTos ->
+                            ( to, from ) :: soFarWithTos
+                        )
+                        soFar
+                        tos
+        )
+        []
+        (vertices g)
 
 
 {-| (O((V+E) \\log V)). Build a graph from a list of nodes uniquely identified
