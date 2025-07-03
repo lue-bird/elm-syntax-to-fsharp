@@ -217,9 +217,7 @@ modulesPlusImplicitlyImportedToModuleContext context moduleNames =
                     moduleDeclaredPorts =
                         case context.ports |> FastDict.get moduleName of
                             Nothing ->
-                                { portsIncoming = FastSet.empty
-                                , portsOutgoing = FastSet.empty
-                                }
+                                portsOutgoingDictEmptyPortsIncomingDictEmpty
 
                             Just moduleExposedNames ->
                                 { portsIncoming = moduleExposedNames.portsIncoming
@@ -1725,9 +1723,7 @@ pattern patternInferred =
                                         |> FastSet.insert introducedVariableName
                                 }
                             )
-                            { fields = FastDict.empty
-                            , introducedVariables = FastSet.empty
-                            }
+                            fieldsDictEmptyIntroducedVariablesDictEmpty
             in
             Ok
                 { pattern = FsharpPatternRecordInexhaustive fieldNames.fields
@@ -1833,6 +1829,16 @@ pattern patternInferred =
                 (patternAs.pattern |> pattern)
 
 
+fieldsDictEmptyIntroducedVariablesDictEmpty :
+    { fields : FastDict.Dict String FsharpPattern
+    , introducedVariables : FastSet.Set String
+    }
+fieldsDictEmptyIntroducedVariablesDictEmpty =
+    { fields = FastDict.empty
+    , introducedVariables = FastSet.empty
+    }
+
+
 okFsharpPatternIgnoreIntroducedVariablesSetEmpty :
     Result
         error_
@@ -1908,10 +1914,10 @@ typeConstructReferenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "bool" }
 
                 "Int" ->
-                    Just { moduleOrigin = Nothing, name = "int64" }
+                    justFsharpReferenceInt64
 
                 "Float" ->
-                    Just { moduleOrigin = Nothing, name = "float" }
+                    justFsharpReferenceFloat
 
                 "Never" ->
                     Just { moduleOrigin = Nothing, name = "Basics_Never" }
@@ -1922,7 +1928,7 @@ typeConstructReferenceToCoreFsharp reference =
         "String" ->
             case reference.name of
                 "String" ->
-                    Just { moduleOrigin = Nothing, name = "StringRope" }
+                    justFsharpReferenceStringRope
 
                 _ ->
                     Nothing
@@ -1938,7 +1944,7 @@ typeConstructReferenceToCoreFsharp reference =
         "List" ->
             case reference.name of
                 "List" ->
-                    Just { moduleOrigin = Nothing, name = "List" }
+                    justFsharpReferenceList
 
                 _ ->
                     Nothing
@@ -1970,7 +1976,7 @@ typeConstructReferenceToCoreFsharp reference =
         "Maybe" ->
             case reference.name of
                 "Maybe" ->
-                    Just { moduleOrigin = Nothing, name = "ValueOption" }
+                    justFsharpReferenceValueOption
 
                 _ ->
                     Nothing
@@ -1978,7 +1984,7 @@ typeConstructReferenceToCoreFsharp reference =
         "Result" ->
             case reference.name of
                 "Result" ->
-                    Just { moduleOrigin = Nothing, name = "Result_Result" }
+                    justFsharpReferenceResultResult
 
                 _ ->
                     Nothing
@@ -2154,6 +2160,36 @@ typeConstructReferenceToCoreFsharp reference =
             Nothing
 
 
+justFsharpReferenceInt64 : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceInt64 =
+    Just { moduleOrigin = Nothing, name = "int64" }
+
+
+justFsharpReferenceFloat : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceFloat =
+    Just { moduleOrigin = Nothing, name = "float" }
+
+
+justFsharpReferenceStringRope : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceStringRope =
+    Just { moduleOrigin = Nothing, name = "StringRope" }
+
+
+justFsharpReferenceList : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceList =
+    Just { moduleOrigin = Nothing, name = "List" }
+
+
+justFsharpReferenceValueOption : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceValueOption =
+    Just { moduleOrigin = Nothing, name = "ValueOption" }
+
+
+justFsharpReferenceResultResult : Maybe { moduleOrigin : Maybe String, name : String }
+justFsharpReferenceResultResult =
+    Just { moduleOrigin = Nothing, name = "Result_Result" }
+
+
 {-| Use `typeConstructReferenceToCoreFsharp` for types
 -}
 referenceToCoreFsharp :
@@ -2222,7 +2258,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "Basics_round" }
 
                 "truncate" ->
-                    Just { moduleOrigin = Nothing, name = "int64" }
+                    justFsharpReferenceInt64
 
                 "negate" ->
                     case reference.type_ of
@@ -2253,7 +2289,7 @@ referenceToCoreFsharp reference =
                             Just { moduleOrigin = Just "System.Int64", name = "Abs" }
 
                 "toFloat" ->
-                    Just { moduleOrigin = Nothing, name = "float" }
+                    justFsharpReferenceFloat
 
                 "isNaN" ->
                     Just { moduleOrigin = Just "System.Double", name = "IsNaN" }
@@ -2477,7 +2513,7 @@ referenceToCoreFsharp reference =
         "Char" ->
             case reference.name of
                 "toCode" ->
-                    Just { moduleOrigin = Nothing, name = "int64" }
+                    justFsharpReferenceInt64
 
                 "fromCode" ->
                     Just { moduleOrigin = Nothing, name = "char" }
@@ -4806,9 +4842,7 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                                             -- invalid syntax
                                                             membersSoFar
                                                 )
-                                                { portsOutgoing = FastSet.empty
-                                                , portsIncoming = FastSet.empty
-                                                }
+                                                portsOutgoingDictEmptyPortsIncomingDictEmpty
                                         )
                             )
                             FastDict.empty
@@ -5116,6 +5150,13 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                             |> List.reverse
                        )
             }
+
+
+portsOutgoingDictEmptyPortsIncomingDictEmpty : { portsOutgoing : FastSet.Set a, portsIncoming : FastSet.Set a }
+portsOutgoingDictEmptyPortsIncomingDictEmpty =
+    { portsOutgoing = FastSet.empty
+    , portsIncoming = FastSet.empty
+    }
 
 
 listFoldlWhileOkFrom :
@@ -7703,7 +7744,12 @@ fastDictPermutations specializations =
                                     )
                         )
             )
-            [ FastDict.empty ]
+            listSingletonFastDictEmpty
+
+
+listSingletonFastDictEmpty : List (FastDict.Dict k_ v_)
+listSingletonFastDictEmpty =
+    [ FastDict.empty ]
 
 
 createSynchronizationFromInferredTypeVariableToSyntaxTypeVariable :
@@ -8063,9 +8109,7 @@ inferredTypeWithExpandedInnerAliasesSplitIntoSpecializedFsharpTypes context infe
         ElmSyntaxTypeInfer.TypeVariable variable ->
             if variable.name |> String.startsWith "number" then
                 FastDict.singleton variable.name
-                    [ FsharpTypeVariableSpecializationToInt
-                    , FsharpTypeVariableSpecializationToFloat
-                    ]
+                    fsharpTypeVariableSpecializationsToIntAndFloat
 
             else
                 FastDict.empty
@@ -8074,6 +8118,13 @@ inferredTypeWithExpandedInnerAliasesSplitIntoSpecializedFsharpTypes context infe
             inferredTypeNotVariableWithExpandedInnerAliasesSplitIntoSpecializedFsharpTypes
                 context
                 inferredTypeNotVariable
+
+
+fsharpTypeVariableSpecializationsToIntAndFloat : List FsharpTypeVariableSpecialization
+fsharpTypeVariableSpecializationsToIntAndFloat =
+    [ FsharpTypeVariableSpecializationToInt
+    , FsharpTypeVariableSpecializationToFloat
+    ]
 
 
 inferredTypeNotVariableWithExpandedInnerAliasesSplitIntoSpecializedFsharpTypes :
@@ -8230,14 +8281,10 @@ syntaxTypeApplySpecialization specialization syntaxType =
                 Just specificSpecialization ->
                     case specificSpecialization of
                         FsharpTypeVariableSpecializationToInt ->
-                            Elm.Syntax.TypeAnnotation.Typed
-                                (Elm.Syntax.Node.empty ( [ "Basics" ], "Int" ))
-                                []
+                            syntaxTypeBasicsInt
 
                         FsharpTypeVariableSpecializationToFloat ->
-                            Elm.Syntax.TypeAnnotation.Typed
-                                (Elm.Syntax.Node.empty ( [ "Basics" ], "Float" ))
-                                []
+                            syntaxTypeBasicsFloat
 
                         FsharpTypeVariableSpecializationToRecord fields ->
                             Elm.Syntax.TypeAnnotation.Record
@@ -8314,14 +8361,10 @@ syntaxTypeApplySpecialization specialization syntaxType =
                 Just specificSpecialization ->
                     case specificSpecialization of
                         FsharpTypeVariableSpecializationToInt ->
-                            Elm.Syntax.TypeAnnotation.Typed
-                                (Elm.Syntax.Node.empty ( [ "Basics" ], "Int" ))
-                                []
+                            syntaxTypeBasicsInt
 
                         FsharpTypeVariableSpecializationToFloat ->
-                            Elm.Syntax.TypeAnnotation.Typed
-                                (Elm.Syntax.Node.empty ( [ "Basics" ], "Float" ))
-                                []
+                            syntaxTypeBasicsFloat
 
                         FsharpTypeVariableSpecializationToRecord allFields ->
                             let
@@ -8366,6 +8409,20 @@ syntaxTypeApplySpecialization specialization syntaxType =
             Elm.Syntax.TypeAnnotation.FunctionTypeAnnotation
                 (inType |> syntaxTypeNodeApplySpecialization specialization)
                 (outType |> syntaxTypeNodeApplySpecialization specialization)
+
+
+syntaxTypeBasicsInt : Elm.Syntax.TypeAnnotation.TypeAnnotation
+syntaxTypeBasicsInt =
+    Elm.Syntax.TypeAnnotation.Typed
+        (Elm.Syntax.Node.empty ( [ "Basics" ], "Int" ))
+        []
+
+
+syntaxTypeBasicsFloat : Elm.Syntax.TypeAnnotation.TypeAnnotation
+syntaxTypeBasicsFloat =
+    Elm.Syntax.TypeAnnotation.Typed
+        (Elm.Syntax.Node.empty ( [ "Basics" ], "Float" ))
+        []
 
 
 typeNodeExpand :
