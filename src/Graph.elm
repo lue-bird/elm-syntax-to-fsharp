@@ -418,8 +418,8 @@ thus more efficient.
 
 -}
 depthFirstSpanningTreeFromVertices : Graph -> List Vertex -> List (Tree Vertex)
-depthFirstSpanningTreeFromVertices graph vs0 =
-    depthFirstSpanningTreeFromVerticesStep graph vs0 FastSet.empty [] []
+depthFirstSpanningTreeFromVertices graph fromVertices =
+    depthFirstSpanningTreeFromVerticesStep graph fromVertices FastSet.empty [] []
 
 
 depthFirstSpanningTreeFromVerticesStep :
@@ -447,11 +447,11 @@ depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack soFar =
                         )
                         soFar
 
-                ( firstTree, firstVs ) :: rest ->
+                [ ( firstTree, firstVs ) ] ->
                     depthFirstSpanningTreeFromVerticesStep graph
                         firstVs
                         visited
-                        rest
+                        []
                         (firstTree :: soFar)
 
         v :: vs ->
