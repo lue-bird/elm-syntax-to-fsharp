@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>example-compile-itself</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <IlcTrimMetadata>true</IlcTrimMetadata>
+    <PublishTrimmed>true</PublishTrimmed>
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/Elm.fs" />
+    <Compile Include="src/Program.fs" />
+  </ItemGroup>
+
+</Project>
