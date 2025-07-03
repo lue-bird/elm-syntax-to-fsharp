@@ -305,30 +305,25 @@ typeContainedRecords (Elm.Syntax.Node.Node _ syntaxType) =
                     |> List.sort
                 )
                 (fields
-                    |> List.map
-                        (\(Elm.Syntax.Node.Node _ ( _, value )) ->
-                            value
-                        )
                     |> listMapToFastSetsAndUnify
-                        typeContainedRecords
+                        (\(Elm.Syntax.Node.Node _ ( _, value )) ->
+                            value |> typeContainedRecords
+                        )
                 )
 
         Elm.Syntax.TypeAnnotation.GenericRecord _ (Elm.Syntax.Node.Node _ fields) ->
             fields
-                |> List.map
-                    (\(Elm.Syntax.Node.Node _ ( _, value )) ->
-                        value
-                    )
                 |> listMapToFastSetsAndUnify
-                    typeContainedRecords
+                    (\(Elm.Syntax.Node.Node _ ( _, value )) ->
+                        value |> typeContainedRecords
+                    )
 
 
 syntaxExpressionContainedConstructedRecords :
     Elm.Syntax.Node.Node Elm.Syntax.Expression.Expression
     ->
         FastSet.Set
-            -- sorted field names
-            (List String)
+            {- sorted field names -} (List String)
 syntaxExpressionContainedConstructedRecords syntaxExpressionNode =
     -- IGNORE TCO
     FastSet.union
@@ -4178,20 +4173,24 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                                 (\(Elm.Syntax.Node.Node _ syntaxDeclaration) ->
                                     case syntaxDeclaration of
                                         Elm.Syntax.Declaration.FunctionDeclaration syntaxValueOrFunctionDeclaration ->
-                                            (syntaxValueOrFunctionDeclaration.declaration
-                                                |> Elm.Syntax.Node.value
-                                                |> .expression
-                                                |> syntaxExpressionContainedConstructedRecords
-                                            )
-                                                |> FastSet.union
-                                                    (case syntaxValueOrFunctionDeclaration.signature of
-                                                        Nothing ->
-                                                            FastSet.empty
+                                            let
+                                                implementationContainedConstructedRecords : FastSet.Set (List String)
+                                                implementationContainedConstructedRecords =
+                                                    syntaxValueOrFunctionDeclaration.declaration
+                                                        |> Elm.Syntax.Node.value
+                                                        |> .expression
+                                                        |> syntaxExpressionContainedConstructedRecords
+                                            in
+                                            case syntaxValueOrFunctionDeclaration.signature of
+                                                Nothing ->
+                                                    implementationContainedConstructedRecords
 
-                                                        Just (Elm.Syntax.Node.Node _ signature) ->
-                                                            signature.typeAnnotation
+                                                Just (Elm.Syntax.Node.Node _ signature) ->
+                                                    implementationContainedConstructedRecords
+                                                        |> FastSet.union
+                                                            (signature.typeAnnotation
                                                                 |> typeContainedRecords
-                                                    )
+                                                            )
 
                                         Elm.Syntax.Declaration.Destructuring _ _ ->
                                             -- invalid syntax
