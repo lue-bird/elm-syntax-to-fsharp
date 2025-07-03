@@ -1,7 +1,6 @@
 module Graph exposing
     ( Graph, Edge, Vertex, Array
-    , SCC(..)
-    , stronglyConnComponents
+    , SCC(..), stronglyConnComponents
     )
 
 {-| An Elm graph type implementation, inspired by Haskell's Data.Graph.
@@ -16,7 +15,7 @@ This is edited from https://dark.elm.dmy.fr/packages/guida-lang/graph/latest/
 
 ## strongly-connected components
 
-@docs SCC, stronglyConnCompR
+@docs SCC, stronglyConnComponents
 
 -}
 
