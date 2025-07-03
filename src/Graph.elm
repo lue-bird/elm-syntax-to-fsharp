@@ -217,15 +217,21 @@ vertices graph =
 -}
 edges : Graph -> List Edge
 edges g =
-    List.concatMap
-        (\from ->
+    List.foldr
+        (\from soFar ->
             case arrayFind from g of
                 Nothing ->
-                    []
+                    soFar
 
                 Just tos ->
-                    List.map (\to -> ( from, to )) tos
+                    List.foldr
+                        (\to soFarWithTos ->
+                            ( from, to ) :: soFarWithTos
+                        )
+                        soFar
+                        tos
         )
+        []
         (vertices g)
 
 
@@ -245,11 +251,11 @@ buildG max edgesToBuildFrom =
 -}
 transposeG : Graph -> Graph
 transposeG g =
-    buildG g.max (reverseE g)
+    buildG g.max (reverseEdges g)
 
 
-reverseE : Graph -> List Edge
-reverseE g =
+reverseEdges : Graph -> List Edge
+reverseEdges g =
     List.map (\( v, w ) -> ( w, v )) (edges g)
 
 
