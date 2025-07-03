@@ -122,5 +122,11 @@ dotnet publish --self-contained -c release
 ```
 The built executable can now be found at `/bin/release/net9.0/yourArchitecture/native/yourProjectName`.
 
+Or build and run it once:
+```bash
+dotnet run
+```
+append ` --no-restore` on consecutive runs to make it faster.
+
 If something unexpected happened,
 please [report an issue](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new).
