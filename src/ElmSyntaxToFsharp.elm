@@ -1926,76 +1926,40 @@ typeConstructReferenceToCoreFsharp reference =
                     Nothing
 
         "String" ->
-            case reference.name of
-                "String" ->
-                    justFsharpReferenceStringRope
-
-                _ ->
-                    Nothing
+            -- "String" is the only possible reference.name
+            justFsharpReferenceStringRope
 
         "Char" ->
-            case reference.name of
-                "Char" ->
-                    Just { moduleOrigin = Nothing, name = "char" }
-
-                _ ->
-                    Nothing
+            -- "Char" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "char" }
 
         "List" ->
-            case reference.name of
-                "List" ->
-                    justFsharpReferenceList
-
-                _ ->
-                    Nothing
+            -- "List" is the only possible reference.name
+            justFsharpReferenceList
 
         "Dict" ->
-            case reference.name of
-                "Dict" ->
-                    Just { moduleOrigin = Nothing, name = "Map" }
-
-                _ ->
-                    Nothing
+            -- "Dict" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "Map" }
 
         "Set" ->
-            case reference.name of
-                "Set" ->
-                    Just { moduleOrigin = Nothing, name = "Set" }
-
-                _ ->
-                    Nothing
+            -- "Set" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "Set" }
 
         "Array" ->
-            case reference.name of
-                "Array" ->
-                    Just { moduleOrigin = Nothing, name = "array" }
-
-                _ ->
-                    Nothing
+            -- "Array" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "array" }
 
         "Maybe" ->
-            case reference.name of
-                "Maybe" ->
-                    justFsharpReferenceValueOption
-
-                _ ->
-                    Nothing
+            -- "Maybe" is the only possible reference.name
+            justFsharpReferenceValueOption
 
         "Result" ->
-            case reference.name of
-                "Result" ->
-                    justFsharpReferenceResultResult
-
-                _ ->
-                    Nothing
+            -- "Result" is the only possible reference.name
+            justFsharpReferenceResultResult
 
         "Json.Encode" ->
-            case reference.name of
-                "Value" ->
-                    Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
-
-                _ ->
-                    Nothing
+            -- "Value" is the only possible reference.name
+            Just { moduleOrigin = Just "System.Text.Json.Nodes", name = "JsonNode" }
 
         "Json.Decode" ->
             case reference.name of
@@ -2079,12 +2043,8 @@ typeConstructReferenceToCoreFsharp reference =
                     Nothing
 
         "Bytes.Encode" ->
-            case reference.name of
-                "Encoder" ->
-                    Just { moduleOrigin = Nothing, name = "BytesEncode_Encoder" }
-
-                _ ->
-                    Nothing
+            -- "Encoder" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "BytesEncode_Encoder" }
 
         "VirtualDom" ->
             case reference.name of
@@ -2137,24 +2097,17 @@ typeConstructReferenceToCoreFsharp reference =
                 "Program" ->
                     Just { moduleOrigin = Nothing, name = "Platform_Program" }
 
+                -- "Task" | "ProcessId" | "Router"
                 _ ->
                     Nothing
 
         "Platform.Cmd" ->
-            case reference.name of
-                "Cmd" ->
-                    Just { moduleOrigin = Nothing, name = "PlatformCmd_Cmd" }
-
-                _ ->
-                    Nothing
+            -- "Cmd" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "PlatformCmd_Cmd" }
 
         "Platform.Sub" ->
-            case reference.name of
-                "Sub" ->
-                    Just { moduleOrigin = Nothing, name = "PlatformSub_Sub" }
-
-                _ ->
-                    Nothing
+            -- "Sub" is the only possible reference.name
+            Just { moduleOrigin = Nothing, name = "PlatformSub_Sub" }
 
         _ ->
             Nothing
