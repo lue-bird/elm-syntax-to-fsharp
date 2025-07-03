@@ -8767,8 +8767,8 @@ syntaxTypeExpandInnerAliases context syntaxType =
         Elm.Syntax.TypeAnnotation.Unit ->
             Elm.Syntax.TypeAnnotation.Unit
 
-        Elm.Syntax.TypeAnnotation.GenericType variable ->
-            Elm.Syntax.TypeAnnotation.GenericType variable
+        Elm.Syntax.TypeAnnotation.GenericType _ ->
+            syntaxType
 
         Elm.Syntax.TypeAnnotation.Tupled parts ->
             Elm.Syntax.TypeAnnotation.Tupled
