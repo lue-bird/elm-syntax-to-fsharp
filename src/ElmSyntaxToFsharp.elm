@@ -4235,17 +4235,17 @@ modules syntaxDeclarationsIncludingOverwrittenOnes =
                         )
                     )
                 |> Graph.stronglyConnComponents
-                |> -- TODO optimize
-                   List.concatMap
-                    (\edge0 ->
+                |> List.foldr
+                    (\edge0 syntaxModulesFromMostToLeastImportedSoFar ->
                         case edge0 of
                             Graph.AcyclicSCC n ->
-                                [ n ]
+                                n :: syntaxModulesFromMostToLeastImportedSoFar
 
                             Graph.CyclicSCC recursive ->
                                 -- we assume the given module do not have cyclic imports
-                                recursive
+                                recursive ++ syntaxModulesFromMostToLeastImportedSoFar
                     )
+                    []
 
         specialize :
             { typeAliases :
