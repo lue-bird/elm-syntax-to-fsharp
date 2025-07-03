@@ -1,10 +1,10 @@
 module Main exposing (view)
 
-import Html
+import Html exposing (Html)
 import Html.Attributes
 
 
-view : String -> Html.Html Never
+view : String -> Html Never
 view name =
     Html.div []
         [ Html.h1 []
