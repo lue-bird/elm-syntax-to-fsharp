@@ -39,12 +39,12 @@ arrayAccum f initial max ies =
     { max = max
     , byIndex =
         List.foldl
-            (\( i, a ) acc ->
+            (\( i, a ) soFar ->
                 FastDict.update i
                     (\atIndexOrNothing ->
                         Just (f (atIndexOrNothing |> Maybe.withDefault initial) a)
                     )
-                    acc
+                    soFar
             )
             (-- FastDict.empty is also possible but not conclusively faster
              fastDictRangeToConstant 0 max initial
@@ -428,12 +428,12 @@ depthFirstSpanningTreeFromVerticesStep :
     -> List ( Tree Vertex, List Vertex )
     -> List (Tree Vertex)
     -> List (Tree Vertex)
-depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack acc =
+depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack soFar =
     case fromVertices of
         [] ->
             case stack of
                 [] ->
-                    List.reverse acc
+                    List.reverse soFar
 
                 ( firstTree, firstVs ) :: ( secondTree, secondVs ) :: rest ->
                     depthFirstSpanningTreeFromVerticesStep graph
@@ -444,14 +444,14 @@ depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack acc =
                          )
                             :: rest
                         )
-                        acc
+                        soFar
 
                 ( firstTree, firstVs ) :: rest ->
                     depthFirstSpanningTreeFromVerticesStep graph
                         firstVs
                         visited
                         rest
-                        (firstTree :: acc)
+                        (firstTree :: soFar)
 
         v :: vs ->
             if FastSet.member v visited then
@@ -459,14 +459,14 @@ depthFirstSpanningTreeFromVerticesStep graph fromVertices visited stack acc =
                     vs
                     visited
                     stack
-                    acc
+                    soFar
 
             else
                 depthFirstSpanningTreeFromVerticesStep graph
                     (Maybe.withDefault [] (arrayFind v graph))
                     (FastSet.insert v visited)
                     (( treeOne v, vs ) :: stack)
-                    acc
+                    soFar
 
 
 postorder : Tree a -> List a -> List a
