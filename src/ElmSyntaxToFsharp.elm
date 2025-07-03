@@ -615,10 +615,10 @@ fsharpTypeParametersToString fsharpTypeParameters =
 
         parameter0 :: parameter1Up ->
             "<"
-                ++ ((parameter0 :: parameter1Up)
-                        |> List.map (\parameter -> "'" ++ parameter)
-                        |> String.join ", "
-                   )
+                ++ listFilledMapAndStringJoinWith ", "
+                    (\parameter -> "'" ++ parameter)
+                    parameter0
+                    parameter1Up
                 ++ ">"
 
 
@@ -7244,11 +7244,10 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
 
                             parameter0 :: parameter1Up ->
                                 "<"
-                                    ++ ((parameter0 :: parameter1Up)
-                                            |> List.map
-                                                (\parameter -> "'" ++ parameter)
-                                            |> String.join ", "
-                                       )
+                                    ++ listFilledMapAndStringJoinWith ", "
+                                        (\parameter -> "'" ++ parameter)
+                                        parameter0
+                                        parameter1Up
                                     ++ (case
                                             (parameter0 :: parameter1Up)
                                                 |> List.filter (\parameter -> parameter |> String.startsWith "comparable")
@@ -7258,13 +7257,12 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
 
                                             comparableParameter0 :: comparableParameter1Up ->
                                                 " when "
-                                                    ++ ((comparableParameter0 :: comparableParameter1Up)
-                                                            |> List.map
-                                                                (\parameter ->
-                                                                    "'" ++ parameter ++ ": comparison"
-                                                                )
-                                                            |> String.join ", "
-                                                       )
+                                                    ++ listFilledMapAndStringJoinWith ", "
+                                                        (\parameter ->
+                                                            "'" ++ parameter ++ ": comparison"
+                                                        )
+                                                        comparableParameter0
+                                                        comparableParameter1Up
                                        )
                                     ++ ">"
                        )
@@ -7296,6 +7294,16 @@ printFsharpValueOrFunctionDeclaration fsharpValueOrFunctionDeclaration =
                                 )
                         )
                     )
+
+
+listFilledMapAndStringJoinWith : String -> (a -> String) -> a -> List a -> String
+listFilledMapAndStringJoinWith separator elementChange head tail =
+    List.foldl
+        (\element leftSoFar ->
+            leftSoFar ++ separator ++ (element |> elementChange) ++ ""
+        )
+        (head |> elementChange)
+        tail
 
 
 fsharpTypeContainedVariables : FsharpType -> FastSet.Set String
@@ -9096,9 +9104,15 @@ fsharpNameWithSpecializedTypes specializedTypes name =
                     ++ "_"
                     ++ (case specializedType of
                             FsharpTypeVariableSpecializationToRecord specializedTypeRecordFields ->
-                                specializedTypeRecordFields
-                                    |> List.map stringFirstCharToUpper
-                                    |> String.join "_"
+                                case specializedTypeRecordFields of
+                                    [] ->
+                                        ""
+
+                                    specializedTypeRecordField0 :: specializedTypeRecordField1Up ->
+                                        listFilledMapAndStringJoinWith "_"
+                                            stringFirstCharToUpper
+                                            specializedTypeRecordField0
+                                            specializedTypeRecordField1Up
 
                             FsharpTypeVariableSpecializationToInt ->
                                 "Int"
