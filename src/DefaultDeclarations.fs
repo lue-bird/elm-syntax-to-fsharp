@@ -1097,6 +1097,17 @@ let inline JsonEncode_object
             fields
     )
 
+let inline JsonEncode_objectRaw
+    (fields: List<struct (string * System.Text.Json.Nodes.JsonNode)>)
+    : System.Text.Json.Nodes.JsonNode =
+    System.Text.Json.Nodes.JsonObject(
+        List.fold
+            (fun soFar (struct (fieldName, fieldValue)) ->
+                Map.add fieldName fieldValue soFar)
+            Map.empty
+            fields
+    )
+
 let inline JsonEncode_dict
     ([<InlineIfLambda>] keyToString: 'key -> StringRope)
     ([<InlineIfLambda>] valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
