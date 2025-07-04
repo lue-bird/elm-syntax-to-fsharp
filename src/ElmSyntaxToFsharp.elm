@@ -3369,10 +3369,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathVector2_lengthSquared" }
 
                 "negate" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector2_negate" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector2", name = "Negate" }
 
                 "normalize" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector2_normalize" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector2", name = "Normalize" }
 
                 "scale" ->
                     Just { moduleOrigin = Nothing, name = "MathVector2_scale" }
@@ -3443,10 +3443,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathVector3_lengthSquared" }
 
                 "negate" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector3_negate" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector3", name = "Negate" }
 
                 "normalize" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector3_normalize" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector3", name = "Normalize" }
 
                 "scale" ->
                     Just { moduleOrigin = Nothing, name = "MathVector3_scale" }
@@ -3511,10 +3511,10 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathVector4_lengthSquared" }
 
                 "negate" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector4_negate" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector4", name = "Negate" }
 
                 "normalize" ->
-                    Just { moduleOrigin = Nothing, name = "MathVector4_normalize" }
+                    Just { moduleOrigin = Just "System.Numerics.Vector4", name = "Normalize" }
 
                 "scale" ->
                     Just { moduleOrigin = Nothing, name = "MathVector4_scale" }
@@ -3549,7 +3549,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_fromRecord" }
 
                 "identity" ->
-                    Just { moduleOrigin = Nothing, name = "MathMatrix4_identity" }
+                    Just { moduleOrigin = Just "System.Numerics.Matrix4x4", name = "Identity" }
 
                 "inverse" ->
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_inverse" }
@@ -3579,13 +3579,13 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_makeRotate" }
 
                 "makeScale" ->
-                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeScale" }
+                    Just { moduleOrigin = Just "System.Numerics.Matrix4x4", name = "CreateScale" }
 
                 "makeScale3" ->
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_makeScale3" }
 
                 "makeTranslate" ->
-                    Just { moduleOrigin = Nothing, name = "MathMatrix4_makeTranslate" }
+                    Just { moduleOrigin = Just "System.Numerics.Matrix4x4", name = "CreateTranslation" }
 
                 "makeTranslate3" ->
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_makeTranslate3" }
@@ -3618,7 +3618,7 @@ referenceToCoreFsharp reference =
                     Just { moduleOrigin = Nothing, name = "MathMatrix4_translate3" }
 
                 "transpose" ->
-                    Just { moduleOrigin = Nothing, name = "MathMatrix4_transpose" }
+                    Just { moduleOrigin = Just "System.Numerics.Matrix4x4", name = "Transpose" }
 
                 _ ->
                     Nothing
@@ -10757,9 +10757,9 @@ let inline Basics_compare (a: 'a) (b: 'a) : Basics_Order =
     else if comparisonMagnitude < 0 then Basics_Order.LT
     else Basics_Order.GT
 
-let inline Basics_ceiling (n: float) : int64 = int64 (System.Double.Ceiling(n))
-let inline Basics_floor (n: float) : int64 = int64 (System.Double.Floor(n))
-let inline Basics_round (n: float) : int64 = int64 (System.Double.Round(n))
+let inline Basics_ceiling (n: float) : int64 = int64 (System.Double.Ceiling n)
+let inline Basics_floor (n: float) : int64 = int64 (System.Double.Floor n)
+let inline Basics_round (n: float) : int64 = int64 (System.Double.Round n)
 let inline Basics_fnegate (n: float) : float = -n
 let inline Basics_inegate (n: int64) : int64 = -n
 let inline Basics_fadd (a: float) (b: float) : float = a + b
@@ -10809,7 +10809,7 @@ let inline Basics_turns (angleInTurns: float) : float =
 let Basics_fromPolar
     (struct (radius: float, theta: float))
     : struct (float * float) =
-    struct (radius * (System.Double.Cos(theta)), radius * (System.Double.Sin(theta)))
+    struct (radius * System.Double.Cos theta, radius * System.Double.Sin theta)
 
 let Basics_toPolar (struct (x: float, y: float)) : struct (float * float) =
     struct (System.Double.Sqrt((x * x) + (y * y)), System.Double.Atan2(y, x))
@@ -10886,12 +10886,12 @@ type StringRope =
                 : System.Collections.Generic.Stack<StringRope> =
                 System.Collections.Generic.Stack()
 
-            mutableRemainingRightStringRopes.Push(fullRightRope)
+            mutableRemainingRightStringRopes.Push fullRightRope
 
-            while (shouldKeepGoing) do
+            while shouldKeepGoing do
                 match stringRopeToMatchNext with
                 | StringRopeOne segment ->
-                    let _ = mutableBuilder.Append(segment)
+                    let _ = mutableBuilder.Append segment
 
                     if mutableRemainingRightStringRopes.Count = 0 then
                         shouldKeepGoing <- false
@@ -10900,7 +10900,7 @@ type StringRope =
                             mutableRemainingRightStringRopes.Pop()
                 | StringRopeAppend(left, right) ->
                     stringRopeToMatchNext <- left
-                    mutableRemainingRightStringRopes.Push(right)
+                    mutableRemainingRightStringRopes.Push right
 
             mutableBuilder.ToString()
 
@@ -10924,7 +10924,7 @@ let stringRopeEmpty: StringRope = StringRopeOne ""
 
 let rec String_isEmpty (stringToCheck: StringRope) : bool =
     match stringToCheck with
-    | StringRopeOne string -> System.String.IsNullOrEmpty(string)
+    | StringRopeOne string -> System.String.IsNullOrEmpty string
     | StringRopeAppend(left, right) -> String_isEmpty left && String_isEmpty right
 
 let inline String_length (str: StringRope) : int64 =
@@ -10950,7 +10950,7 @@ let runesToString (runes: seq<System.Text.Rune>) : string =
     for rune in runes do
         let _ =
             if rune.Utf16SequenceLength = 1 then
-                stringBuilder.Append(rune.Value)
+                stringBuilder.Append rune.Value
             else
                 stringBuilder.Append(rune.ToString())
 
@@ -11153,10 +11153,10 @@ let newLineOptions: array<string> = [| "\\r\\n"; "\\n" |]
 let String_lines (string: StringRope) : List<StringRope> =
     // can be optimized
     Seq.toList (
-        (Seq.map
+        Seq.map
             (fun line -> StringRopeOne line)
             ((StringRope.toString string)
-                .Split(newLineOptions, System.StringSplitOptions.None)))
+                .Split(newLineOptions, System.StringSplitOptions.None))
     )
 
 let whitespaceCharacters: array<char> =
@@ -11190,13 +11190,13 @@ let whitespaceCharacters: array<char> =
 let String_words (string: StringRope) : List<StringRope> =
     // can be optimized
     Seq.toList (
-        (Seq.map
+        Seq.map
             (fun line -> StringRopeOne line)
             ((StringRope.toString string)
                 .Split(
                     whitespaceCharacters,
                     System.StringSplitOptions.RemoveEmptyEntries
-                )))
+                ))
     )
 
 let String_reverse (string: StringRope) : StringRope =
@@ -11274,7 +11274,7 @@ let String_slice
     let string = StringRope.toString stringRope
 
     let realStartIndex: int =
-        if (startInclusivePossiblyNegative < 0L) then
+        if startInclusivePossiblyNegative < 0L then
             System.Int32.Max(
                 0,
                 int startInclusivePossiblyNegative + String.length string
@@ -11283,7 +11283,7 @@ let String_slice
             int startInclusivePossiblyNegative
 
     let realEndIndexExclusive: int =
-        if (endExclusivePossiblyNegative < 0L) then
+        if endExclusivePossiblyNegative < 0L then
             System.Int32.Max(
                 0,
                 int endExclusivePossiblyNegative + String.length string
@@ -11291,7 +11291,7 @@ let String_slice
         else
             System.Int32.Min(int endExclusivePossiblyNegative, String.length string)
 
-    if (realStartIndex >= realEndIndexExclusive) then
+    if realStartIndex >= realEndIndexExclusive then
         stringRopeEmpty
     else
         StringRopeOne(
@@ -11308,7 +11308,7 @@ let inline List_head (list: List<'a>) : ValueOption<'a> =
 let inline List_tail (list: List<'a>) : ValueOption<List<'a>> =
     match list with
     | [] -> ValueNone
-    | head :: tail -> ValueSome tail
+    | _head :: tail -> ValueSome tail
 
 let inline List_filterMap
     ([<InlineIfLambda>] elementToMaybe: 'a -> ValueOption<'b>)
@@ -11319,18 +11319,18 @@ let inline List_filterMap
 let inline List_member (needle: 'a) (list: List<'a>) : bool =
     List.contains needle list
 
-let List_minimum (list: List<'a>) : ValueOption<'a> =
+let inline List_minimum (list: List<'a>) : ValueOption<'a> =
     match list with
     | [] -> ValueNone
     | _ :: _ -> ValueSome(List.min list)
 
-let List_maximum (list: List<'a>) : ValueOption<'a> =
+let inline List_maximum (list: List<'a>) : ValueOption<'a> =
     match list with
     | [] -> ValueNone
     | _ :: _ -> ValueSome(List.max list)
 
-let List_fproduct (list: List<float>) : float = List.fold (*) 1.0 list
-let List_iproduct (list: List<int64>) : int64 = List.fold (*) 1L list
+let inline List_fproduct (list: List<float>) : float = List.fold (*) 1.0 list
+let inline List_iproduct (list: List<int64>) : int64 = List.fold (*) 1L list
 
 let inline List_cons (newHead: 'a) (tail: List<'a>) : List<'a> = newHead :: tail
 
@@ -11478,7 +11478,7 @@ let inline Maybe_map4
     (dOption: ValueOption<'d>)
     : ValueOption<'combined> =
     match aOption, bOption, cOption, dOption with
-    | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d) ->
+    | ValueSome a, ValueSome b, ValueSome c, ValueSome d ->
         ValueSome(valuesCombine a b c d)
     | _ -> ValueNone
 
@@ -11491,7 +11491,7 @@ let inline Maybe_map5
     (eOption: ValueOption<'e>)
     : ValueOption<'combined> =
     match aOption, bOption, cOption, dOption, eOption with
-    | ValueSome(a), ValueSome(b), ValueSome(c), ValueSome(d), ValueSome(e) ->
+    | ValueSome a, ValueSome b, ValueSome c, ValueSome d, ValueSome e ->
         ValueSome(valuesCombine a b c d e)
     | _ -> ValueNone
 
@@ -11502,11 +11502,11 @@ let inline Result_map2
     (bResult: Result<'b, 'error>)
     : Result<'combined, 'error> =
     match aResult with
-    | Error(error) -> Error(error)
-    | Ok(a) ->
+    | Error error -> Error error
+    | Ok a ->
         match bResult with
-        | Error(error) -> Error(error)
-        | Ok(b) -> Ok(valuesCombine a b)
+        | Error error -> Error error
+        | Ok b -> Ok(valuesCombine a b)
 
 let inline Result_map3
     ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'combined)
@@ -11515,14 +11515,14 @@ let inline Result_map3
     (cResult: Result<'c, 'error>)
     : Result<'combined, 'error> =
     match aResult with
-    | Error(error) -> Error(error)
-    | Ok(a) ->
+    | Error error -> Error error
+    | Ok a ->
         match bResult with
-        | Error(error) -> Error(error)
-        | Ok(b) ->
+        | Error error -> Error error
+        | Ok b ->
             match cResult with
-            | Error(error) -> Error(error)
-            | Ok(c) -> Ok(valuesCombine a b c)
+            | Error error -> Error error
+            | Ok c -> Ok(valuesCombine a b c)
 
 let inline Result_map4
     ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'combined)
@@ -11532,17 +11532,17 @@ let inline Result_map4
     (dResult: Result<'d, 'error>)
     : Result<'combined, 'error> =
     match aResult with
-    | Error(error) -> Error(error)
-    | Ok(a) ->
+    | Error error -> Error error
+    | Ok a ->
         match bResult with
-        | Error(error) -> Error(error)
-        | Ok(b) ->
+        | Error error -> Error error
+        | Ok b ->
             match cResult with
-            | Error(error) -> Error(error)
-            | Ok(c) ->
+            | Error error -> Error error
+            | Ok c ->
                 match dResult with
-                | Error(error) -> Error(error)
-                | Ok(d) -> Ok(valuesCombine a b c d)
+                | Error error -> Error error
+                | Ok d -> Ok(valuesCombine a b c d)
 
 let inline Result_map5
     ([<InlineIfLambda>] valuesCombine: 'a -> 'b -> 'c -> 'd -> 'e -> 'combined)
@@ -11553,28 +11553,28 @@ let inline Result_map5
     (eResult: Result<'e, 'error>)
     : Result<'combined, 'error> =
     match aResult with
-    | Error(error) -> Error(error)
-    | Ok(a) ->
+    | Error error -> Error error
+    | Ok a ->
         match bResult with
-        | Error(error) -> Error(error)
-        | Ok(b) ->
+        | Error error -> Error error
+        | Ok b ->
             match cResult with
-            | Error(error) -> Error(error)
-            | Ok(c) ->
+            | Error error -> Error error
+            | Ok c ->
                 match dResult with
-                | Error(error) -> Error(error)
-                | Ok(d) ->
+                | Error error -> Error error
+                | Ok d ->
                     match eResult with
-                    | Error(error) -> Error(error)
-                    | Ok(e) -> Ok(valuesCombine a b c d e)
+                    | Error error -> Error error
+                    | Ok e -> Ok(valuesCombine a b c d e)
 
 let inline Result_fromMaybe
     (errorOnNothing: 'error)
     (maybe: ValueOption<'value>)
     : Result<'value, 'error> =
     match maybe with
-    | ValueNone -> Error(errorOnNothing)
-    | ValueSome(value) -> Ok(value)
+    | ValueNone -> Error errorOnNothing
+    | ValueSome value -> Ok value
 
 
 let inline Dict_size (dict: Map<'key, 'value>) : int64 = Map.count dict
@@ -11908,7 +11908,7 @@ let inline JsonDecode_decodeString
         )
 
 let inline JsonDecode_succeed (value: 'value) : JsonDecode_Decoder<'value> =
-    fun _ -> Ok(value)
+    fun _ -> Ok value
 
 let inline JsonDecode_fail (errorMessage: StringRope) : JsonDecode_Decoder<'value> =
     fun jsonDomNode -> Error(JsonDecode_Failure(errorMessage, jsonDomNode))
@@ -11919,8 +11919,8 @@ let inline JsonDecode_map
     : JsonDecode_Decoder<'b> =
     fun jsonDomNode ->
         match decoder jsonDomNode with
-        | Error(error) -> Error(error)
-        | Ok(value) -> Ok(valueChange value)
+        | Error error -> Error error
+        | Ok value -> Ok(valueChange value)
 
 let JsonDecode_lazy
     (lazilyConstructDecoder: unit -> JsonDecode_Decoder<'value>)
@@ -11933,8 +11933,8 @@ let inline JsonDecode_andThen
     : JsonDecode_Decoder<'b> =
     fun json ->
         match decoder json with
-        | Error(error) -> Error(error)
-        | Ok(value) -> decoderBasedOnValue value json
+        | Error error -> Error error
+        | Ok value -> decoderBasedOnValue value json
 
 let inline JsonDecode_map2
     ([<InlineIfLambda>] combine: 'a -> 'b -> 'combined)
@@ -12119,7 +12119,7 @@ let JsonDecode_maybe
         Ok(
             match valueDecoder json with
             | Ok valueDecodeResult -> ValueSome valueDecodeResult
-            | Error valueError -> ValueNone
+            | Error _ -> ValueNone
         )
 
 let rec JsonDecode_oneOfWithErrorsReverse
@@ -13401,7 +13401,7 @@ let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
 
     while shouldKeepGoing do
         match toEncodeNext with
-        | BytesEncode_I8(i8) ->
+        | BytesEncode_I8 i8 ->
             mutableBuffer.WriteByte(byte (sbyte i8))
 
             if mutableRemainingRightEncoders.Count = 0 then
@@ -13430,7 +13430,7 @@ let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
                 shouldKeepGoing <- false
             else
                 toEncodeNext <- mutableRemainingRightEncoders.Pop()
-        | BytesEncode_U8(u8) ->
+        | BytesEncode_U8 u8 ->
             mutableBuffer.WriteByte(byte u8)
 
             if mutableRemainingRightEncoders.Count = 0 then
@@ -13474,14 +13474,14 @@ let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
             mutableBuffer.Write(
                 convertedBytesAdaptEndianness
                     endianness
-                    (System.BitConverter.GetBytes(f64))
+                    (System.BitConverter.GetBytes f64)
             )
 
             if mutableRemainingRightEncoders.Count = 0 then
                 shouldKeepGoing <- false
             else
                 toEncodeNext <- mutableRemainingRightEncoders.Pop()
-        | BytesEncode_Utf8(byteLength, stringRope) ->
+        | BytesEncode_Utf8(_byteLength, stringRope) ->
             mutableBuffer.Write(
                 new System.ReadOnlySpan<byte>(
                     System.Text.Encoding.UTF8.GetBytes(
@@ -13494,14 +13494,14 @@ let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
                 shouldKeepGoing <- false
             else
                 toEncodeNext <- mutableRemainingRightEncoders.Pop()
-        | BytesEncode_Bytes(byteArray) ->
+        | BytesEncode_Bytes byteArray ->
             mutableBuffer.Write(new System.ReadOnlySpan<byte>(byteArray))
 
             if mutableRemainingRightEncoders.Count = 0 then
                 shouldKeepGoing <- false
             else
                 toEncodeNext <- mutableRemainingRightEncoders.Pop()
-        | BytesEncode_Seq(byteLength, encoders) ->
+        | BytesEncode_Seq(_byteLength, encoders) ->
             match encoders with
             | [] ->
                 if mutableRemainingRightEncoders.Count = 0 then
@@ -13511,12 +13511,9 @@ let BytesEncode_encode (encoder: BytesEncode_Encoder) : Bytes_Bytes =
             | nextSubEncoder :: subEncodersAfterNextSubEncoder ->
                 toEncodeNext <- nextSubEncoder
                 // can probably be optimized
-                Seq.iter
-                    (fun subEncoderAfterNextSubEncoder ->
-                        mutableRemainingRightEncoders.Push(
-                            subEncoderAfterNextSubEncoder
-                        ))
-                    (Seq.rev subEncodersAfterNextSubEncoder)
+                for subEncoderAfterNextSubEncoder in
+                    Seq.rev subEncodersAfterNextSubEncoder do
+                    mutableRemainingRightEncoders.Push subEncoderAfterNextSubEncoder
 
     mutableBuffer.ToArray()
 
@@ -13538,9 +13535,9 @@ let BytesDecode_decode
     | ValueSome(_, value) -> ValueSome value
 
 let BytesDecode_succeed (value: 'value) : BytesDecode_Decoder<'value> =
-    fun bytes index -> ValueSome(index, value)
+    fun _bytes index -> ValueSome(index, value)
 
-let BytesDecode_fail: BytesDecode_Decoder<'value> = fun bytes index -> ValueNone
+let BytesDecode_fail: BytesDecode_Decoder<'value> = fun _bytes _index -> ValueNone
 
 let BytesDecode_andThen
     (valueToFollowingDecoder: 'value -> BytesDecode_Decoder<'mappedValue>)
@@ -13570,10 +13567,9 @@ let rec BytesDecode_loop
         | ValueNone -> ValueNone
         | ValueSome(indexAfterStep, stepValue) ->
             match stepValue with
-            | BytesDecode_Loop(newState) ->
+            | BytesDecode_Loop newState ->
                 BytesDecode_loop newState step bytes indexAfterStep
-
-            | BytesDecode_Done(result) -> ValueSome(indexAfterStep, result)
+            | BytesDecode_Done result -> ValueSome(indexAfterStep, result)
 
 let BytesDecode_map2
     (valuesCombine: 'a -> 'b -> 'combined)
@@ -13601,7 +13597,7 @@ let BytesDecode_map3
             match bDecoder bytes indexAfterA with
             | ValueNone -> ValueNone
             | ValueSome(indexAfterB, b) ->
-                match cDecoder bytes indexAfterA with
+                match cDecoder bytes indexAfterB with
                 | ValueNone -> ValueNone
                 | ValueSome(indexAfterC, c) ->
                     ValueSome(indexAfterC, valuesCombine a b c)
@@ -13620,10 +13616,10 @@ let BytesDecode_map4
             match bDecoder bytes indexAfterA with
             | ValueNone -> ValueNone
             | ValueSome(indexAfterB, b) ->
-                match cDecoder bytes indexAfterA with
+                match cDecoder bytes indexAfterB with
                 | ValueNone -> ValueNone
                 | ValueSome(indexAfterC, c) ->
-                    match dDecoder bytes indexAfterA with
+                    match dDecoder bytes indexAfterC with
                     | ValueNone -> ValueNone
                     | ValueSome(indexAfterD, d) ->
                         ValueSome(indexAfterD, valuesCombine a b c d)
@@ -13643,20 +13639,20 @@ let BytesDecode_map5
             match bDecoder bytes indexAfterA with
             | ValueNone -> ValueNone
             | ValueSome(indexAfterB, b) ->
-                match cDecoder bytes indexAfterA with
+                match cDecoder bytes indexAfterB with
                 | ValueNone -> ValueNone
                 | ValueSome(indexAfterC, c) ->
-                    match dDecoder bytes indexAfterA with
+                    match dDecoder bytes indexAfterC with
                     | ValueNone -> ValueNone
                     | ValueSome(indexAfterD, d) ->
-                        match eDecoder bytes indexAfterA with
+                        match eDecoder bytes indexAfterD with
                         | ValueNone -> ValueNone
                         | ValueSome(indexAfterE, e) ->
                             ValueSome(indexAfterE, valuesCombine a b c d e)
 
 let BytesDecode_signedInt8: BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 1
+        let indexAfter: int = index + 1
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13667,7 +13663,7 @@ let BytesDecode_signedInt16
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 2
+        let indexAfter: int = index + 2
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13691,7 +13687,7 @@ let BytesDecode_signedInt32
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 4
+        let indexAfter: int = index + 4
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13713,7 +13709,7 @@ let BytesDecode_signedInt32
 
 let BytesDecode_unsignedInt8: BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 1
+        let indexAfter: int = index + 1
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13724,7 +13720,7 @@ let BytesDecode_unsignedInt16
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 2
+        let indexAfter: int = index + 2
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13750,7 +13746,7 @@ let BytesDecode_unsignedInt32
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<int64> =
     fun bytes index ->
-        let indexAfter = index + 4
+        let indexAfter: int = index + 4
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13776,7 +13772,7 @@ let BytesDecode_float32
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<float> =
     fun bytes index ->
-        let indexAfter = index + 4
+        let indexAfter: int = index + 4
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13802,7 +13798,7 @@ let BytesDecode_float64
     (endianness: Bytes_Endianness)
     : BytesDecode_Decoder<float> =
     fun bytes index ->
-        let indexAfter = index + 8
+        let indexAfter: int = index + 8
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13822,7 +13818,7 @@ let BytesDecode_float64
 
 let BytesDecode_bytes (byteCountToRead: int64) : BytesDecode_Decoder<Bytes_Bytes> =
     fun bytes index ->
-        let indexAfter = index + int byteCountToRead
+        let indexAfter: int = index + int byteCountToRead
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13831,7 +13827,7 @@ let BytesDecode_bytes (byteCountToRead: int64) : BytesDecode_Decoder<Bytes_Bytes
 
 let BytesDecode_string (byteCountToRead: int64) : BytesDecode_Decoder<StringRope> =
     fun bytes index ->
-        let indexAfter = index + 8
+        let indexAfter: int = index + 8
 
         if indexAfter >= Array.length bytes then
             ValueNone
@@ -13849,14 +13845,12 @@ let BytesDecode_string (byteCountToRead: int64) : BytesDecode_Decoder<StringRope
 
 
 let VirtualDom_RE_js: System.Text.RegularExpressions.Regex =
-    System.Text.RegularExpressions.Regex(
+    System.Text.RegularExpressions.Regex
         "/^\\s*j\\s*a\\s*v\\s*a\\s*s\\s*c\\s*r\\s*i\\s*p\\s*t\\s*:/i"
-    )
 
 let VirtualDom_RE_js_html: System.Text.RegularExpressions.Regex =
-    System.Text.RegularExpressions.Regex(
+    System.Text.RegularExpressions.Regex
         "/^\\s*(j\\s*a\\s*v\\s*a\\s*s\\s*c\\s*r\\s*i\\s*p\\s*t\\s*:|d\\s*a\\s*t\\s*a\\s*:\\s*t\\s*e\\s*x\\s*t\\s*\\/\\s*h\\s*t\\s*m\\s*l\\s*(,|;))/i"
-    )
 
 let VirtualDom_noJavaScriptUri (uri: StringRope) : StringRope =
     if VirtualDom_RE_js.IsMatch(StringRope.toString uri) then
@@ -14589,8 +14583,8 @@ let MathMatrix4_identity: System.Numerics.Matrix4x4 =
 let MathMatrix4_inverse
     (matrix4: System.Numerics.Matrix4x4)
     : ValueOption<System.Numerics.Matrix4x4> =
-    let (wasSuccessful, result) = System.Numerics.Matrix4x4.Invert(matrix4)
-    if wasSuccessful then ValueSome(result) else ValueNone
+    let (wasSuccessful, result) = System.Numerics.Matrix4x4.Invert matrix4
+    if wasSuccessful then ValueSome result else ValueNone
 
 let inline MathMatrix4_mul
     (a: System.Numerics.Matrix4x4)
@@ -14601,7 +14595,7 @@ let inline MathMatrix4_mul
 let inline MathMatrix4_transpose
     (matrix4: System.Numerics.Matrix4x4)
     : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.Transpose(matrix4)
+    System.Numerics.Matrix4x4.Transpose matrix4
 
 let inline MathMatrix4_makeBasis
     (vx: System.Numerics.Vector3)
@@ -14739,7 +14733,7 @@ let inline MathMatrix4_scale
     : System.Numerics.Matrix4x4 =
     System.Numerics.Matrix4x4.Multiply(
         matrix4,
-        System.Numerics.Matrix4x4.CreateScale(scales)
+        System.Numerics.Matrix4x4.CreateScale scales
     )
 
 let inline MathMatrix4_scale3
@@ -14763,7 +14757,7 @@ let inline MathMatrix4_translate
     : System.Numerics.Matrix4x4 =
     System.Numerics.Matrix4x4.Multiply(
         matrix4,
-        System.Numerics.Matrix4x4.CreateTranslation(position)
+        System.Numerics.Matrix4x4.CreateTranslation position
     )
 
 let inline MathMatrix4_translate3
@@ -14790,7 +14784,7 @@ let inline MathMatrix4_makeRotate
 let inline MathMatrix4_makeScale
     (scales: System.Numerics.Vector3)
     : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.CreateScale(scales)
+    System.Numerics.Matrix4x4.CreateScale scales
 
 let inline MathMatrix4_makeScale3
     (xScale: float)
@@ -14806,7 +14800,7 @@ let inline MathMatrix4_makeScale3
 let inline MathMatrix4_makeTranslate
     (position: System.Numerics.Vector3)
     : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.CreateTranslation(position)
+    System.Numerics.Matrix4x4.CreateTranslation position
 
 let inline MathMatrix4_makeTranslate3
     (xPosition: float)
@@ -14900,12 +14894,11 @@ let inline PlatformCmd_batch
     List.concat subCommands
 
 let PlatformCmd_singleMap
-    (eventChange: 'event -> 'mappedEvent)
+    (_eventChange: 'event -> 'mappedEvent)
     (commandSingle: PlatformCmd_CmdSingle<'event>)
     : PlatformCmd_CmdSingle<'mappedEvent> =
     match commandSingle with
-    | PlatformCmd_PortOutgoing(portOutgoing) ->
-        PlatformCmd_PortOutgoing portOutgoing
+    | PlatformCmd_PortOutgoing portOutgoing -> PlatformCmd_PortOutgoing portOutgoing
 
 let inline PlatformCmd_map
     (eventChange: 'event -> 'mappedEvent)
@@ -14945,7 +14938,7 @@ let PlatformSub_singleMap
     (subscriptionSingle: PlatformSub_SubSingle<'event>)
     : PlatformSub_SubSingle<'mappedEvent> =
     match subscriptionSingle with
-    | PlatformSub_PortIncoming(portIncoming) ->
+    | PlatformSub_PortIncoming portIncoming ->
         PlatformSub_PortIncoming
             { Name = portIncoming.Name
               OnValue = fun value -> eventChange (portIncoming.OnValue value) }

@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>default-declarations</RootNamespace>
+    <WarnOn>1182,3180,3366,3570</WarnOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="DefaultDeclarations.fs" />
+  </ItemGroup>
+
+</Project>
