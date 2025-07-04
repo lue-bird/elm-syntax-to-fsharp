@@ -6,6 +6,7 @@ import Ansi.Font
 import Bytes exposing (Bytes)
 import Bytes.Decode
 import Bytes.Encode
+import Dict
 import Elm.Package
 import Elm.Parser
 import Elm.Project
@@ -24,7 +25,8 @@ import Node
 
 
 type State
-    = WaitingForElmJson
+    = WaitingForHomeDirectoryWaitingForElmJson
+    | WaitingForElmJson { homeDirectory : String }
     | Running RunningState
     | ElmJsonReadFailed String
     | Finished (Result { code : String, message : String } ())
@@ -41,12 +43,13 @@ type alias RunningState =
 
 initialState : State
 initialState =
-    WaitingForElmJson
+    WaitingForHomeDirectoryWaitingForElmJson
 
 
-packageSourceDirectoryPath : { name : String, version : String } -> String
-packageSourceDirectoryPath packageMeta =
-    "/home/pascal/.elm/0.19.1/packages/"
+packageSourceDirectoryPath : String -> { name : String, version : String } -> String
+packageSourceDirectoryPath homeDirectory packageMeta =
+    homeDirectory
+        ++ "/.elm/0.19.1/packages/"
         ++ packageMeta.name
         ++ "/"
         ++ packageMeta.version
@@ -56,7 +59,24 @@ packageSourceDirectoryPath packageMeta =
 interface : State -> Node.Interface State
 interface state =
     case state of
-        WaitingForElmJson ->
+        WaitingForHomeDirectoryWaitingForElmJson ->
+            Node.environmentVariablesRequest
+                |> Node.interfaceFutureMap
+                    (\environmentVariables ->
+                        case environmentVariables |> Dict.get "HOME" of
+                            Just homeDirectory ->
+                                WaitingForElmJson { homeDirectory = homeDirectory }
+
+                            Nothing ->
+                                case environmentVariables |> Dict.get "USERPROFILE" of
+                                    Just homeDirectory ->
+                                        WaitingForElmJson { homeDirectory = homeDirectory }
+
+                                    Nothing ->
+                                        WaitingForHomeDirectoryWaitingForElmJson
+                    )
+
+        WaitingForElmJson homeDirectory ->
             nodeElmJsonRequest
                 |> Node.interfaceFutureMap
                     (\elmJsonBytesOrError ->
@@ -75,7 +95,7 @@ interface state =
                                                         )
                                                             |> List.map
                                                                 (\( dependencyName, dependencyVersion ) ->
-                                                                    packageSourceDirectoryPath
+                                                                    packageSourceDirectoryPath homeDirectory.homeDirectory
                                                                         { name = dependencyName |> Elm.Package.toString
                                                                         , version = dependencyVersion |> Elm.Version.toString
                                                                         }
@@ -169,8 +189,8 @@ runningInterface state =
             , content =
                 transpiledDeclarationsAndErrors.declarations
                     |> ElmSyntaxToFsharp.fsharpDeclarationsToModuleString
-                    -- TODO remove for general use
-                    |> String.replace
+                    |> -- TODO remove for general use
+                       String.replace
                         "ListExtra_uniqueHelp<'a>"
                         "ListExtra_uniqueHelp<'a when 'a: equality>"
                     |> String.replace
