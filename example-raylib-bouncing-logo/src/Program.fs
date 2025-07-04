@@ -79,10 +79,9 @@ let performElmCmd (commands: Elm.PlatformCmd_Cmd<'event>) : unit =
         commands
 
 
-let cBoolTrue: CBool = new CBool(true)
+let cBoolTrue: CBool = CBool true
 
-let cBoolToBool (cBool: CBool) : bool =
-    Raylib.WindowShouldClose() = cBoolTrue
+let cBoolToBool (cBool: CBool) : bool = cBool = cBoolTrue
 
 let pressedKeys () : array<int> =
     let mutable pressedKeysArray: System.Collections.Generic.List<int> =
