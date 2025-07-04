@@ -14,9 +14,8 @@ const elmString =
     "\"\"\""
     + defaultDeclarationsFsharpFile
         .replaceAll(
-            `namespace global
-
-module Elm =`,
+            `module Elm
+`,
             ""
         ).replaceAll("\\", "\\\\")
     + "\"\"\""
