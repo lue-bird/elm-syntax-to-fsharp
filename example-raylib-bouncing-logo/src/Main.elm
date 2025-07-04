@@ -223,12 +223,12 @@ durationJsonDecoderFromSeconds =
 
 
 framePassed : (Duration -> Event) -> Sub Event
-framePassed onReadLine =
+framePassed onFramePassed =
     portFramePassed
         (\value ->
             case value |> Json.Decode.decodeValue durationJsonDecoderFromSeconds of
                 Ok duration ->
-                    onReadLine duration
+                    onFramePassed duration
 
                 Err error ->
                     PortEventFailedToDecode
@@ -239,12 +239,12 @@ framePassed onReadLine =
 
 
 keysPressed : (List Int -> Event) -> Sub Event
-keysPressed onReadLine =
+keysPressed onKeysPressed =
     portKeysPressed
         (\value ->
             case value |> Json.Decode.decodeValue (Json.Decode.list Json.Decode.int) of
-                Ok readLine ->
-                    onReadLine readLine
+                Ok keys ->
+                    onKeysPressed keys
 
                 Err error ->
                     PortEventFailedToDecode
