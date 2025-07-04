@@ -46,13 +46,15 @@ initialState =
     WaitingForHomeDirectoryWaitingForElmJson
 
 
-packageSourceDirectoryPath : String -> { name : String, version : String } -> String
-packageSourceDirectoryPath homeDirectory packageMeta =
-    homeDirectory
+packageSourceDirectoryPath :
+    { homeDirectory : String, packageName : String, packageVersion : String }
+    -> String
+packageSourceDirectoryPath info =
+    info.homeDirectory
         ++ "/.elm/0.19.1/packages/"
-        ++ packageMeta.name
+        ++ info.packageName
         ++ "/"
-        ++ packageMeta.version
+        ++ info.packageVersion
         ++ "/src"
 
 
@@ -95,9 +97,10 @@ interface state =
                                                         )
                                                             |> List.map
                                                                 (\( dependencyName, dependencyVersion ) ->
-                                                                    packageSourceDirectoryPath homeDirectory.homeDirectory
-                                                                        { name = dependencyName |> Elm.Package.toString
-                                                                        , version = dependencyVersion |> Elm.Version.toString
+                                                                    packageSourceDirectoryPath
+                                                                        { homeDirectory = homeDirectory.homeDirectory
+                                                                        , packageName = dependencyName |> Elm.Package.toString
+                                                                        , packageVersion = dependencyVersion |> Elm.Version.toString
                                                                         }
                                                                 )
                                                        )
