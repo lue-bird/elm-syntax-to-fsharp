@@ -10751,7 +10751,7 @@ type Basics_Order =
     | GT = 1
 
 let inline Basics_compare (a: 'a) (b: 'a) : Basics_Order =
-    let comparisonMagnitude = compare a b
+    let comparisonMagnitude: int = compare a b
 
     if comparisonMagnitude = 0 then Basics_Order.EQ
     else if comparisonMagnitude < 0 then Basics_Order.LT
@@ -10904,16 +10904,16 @@ type StringRope =
 
             mutableBuilder.ToString()
 
-    override x.GetHashCode() = hash (StringRope.toString x)
+    override x.GetHashCode() : int = hash (StringRope.toString x)
 
-    override x.Equals(other) =
+    override x.Equals(other: obj) : bool =
         match other with
         | :? StringRope as otherStringRope ->
             StringRope.toString x = StringRope.toString otherStringRope
         | _ -> false
 
     interface System.IComparable with
-        member x.CompareTo(other) =
+        member x.CompareTo other =
             match other with
             | :? StringRope as otherStringRope ->
                 (StringRope.toString x)
@@ -11355,7 +11355,7 @@ let inline List_sortWith
     : List<'a> =
     List.sortWith (fun a b -> int (elementCompare a b)) list
 
-let List_intersperse (sep: 'a) (list: List<'a>) =
+let List_intersperse (sep: 'a) (list: List<'a>) : List<'a> =
     match list with
     | [] -> []
     | listHead :: listTail ->
@@ -11651,7 +11651,7 @@ let Dict_merge
         (list: List<('comparable * 'aValue)>, result: 'result)
         (rKey: 'comparable)
         (rValue: 'bValue)
-        =
+        : (List<('comparable * 'aValue)> * 'result) =
         match list with
         | [] -> (list, rightStep rKey rValue result)
 
@@ -11727,7 +11727,7 @@ let inline Array_indexedMap
 
 let Array_toIndexedList (array: array<'a>) : List<struct (int64 * 'a)> =
     Seq.toList (
-        Seq.mapi (fun (index: int) (element: 'a) -> (struct (index, element))) array
+        Seq.mapi (fun (index: int) (element: 'a) -> struct (index, element)) array
     )
 
 let inline Array_foldl
@@ -11767,20 +11767,20 @@ let Array_slice
         else
             System.Int32.Min(int endExclusivePossiblyNegative, Array.length array)
 
-    if (realStartIndex >= realEndIndexExclusive) then
+    if realStartIndex >= realEndIndexExclusive then
         Array.empty
     else
         Array.sub array realStartIndex (realEndIndexExclusive - realStartIndex)
 
 
 let JsonEncode_null: System.Text.Json.Nodes.JsonNode =
-    System.Text.Json.Nodes.JsonValue.Create(null)
+    System.Text.Json.Nodes.JsonValue.Create null
 
 let inline JsonEncode_bool (bool: bool) : System.Text.Json.Nodes.JsonNode =
-    System.Text.Json.Nodes.JsonValue.Create(bool)
+    System.Text.Json.Nodes.JsonValue.Create bool
 
 let inline JsonEncode_stringRaw (string: string) : System.Text.Json.Nodes.JsonNode =
-    System.Text.Json.Nodes.JsonValue.Create(string)
+    System.Text.Json.Nodes.JsonValue.Create string
 
 let inline JsonEncode_string
     (string: StringRope)
@@ -11788,10 +11788,10 @@ let inline JsonEncode_string
     JsonEncode_stringRaw(StringRope.toString string)
 
 let inline JsonEncode_int (int: int64) : System.Text.Json.Nodes.JsonNode =
-    System.Text.Json.Nodes.JsonValue.Create(int)
+    System.Text.Json.Nodes.JsonValue.Create int
 
 let inline JsonEncode_float (float: float) : System.Text.Json.Nodes.JsonNode =
-    System.Text.Json.Nodes.JsonValue.Create(float)
+    System.Text.Json.Nodes.JsonValue.Create float
 
 let inline JsonEncode_list
     ([<InlineIfLambda>] elementToValue: 'element -> System.Text.Json.Nodes.JsonNode)
@@ -11828,6 +11828,17 @@ let inline JsonEncode_object
             fields
     )
 
+let inline JsonEncode_objectRaw
+    (fields: List<struct (string * System.Text.Json.Nodes.JsonNode)>)
+    : System.Text.Json.Nodes.JsonNode =
+    System.Text.Json.Nodes.JsonObject(
+        List.fold
+            (fun soFar (struct (fieldName, fieldValue)) ->
+                Map.add fieldName fieldValue soFar)
+            Map.empty
+            fields
+    )
+
 let inline JsonEncode_dict
     ([<InlineIfLambda>] keyToString: 'key -> StringRope)
     ([<InlineIfLambda>] valueToJson: 'value -> System.Text.Json.Nodes.JsonNode)
@@ -11845,7 +11856,7 @@ let inline JsonEncode_dict
     )
 
 let lineSetIndentSizeFrom2To (newIndentSize: int) (line: string) : string =
-    let lineWithoutIndentation: string = line.TrimStart(' ')
+    let lineWithoutIndentation: string = line.TrimStart ' '
 
     let lineIndentation: int =
         (String.length line - String.length lineWithoutIndentation) / 2
@@ -11861,7 +11872,7 @@ let setIndentSizeFrom2To (newIndentSize: int) (printed: string) : string =
             "\\n"
             (Array.map
                 (fun (line: string) -> lineSetIndentSizeFrom2To newIndentSize line)
-                (printed.Split('\\n')))
+                (printed.Split '\\n'))
 
 let JsonEncode_encode
     (indentDepth: int64)
@@ -11870,7 +11881,7 @@ let JsonEncode_encode
     let printOptions = System.Text.Json.JsonSerializerOptions()
 
     if (indentDepth = 0) then
-        StringRopeOne(json.ToJsonString(printOptions))
+        StringRopeOne(json.ToJsonString printOptions)
     else
         printOptions.WriteIndented <- true
         // JsonSerializerOptions.IndentSize is only available since .net9.0
@@ -12414,7 +12425,7 @@ let inline JsonDecode_oneOrMore
     JsonDecode_map2 combineHeadTail elementDecoder (JsonDecode_list elementDecoder)
 
 let inline indent (str: string) : string =
-    String.concat "\\n    " (Array.toList (str.Split("\\n")))
+    String.concat "\\n    " (Array.toList (str.Split "\\n"))
 
 let rec JsonDecode_errorToStringHelp
     (error: JsonDecode_Error)
@@ -12552,7 +12563,7 @@ let Regex_fromStringWith
         ValueNone
 
 let Regex_never: System.Text.RegularExpressions.Regex =
-    System.Text.RegularExpressions.Regex("/.^/")
+    System.Text.RegularExpressions.Regex "/.^/"
 
 let inline Regex_contains
     (regex: System.Text.RegularExpressions.Regex)
@@ -12631,7 +12642,7 @@ let inline createRegexMatchNumber0BasedMap
             {| Index = soFar.Index + 1L
                Map = Map.add regexMatch.Value soFar.Index soFar.Map |})
         {| Index = 0L; Map = Map.empty |}
-        (regex.Matches(string)))
+        (regex.Matches string))
         .Map
 
 let Regex_replace
@@ -12639,7 +12650,7 @@ let Regex_replace
     (replacementForMatch: Regex_Match -> StringRope)
     (stringRope: StringRope)
     : StringRope =
-    let string = StringRope.toString stringRope
+    let string: string = StringRope.toString stringRope
 
     let matchNumbers0Based: Map<string, int64> =
         createRegexMatchNumber0BasedMap regex string
@@ -12664,7 +12675,7 @@ let Regex_replaceAtMost
     (replacementForMatch: Regex_Match -> StringRope)
     (stringRope: StringRope)
     : StringRope =
-    let string = StringRope.toString stringRope
+    let string: string = StringRope.toString stringRope
 
     let matchNumbers0Based: Map<string, int64> =
         createRegexMatchNumber0BasedMap regex string
@@ -12704,14 +12715,14 @@ let ElmKernelParser_isSubString
     (colOriginal: int64)
     (bigStringRope: StringRope)
     : struct (int64 * int64 * int64) =
-    let smallString = StringRope.toString smallStringRope
-    let bigString = StringRope.toString bigStringRope
-    let smallLength = String.length smallString
-    let mutable row = int rowOriginal
-    let mutable col = int colOriginal
-    let mutable offset = int offsetOriginal
-    let mutable isGood = int offset + smallLength <= String.length bigString
-    let mutable i = 0
+    let smallString: string = StringRope.toString smallStringRope
+    let bigString: string = StringRope.toString bigStringRope
+    let smallLength: int = String.length smallString
+    let mutable row: int = int rowOriginal
+    let mutable col: int = int colOriginal
+    let mutable offset: int = int offsetOriginal
+    let mutable isGood: bool = int offset + smallLength <= String.length bigString
+    let mutable i: int = 0
 
     while isGood && i < smallLength do
         let code = int (bigString[offset])
@@ -13100,7 +13111,7 @@ let Random_float (a: float) (b: float) =
 
         let scaled: float = (+) ((*) val_ range) a
 
-        (struct (scaled, Random_next seed1))
+        struct (scaled, Random_next seed1)
 
 let Random_weighted
     (first: (struct (float * 'a)))
@@ -13114,16 +13125,16 @@ let Random_weighted
     Random_map (Random_getByWeight first others) (Random_float 0.0 total)
 
 let inline Random_constant (value: 'a) : Random_Generator<'a> =
-    fun (seed: Random_Seed) -> (struct (value, seed))
+    fun (seed: Random_Seed) -> struct (value, seed)
 
 let Random_andThen
     (callback: 'a -> Random_Generator<'b>)
     (genA: Random_Generator<'a>)
     =
     fun (seed: Random_Seed) ->
-        let ((struct (result, newSeed)): (struct ('a * Random_Seed))) = genA seed
+        let (struct (result, newSeed)): (struct ('a * Random_Seed)) = genA seed
 
-        let (genB: Random_Generator<'b>) = callback result
+        let genB: Random_Generator<'b> = callback result
 
         genB newSeed
 
@@ -13357,14 +13368,14 @@ let BytesEncode_string (string: StringRope) : BytesEncode_Encoder =
 
 let BytesEncode_EncoderByteCount (encoder: BytesEncode_Encoder) : int32 =
     match encoder with
-    | BytesEncode_I8(_) -> 1
-    | BytesEncode_I16(_) -> 2
-    | BytesEncode_I32(_) -> 4
-    | BytesEncode_U8(_) -> 1
-    | BytesEncode_U16(_) -> 2
-    | BytesEncode_U32(_) -> 4
-    | BytesEncode_F32(_) -> 4
-    | BytesEncode_F64(_) -> 8
+    | BytesEncode_I8 _ -> 1
+    | BytesEncode_I16 _ -> 2
+    | BytesEncode_I32 _ -> 4
+    | BytesEncode_U8 _ -> 1
+    | BytesEncode_U16 _ -> 2
+    | BytesEncode_U32 _ -> 4
+    | BytesEncode_F32 _ -> 4
+    | BytesEncode_F64 _ -> 8
     | BytesEncode_Seq(w, _) -> w
     | BytesEncode_Utf8(w, _) -> w
     | BytesEncode_Bytes bytes -> Array.length bytes
@@ -14268,11 +14279,6 @@ let inline MathVector2_sub
     : System.Numerics.Vector2 =
     System.Numerics.Vector2.Subtract(baseVector2, toSubtract)
 
-let inline MathVector2_negate
-    (vector2: System.Numerics.Vector2)
-    : System.Numerics.Vector2 =
-    System.Numerics.Vector2.Negate(vector2)
-
 let inline MathVector2_scale
     (factor: float)
     (vector2: System.Numerics.Vector2)
@@ -14284,11 +14290,6 @@ let inline MathVector2_dot
     (b: System.Numerics.Vector2)
     : float =
     float (System.Numerics.Vector2.Dot(a, b))
-
-let inline MathVector2_normalize
-    (vector2: System.Numerics.Vector2)
-    : System.Numerics.Vector2 =
-    System.Numerics.Vector2.Normalize(vector2)
 
 let inline MathVector2_direction
     (a: System.Numerics.Vector2)
@@ -14375,11 +14376,6 @@ let MathVector3_sub
     : System.Numerics.Vector3 =
     System.Numerics.Vector3.Subtract(baseVector3, toSubtract)
 
-let MathVector3_negate
-    (vector3: System.Numerics.Vector3)
-    : System.Numerics.Vector3 =
-    System.Numerics.Vector3.Negate(vector3)
-
 let MathVector3_scale
     (factor: float)
     (vector3: System.Numerics.Vector3)
@@ -14397,11 +14393,6 @@ let MathVector3_cross
     (b: System.Numerics.Vector3)
     : System.Numerics.Vector3 =
     System.Numerics.Vector3.Cross(a, b)
-
-let MathVector3_normalize
-    (vector3: System.Numerics.Vector3)
-    : System.Numerics.Vector3 =
-    System.Numerics.Vector3.Normalize(vector3)
 
 let MathVector3_direction
     (a: System.Numerics.Vector3)
@@ -14504,11 +14495,6 @@ let inline MathVector4_sub
     : System.Numerics.Vector4 =
     System.Numerics.Vector4.Subtract(baseVector4, toSubtract)
 
-let inline MathVector4_negate
-    (vector4: System.Numerics.Vector4)
-    : System.Numerics.Vector4 =
-    System.Numerics.Vector4.Negate(vector4)
-
 let inline MathVector4_scale
     (factor: float)
     (vector4: System.Numerics.Vector4)
@@ -14520,11 +14506,6 @@ let inline MathVector4_dot
     (b: System.Numerics.Vector4)
     : float =
     float (System.Numerics.Vector4.Dot(a, b))
-
-let inline MathVector4_normalize
-    (vector4: System.Numerics.Vector4)
-    : System.Numerics.Vector4 =
-    System.Numerics.Vector4.Normalize(vector4)
 
 let inline MathVector4_direction
     (a: System.Numerics.Vector4)
@@ -14577,9 +14558,6 @@ let inline MathVector4_fromRecord
 
 
 
-let MathMatrix4_identity: System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.Identity
-
 let MathMatrix4_inverse
     (matrix4: System.Numerics.Matrix4x4)
     : ValueOption<System.Numerics.Matrix4x4> =
@@ -14591,11 +14569,6 @@ let inline MathMatrix4_mul
     (b: System.Numerics.Matrix4x4)
     : System.Numerics.Matrix4x4 =
     System.Numerics.Matrix4x4.Multiply(a, b)
-
-let inline MathMatrix4_transpose
-    (matrix4: System.Numerics.Matrix4x4)
-    : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.Transpose matrix4
 
 let inline MathMatrix4_makeBasis
     (vx: System.Numerics.Vector3)
@@ -14635,12 +14608,12 @@ let MathMatrix4_makeFrustum
     (zNearPlane: float)
     (zFarPlane: float)
     : System.Numerics.Matrix4x4 =
-    let left32 = float32 left
-    let right32 = float32 right
-    let bottom32 = float32 bottom
-    let top32 = float32 top
-    let zNearPlane32 = float32 zNearPlane
-    let zFarPlane32 = float32 zFarPlane
+    let left32: float32 = float32 left
+    let right32: float32 = float32 right
+    let bottom32: float32 = float32 bottom
+    let top32: float32 = float32 top
+    let zNearPlane32: float32 = float32 zNearPlane
+    let zFarPlane32: float32 = float32 zFarPlane
 
     System.Numerics.Matrix4x4(
         2f * zNearPlane32 / (right32 - left32),
@@ -14781,11 +14754,6 @@ let inline MathMatrix4_makeRotate
     : System.Numerics.Matrix4x4 =
     System.Numerics.Matrix4x4.CreateFromAxisAngle(axis, float32 angle)
 
-let inline MathMatrix4_makeScale
-    (scales: System.Numerics.Vector3)
-    : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.CreateScale scales
-
 let inline MathMatrix4_makeScale3
     (xScale: float)
     (yScale: float)
@@ -14796,11 +14764,6 @@ let inline MathMatrix4_makeScale3
         float32 yScale,
         float32 zScale
     )
-
-let inline MathMatrix4_makeTranslate
-    (position: System.Numerics.Vector3)
-    : System.Numerics.Matrix4x4 =
-    System.Numerics.Matrix4x4.CreateTranslation position
 
 let inline MathMatrix4_makeTranslate3
     (xPosition: float)
@@ -14901,7 +14864,7 @@ let PlatformCmd_singleMap
     | PlatformCmd_PortOutgoing portOutgoing -> PlatformCmd_PortOutgoing portOutgoing
 
 let inline PlatformCmd_map
-    (eventChange: 'event -> 'mappedEvent)
+    ([<InlineIfLambda>] eventChange: 'event -> 'mappedEvent)
     (command: PlatformCmd_Cmd<'event>)
     : PlatformCmd_Cmd<'mappedEvent> =
     List.map (fun single -> PlatformCmd_singleMap eventChange single) command
