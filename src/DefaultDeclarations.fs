@@ -143,6 +143,9 @@ type StringRope =
     | StringRopeOne of string
     | StringRopeAppend of struct (StringRope * StringRope)
 
+    static member inline fromString(string: string) : StringRope =
+        StringRopeOne string
+
     static member toString(this: StringRope) : string =
         match this with
         | StringRopeOne content -> content
@@ -200,7 +203,7 @@ let inline String_length (str: StringRope) : int64 =
     String.length (StringRope.toString str)
 
 let inline String_repeat (repetitions: int64) (segment: StringRope) : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         String.replicate
             (System.Int32.Max(0, int repetitions))
             (StringRope.toString segment)
@@ -228,7 +231,7 @@ let runesToString (runes: seq<System.Text.Rune>) : string =
     stringBuilder.ToString()
 
 let inline String_fromList (runes: List<int>) : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         runesToString (Seq.map (fun (code: int) -> System.Text.Rune code) runes)
     )
 
@@ -261,7 +264,7 @@ let inline String_map
     ([<InlineIfLambda>] runeChange: int -> int)
     (string: StringRope)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         runesToString (
             Seq.map
                 (fun (rune: System.Text.Rune) ->
@@ -274,7 +277,7 @@ let inline String_filter
     ([<InlineIfLambda>] charShouldBeKept: int -> bool)
     (string: StringRope)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         runesToString (
             Seq.filter
                 (fun (rune: System.Text.Rune) -> charShouldBeKept rune.Value)
@@ -303,13 +306,13 @@ let inline String_foldr
         initialFolded
 
 let inline String_trim (string: StringRope) : StringRope =
-    StringRopeOne((StringRope.toString string).Trim())
+    StringRope.fromString ((StringRope.toString string).Trim())
 
 let inline String_trimLeft (string: StringRope) : StringRope =
-    StringRopeOne((StringRope.toString string).TrimStart())
+    StringRope.fromString ((StringRope.toString string).TrimStart())
 
 let inline String_trimRight (string: StringRope) : StringRope =
-    StringRopeOne((StringRope.toString string).TrimEnd())
+    StringRope.fromString ((StringRope.toString string).TrimEnd())
 
 let String_right
     (takenElementCountInt64: int64)
@@ -325,7 +328,7 @@ let String_right
         )
 
 
-    StringRopeOne(
+    StringRope.fromString (
         string.Substring(
             String.length string - takenElementCount,
             takenElementCount
@@ -335,7 +338,7 @@ let String_right
 let String_left (skippedElementCount: int64) (stringRope: StringRope) : StringRope =
     let string = StringRope.toString stringRope
 
-    StringRopeOne(
+    StringRope.fromString (
         string.Substring(
             0,
             System.Int32.Clamp(
@@ -352,7 +355,7 @@ let String_dropRight
     : StringRope =
     let string: string = StringRope.toString stringRope
 
-    StringRopeOne(
+    StringRope.fromString (
         string.Substring(
             0,
             System.Int32.Clamp(
@@ -376,7 +379,7 @@ let String_dropLeft
             max = String.length string
         )
 
-    StringRopeOne(
+    StringRope.fromString (
         string.Substring(
             skippedElementCount,
             String.length string - skippedElementCount
@@ -387,7 +390,7 @@ let inline String_append (early: StringRope) (late: StringRope) : StringRope =
     StringRopeAppend(early, late)
 
 let inline String_fromChar (rune: int) : StringRope =
-    StringRopeOne((System.Text.Rune rune).ToString())
+    StringRope.fromString ((System.Text.Rune rune).ToString())
 
 let inline String_cons (newHeadChar: int) (late: StringRope) : StringRope =
     StringRopeAppend(String_fromChar newHeadChar, late)
@@ -404,16 +407,16 @@ let String_uncons
         if System.Char.IsSurrogate(string[0]) then
             ValueSome(
                 struct (System.Char.ConvertToUtf32(string[0], string[1]),
-                        StringRopeOne(string[2..]))
+                        StringRope.fromString (string[2..]))
             )
         else
-            ValueSome(struct (int (string[0]), StringRopeOne(string[1..])))
+            ValueSome(struct (int (string[0]), StringRope.fromString (string[1..])))
 
 let String_split (separator: StringRope) (string: StringRope) : List<StringRope> =
     // can be optimized
     Seq.toList (
         Seq.map
-            (fun segment -> StringRopeOne segment)
+            StringRope.fromString
             ((StringRope.toString string).Split(StringRope.toString separator))
     )
 
@@ -423,7 +426,7 @@ let String_lines (string: StringRope) : List<StringRope> =
     // can be optimized
     Seq.toList (
         Seq.map
-            (fun line -> StringRopeOne line)
+            StringRope.fromString
             ((StringRope.toString string)
                 .Split(newLineOptions, System.StringSplitOptions.None))
     )
@@ -460,7 +463,7 @@ let String_words (string: StringRope) : List<StringRope> =
     // can be optimized
     Seq.toList (
         Seq.map
-            (fun line -> StringRopeOne line)
+            StringRope.fromString
             ((StringRope.toString string)
                 .Split(
                     whitespaceCharacters,
@@ -469,7 +472,7 @@ let String_words (string: StringRope) : List<StringRope> =
     )
 
 let String_reverse (string: StringRope) : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         new string (Array.rev ((StringRope.toString string).ToCharArray()))
     )
 
@@ -478,36 +481,38 @@ let inline String_replace
     (replacement: StringRope)
     (string: StringRope)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         (StringRope.toString string)
             .Replace(StringRope.toString toReplace, StringRope.toString replacement)
     )
 
 let inline String_toUpper (string: StringRope) : StringRope =
-    StringRopeOne((StringRope.toString string).ToUpperInvariant())
+    StringRope.fromString ((StringRope.toString string).ToUpperInvariant())
 
 let inline String_toLower (string: StringRope) : StringRope =
-    StringRopeOne((StringRope.toString string).ToLowerInvariant())
+    StringRope.fromString ((StringRope.toString string).ToLowerInvariant())
 
 let inline String_join
     (separator: StringRope)
     (strings: List<StringRope>)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         String.concat
             (StringRope.toString separator)
             (Seq.map StringRope.toString strings)
     )
 
 let inline String_concat (strings: List<StringRope>) : StringRope =
-    StringRopeOne(System.String.Concat(Seq.map StringRope.toString strings))
+    StringRope.fromString (
+        System.String.Concat(Seq.map StringRope.toString strings)
+    )
 
 let inline String_padLeft
     (newMinimumLength: int64)
     (padding: int)
     (string: StringRope)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         (StringRope.toString string)
             .PadLeft(System.Int32.Max(0, int newMinimumLength), char padding)
     )
@@ -517,13 +522,15 @@ let inline String_padRight
     (padding: int)
     (string: StringRope)
     : StringRope =
-    StringRopeOne(
+    StringRope.fromString (
         (StringRope.toString string)
             .PadRight(System.Int32.Max(0, int newMinimumLength), char padding)
     )
 
-let inline String_fromFloat (n: float) : StringRope = StringRopeOne(string n)
-let inline String_fromInt (n: int64) : StringRope = StringRopeOne(string n)
+let inline String_fromFloat (n: float) : StringRope =
+    StringRope.fromString (string n)
+
+let inline String_fromInt (n: int64) : StringRope = StringRope.fromString (string n)
 
 let String_toInt (string: StringRope) : ValueOption<int64> =
     let (success, num) = System.Int64.TryParse(StringRope.toString string)
@@ -563,7 +570,7 @@ let String_slice
     if realStartIndex >= realEndIndexExclusive then
         stringRopeEmpty
     else
-        StringRopeOne(
+        StringRope.fromString (
             string.Substring(realStartIndex, realEndIndexExclusive - realStartIndex)
         )
 
@@ -1150,11 +1157,11 @@ let JsonEncode_encode
     let printOptions = System.Text.Json.JsonSerializerOptions()
 
     if (indentDepth = 0) then
-        StringRopeOne(json.ToJsonString printOptions)
+        StringRope.fromString (json.ToJsonString printOptions)
     else
         printOptions.WriteIndented <- true
         // JsonSerializerOptions.IndentSize is only available since .net9.0
-        StringRopeOne(
+        StringRope.fromString (
             setIndentSizeFrom2To (int indentDepth) (json.ToJsonString(printOptions))
         )
 
@@ -1182,7 +1189,7 @@ let inline JsonDecode_decodeString
     with :? System.Text.Json.JsonException ->
         Error(
             JsonDecode_Failure(
-                StringRopeOne "This is not valid JSON!",
+                StringRope.fromString "This is not valid JSON!",
                 System.Text.Json.Nodes.JsonValue.Create(StringRope.toString string)
             )
         )
@@ -1434,18 +1441,18 @@ let JsonDecode_stringRaw: JsonDecode_Decoder<string> =
         with _ ->
             Error(
                 JsonDecode_Failure(
-                    struct (StringRopeOne "Expecting a STRING", json)
+                    struct (StringRope.fromString "Expecting a STRING", json)
                 )
             )
 
 let JsonDecode_string: JsonDecode_Decoder<StringRope> =
     fun json ->
         try
-            Ok(StringRopeOne(json.AsValue().GetValue<string>()))
+            Ok(StringRope.fromString (json.AsValue().GetValue<string>()))
         with _ ->
             Error(
                 JsonDecode_Failure(
-                    struct (StringRopeOne "Expecting a STRING", json)
+                    struct (StringRope.fromString "Expecting a STRING", json)
                 )
             )
 
@@ -1455,7 +1462,9 @@ let JsonDecode_int: JsonDecode_Decoder<int64> =
             Ok(json.AsValue().GetValue<int64>())
         with _ ->
             Error(
-                JsonDecode_Failure(struct (StringRopeOne "Expecting an INT", json))
+                JsonDecode_Failure(
+                    struct (StringRope.fromString "Expecting an INT", json)
+                )
             )
 
 let JsonDecode_float: JsonDecode_Decoder<float> =
@@ -1464,7 +1473,9 @@ let JsonDecode_float: JsonDecode_Decoder<float> =
             Ok(json.AsValue().GetValue<float>())
         with _ ->
             Error(
-                JsonDecode_Failure(struct (StringRopeOne "Expecting a FLOAT", json))
+                JsonDecode_Failure(
+                    struct (StringRope.fromString "Expecting a FLOAT", json)
+                )
             )
 
 let JsonDecode_bool: JsonDecode_Decoder<bool> =
@@ -1473,7 +1484,9 @@ let JsonDecode_bool: JsonDecode_Decoder<bool> =
             Ok(json.AsValue().GetValue<bool>())
         with _ ->
             Error(
-                JsonDecode_Failure(struct (StringRopeOne "Expecting a BOOL", json))
+                JsonDecode_Failure(
+                    struct (StringRope.fromString "Expecting a BOOL", json)
+                )
             )
 
 let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
@@ -1486,7 +1499,7 @@ let inline JsonDecode_null (value: 'value) : JsonDecode_Decoder<'value> =
             | _ ->
                 Error(
                     JsonDecode_Failure(
-                        struct (StringRopeOne "Expecting NULL", json)
+                        struct (StringRope.fromString "Expecting NULL", json)
                     )
                 )
 
@@ -1498,7 +1511,7 @@ let JsonDecode_index
         if index < 0 then
             Error(
                 JsonDecode_Failure(
-                    struct (StringRopeOne(
+                    struct (StringRope.fromString (
                                 "Expecting an element at array index "
                                 + string index
                                 + " (likely a logic error in decoder code)"
@@ -1513,7 +1526,7 @@ let JsonDecode_index
                 if index >= jsonArray.Count then
                     Error(
                         JsonDecode_Failure(
-                            struct (StringRopeOne(
+                            struct (StringRope.fromString (
                                         "Expecting a LONGER array. Need index "
                                         + string index
                                         + " but only see "
@@ -1530,7 +1543,7 @@ let JsonDecode_index
             with _ ->
                 Error(
                     JsonDecode_Failure(
-                        struct (StringRopeOne "Expecting an ARRAY", json)
+                        struct (StringRope.fromString "Expecting an ARRAY", json)
                     )
                 )
 
@@ -1568,7 +1581,9 @@ let JsonDecode_list
             folded.Result
         with _ ->
             Error(
-                JsonDecode_Failure(struct (StringRopeOne "Expecting a LIST", json))
+                JsonDecode_Failure(
+                    struct (StringRope.fromString "Expecting a LIST", json)
+                )
             )
 
 let JsonDecode_array
@@ -1589,7 +1604,7 @@ let JsonDecode_fieldRaw
             | null ->
                 Error(
                     JsonDecode_Failure(
-                        struct (StringRopeOne(
+                        struct (StringRope.fromString (
                                     "Expecting an OBJECT with a field named '"
                                     + fieldNameString
                                     + "'"
@@ -1603,13 +1618,13 @@ let JsonDecode_fieldRaw
                 | Error error ->
                     Error(
                         JsonDecode_Field(
-                            struct (StringRopeOne fieldNameString, error)
+                            struct (StringRope.fromString fieldNameString, error)
                         )
                     )
         with _ ->
             Error(
                 JsonDecode_Failure(
-                    struct (StringRopeOne(
+                    struct (StringRope.fromString (
                                 "Expecting an OBJECT with a field named '"
                                 + fieldNameString
                                 + "'"
@@ -1656,17 +1671,22 @@ let JsonDecode_dict
                         | Error error ->
                             Error(
                                 JsonDecode_Field(
-                                    struct (StringRopeOne field.Key, error)
+                                    struct (StringRope.fromString field.Key, error)
                                 )
                             )
                         | Ok fieldValue ->
-                            Ok(Map.add (StringRopeOne field.Key) fieldValue soFar))
+                            Ok(
+                                Map.add
+                                    (StringRope.fromString field.Key)
+                                    fieldValue
+                                    soFar
+                            ))
                 jsonObject
                 (Ok Map.empty)
         with _ ->
             Error(
                 JsonDecode_Failure(
-                    struct (StringRopeOne "Expecting an OBJECT", json)
+                    struct (StringRope.fromString "Expecting an OBJECT", json)
                 )
             )
 
@@ -1771,7 +1791,7 @@ let rec JsonDecode_errorToStringHelp
         + StringRope.toString msg
 
 let JsonDecode_errorToString (error: JsonDecode_Error) : StringRope =
-    StringRopeOne(JsonDecode_errorToStringHelp error [])
+    StringRope.fromString (JsonDecode_errorToStringHelp error [])
 
 
 [<Struct>]
@@ -1845,7 +1865,9 @@ let inline Regex_split
     (string: StringRope)
     : List<StringRope> =
     // can be optimized
-    Array.toList (Array.map StringRopeOne (regex.Split(StringRope.toString string)))
+    Array.toList (
+        Array.map StringRope.fromString (regex.Split(StringRope.toString string))
+    )
 
 let inline Regex_splitAtMost
     (maxSplitCount: int64)
@@ -1855,7 +1877,7 @@ let inline Regex_splitAtMost
     // can be optimized
     Array.toList (
         Array.map
-            StringRopeOne
+            StringRope.fromString
             (regex.Split(StringRope.toString string, int maxSplitCount))
     )
 
@@ -1863,7 +1885,7 @@ let inline regexMatchToRegex_MatchAtIndex0Based
     (matchNumber0Based: int64)
     (regexMatch: System.Text.RegularExpressions.Match)
     : Regex_Match =
-    { Match = StringRopeOne regexMatch.Value
+    { Match = StringRope.fromString regexMatch.Value
       Index = regexMatch.Index
       Number = matchNumber0Based + 1L
       Submatches =
@@ -1871,7 +1893,7 @@ let inline regexMatchToRegex_MatchAtIndex0Based
             Seq.map
                 (fun (subMatch: System.Text.RegularExpressions.Group) ->
                     // TODO when does elm return ValueNone?
-                    ValueSome(StringRopeOne subMatch.Value))
+                    ValueSome(StringRope.fromString subMatch.Value))
                 regexMatch.Groups
         ) }
 
@@ -1924,7 +1946,7 @@ let Regex_replace
     let matchNumbers0Based: Map<string, int64> =
         createRegexMatchNumber0BasedMap regex string
 
-    StringRopeOne(
+    StringRope.fromString (
         regex.Replace(
             string,
             System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
@@ -1949,7 +1971,7 @@ let Regex_replaceAtMost
     let matchNumbers0Based: Map<string, int64> =
         createRegexMatchNumber0BasedMap regex string
 
-    StringRopeOne(
+    StringRope.fromString (
         regex.Replace(
             string,
             System.Text.RegularExpressions.MatchEvaluator(fun regexMatch ->
@@ -1971,7 +1993,7 @@ let inline Debug_log (tag: StringRope) (value: 'value) : 'value =
     value
 
 let inline Debug_toString (value: 'value) : StringRope =
-    StringRopeOne(value.ToString())
+    StringRope.fromString (value.ToString())
 
 let inline Debug_todo (message: string) : 'value =
     raise (new System.NotImplementedException(message))
@@ -2142,14 +2164,16 @@ let ElmKernelParser_findSubString
     (struct (newOffset, row, col))
 
 let inline ElmKernelUrl_percentEncode (string: StringRope) : StringRope =
-    StringRopeOne(System.Net.WebUtility.UrlEncode(StringRope.toString string))
+    StringRope.fromString (
+        System.Net.WebUtility.UrlEncode(StringRope.toString string)
+    )
 
 let inline ElmKernelUrl_percentDecode
     (string: StringRope)
     : ValueOption<StringRope> =
     match System.Net.WebUtility.UrlDecode(StringRope.toString string) with
     | null -> ValueNone
-    | decodedString -> ValueSome(StringRopeOne decodedString)
+    | decodedString -> ValueSome(StringRope.fromString decodedString)
 
 
 [<Struct>]
@@ -3114,7 +3138,7 @@ let BytesDecode_string (byteCountToRead: int64) : BytesDecode_Decoder<StringRope
         else
             ValueSome(
                 indexAfter,
-                StringRopeOne(
+                StringRope.fromString (
                     System.Text.Encoding.UTF8.GetString(
                         bytes,
                         index,

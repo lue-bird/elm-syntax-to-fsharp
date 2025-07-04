@@ -95,7 +95,7 @@ You will find these types:
     or simply using any `int` (F# implicitly converts them)
     and unwrap them to an `int` with `int yourInt64`
   - elm `String`s will be of type `Elm.StringRope`.
-    You can create them with `Elm.StringRopeOne yourFsharpString`
+    You can create them with `Elm.StringRope.fromString yourFsharpString`
     and unwrap them with `Elm.StringRope.toString yourTranspiledString`
   - elm `Char`s will be of type `int`.
     You can create them with e.g. `int 'a'` or the char code.

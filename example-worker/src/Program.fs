@@ -52,9 +52,7 @@ let startElmSubscriptionSingle
                         if readLine <> null then
                             let! () =
                                 onEvent (
-                                    Elm.JsonEncode_string(
-                                        Elm.StringRopeOne readLine
-                                    )
+                                    Elm.JsonEncode_stringRaw readLine
                                 )
 
                             ()
@@ -151,7 +149,7 @@ let elmSubToAbortableSingles
 [<EntryPoint>]
 let main (args: array<string>) : int =
     let struct (initialElmState, initialElmCommands) =
-        Elm.Main_main.Init(Seq.toList (Seq.map Elm.StringRopeOne args))
+        Elm.Main_main.Init(Seq.toList (Seq.map Elm.StringRope.fromString args))
 
     let mutable currentElmState = initialElmState
     let initialElmSub = Elm.Main_main.Subscriptions currentElmState

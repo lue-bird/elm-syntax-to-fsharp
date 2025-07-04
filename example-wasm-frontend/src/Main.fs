@@ -25,7 +25,7 @@ let elmVirtualDomModifierToBolero
                 let eventAsObj: obj = event
 
                 let eventAsString: Elm.StringRope =
-                    Elm.StringRopeOne(
+                    Elm.StringRope.fromString(
                         System.Text.Json.JsonSerializer.Serialize(
                             eventAsObj,
                             event.GetType(),

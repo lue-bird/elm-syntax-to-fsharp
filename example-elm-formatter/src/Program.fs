@@ -6,7 +6,7 @@ let main args =
     stdout.Write(
         Elm.StringRope.toString(
             Elm.FormatSingleModule_formatSingleModule
-                (Elm.StringRopeOne input)
+                (Elm.StringRope.fromString input)
             )
     )
     0

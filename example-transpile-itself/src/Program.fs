@@ -5,7 +5,7 @@ let main (_args: array<string>) : int =
     let elmJsonSource : string = (new System.IO.StreamReader "elm.json").ReadToEnd()
     match
         Elm.ElmProjectToFsharp_elmJsonToProjectAndDependencySourceDirectories
-            (Elm.StringRopeOne elmJsonSource)
+            (Elm.StringRope.fromString elmJsonSource)
     with
     | Error error ->
         stderr.WriteLine (Elm.StringRope.toString error)
@@ -25,7 +25,7 @@ let main (_args: array<string>) : int =
                 sourceDirectoriesToRead
         match
             Elm.ElmProjectToFsharp_fromModuleSources
-                (Seq.toList (Seq.map Elm.StringRopeOne moduleSources))
+                (Seq.toList (Seq.map Elm.StringRope.fromString moduleSources))
         with
         | Error error ->
             stderr.WriteLine (Elm.StringRope.toString error)

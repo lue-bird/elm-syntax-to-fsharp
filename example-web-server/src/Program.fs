@@ -261,7 +261,7 @@ let main (_arguments: array<string>) : int =
         "<!DOCTYPE html>\n\
             <html>\n\
             <body>\n"
-        + virtualDomNodeToString 4 (Elm.Main_view(Elm.StringRopeOne "client"))
+        + virtualDomNodeToString 4 (Elm.Main_view(Elm.StringRope.fromString "client"))
         + "\n</body>\n\
             </html>"
 

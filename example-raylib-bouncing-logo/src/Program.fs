@@ -102,7 +102,7 @@ let pressedKeys () : array<int> =
 [<EntryPoint>]
 let main args =
     let struct (initialElmState, initialElmCommands) =
-        Elm.Main_main.Init(Seq.toList (Seq.map Elm.StringRopeOne args))
+        Elm.Main_main.Init(Seq.toList (Seq.map Elm.StringRope.fromString args))
 
     let mutable currentElmState = initialElmState
 
