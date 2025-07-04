@@ -53,8 +53,11 @@ fromModuleSources originalSources =
                         )
 
 
-elmJsonToProjectAndDependencySourceDirectories : String -> Result String (List String)
-elmJsonToProjectAndDependencySourceDirectories elmJsonSource =
+elmJsonToProjectAndDependencySourceDirectories :
+    { homeDirectory : String }
+    -> String
+    -> Result String (List String)
+elmJsonToProjectAndDependencySourceDirectories environment elmJsonSource =
     case elmJsonSource |> Json.Decode.decodeString Elm.Project.decoder of
         Err elmJsonReadError ->
             Err (Json.Decode.errorToString elmJsonReadError)
@@ -70,8 +73,9 @@ elmJsonToProjectAndDependencySourceDirectories elmJsonSource =
                                     |> List.map
                                         (\( dependencyName, dependencyVersion ) ->
                                             packageSourceDirectoryPath
-                                                { name = dependencyName |> Elm.Package.toString
-                                                , version = dependencyVersion |> Elm.Version.toString
+                                                { homeDirectory = environment.homeDirectory
+                                                , packageName = dependencyName |> Elm.Package.toString
+                                                , packageVersion = dependencyVersion |> Elm.Version.toString
                                                 }
                                         )
                                )
@@ -82,12 +86,15 @@ elmJsonToProjectAndDependencySourceDirectories elmJsonSource =
                         "You're in a package but elm-to-fsharp only works for applications."
 
 
-packageSourceDirectoryPath : { name : String, version : String } -> String
-packageSourceDirectoryPath packageMeta =
-    "/home/pascal/.elm/0.19.1/packages/"
-        ++ packageMeta.name
+packageSourceDirectoryPath :
+    { homeDirectory : String, packageName : String, packageVersion : String }
+    -> String
+packageSourceDirectoryPath info =
+    info.homeDirectory
+        ++ "/.elm/0.19.1/packages/"
+        ++ info.packageName
         ++ "/"
-        ++ packageMeta.version
+        ++ info.packageVersion
         ++ "/src"
 
 
