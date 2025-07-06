@@ -2,7 +2,7 @@
   "type": "module",
   "name": "elm-to-fsharp",
   "devDependencies": {
-    "@lue-bird/elm-state-interface-experimental": "^4.0.0",
+    "@lue-bird/elm-state-interface-experimental": "^6.1.0",
     "elm-esm": "^1.1.4",
     "elm-optimize-level-2": "^0.3.5",
     "esbuild": "0.24.0",
