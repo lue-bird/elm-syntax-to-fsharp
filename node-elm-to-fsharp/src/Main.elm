@@ -25,8 +25,9 @@ import Node
 
 
 type State
-    = WaitingForHomeDirectoryWaitingForElmJson
-    | WaitingForElmJson { homeDirectory : String }
+    = WaitingForElmHomeDirectory
+    | WaitingForNodeHomeDirectoryBecauseElmHomeIsNotDefined
+    | WaitingForElmJson { elmHomeDirectory : String }
     | Running RunningState
     | ElmJsonReadFailed String
     | Finished (Result { code : String, message : String } ())
@@ -43,15 +44,15 @@ type alias RunningState =
 
 initialState : State
 initialState =
-    WaitingForHomeDirectoryWaitingForElmJson
+    WaitingForElmHomeDirectory
 
 
 packageSourceDirectoryPath :
-    { homeDirectory : String, packageName : String, packageVersion : String }
+    { elmHomeDirectory : String, packageName : String, packageVersion : String }
     -> String
 packageSourceDirectoryPath info =
-    info.homeDirectory
-        ++ "/.elm/0.19.1/packages/"
+    info.elmHomeDirectory
+        ++ "/0.19.1/packages/"
         ++ info.packageName
         ++ "/"
         ++ info.packageVersion
@@ -61,21 +62,23 @@ packageSourceDirectoryPath info =
 interface : State -> Node.Interface State
 interface state =
     case state of
-        WaitingForHomeDirectoryWaitingForElmJson ->
+        WaitingForElmHomeDirectory ->
             Node.environmentVariablesRequest
                 |> Node.interfaceFutureMap
                     (\environmentVariables ->
-                        case environmentVariables |> Dict.get "HOME" of
+                        case environmentVariables |> Dict.get "ELM_HOME" of
                             Just homeDirectory ->
-                                WaitingForElmJson { homeDirectory = homeDirectory }
+                                WaitingForElmJson { elmHomeDirectory = homeDirectory }
 
                             Nothing ->
-                                case environmentVariables |> Dict.get "USERPROFILE" of
-                                    Just homeDirectory ->
-                                        WaitingForElmJson { homeDirectory = homeDirectory }
+                                WaitingForNodeHomeDirectoryBecauseElmHomeIsNotDefined
+                    )
 
-                                    Nothing ->
-                                        WaitingForHomeDirectoryWaitingForElmJson
+        WaitingForNodeHomeDirectoryBecauseElmHomeIsNotDefined ->
+            Node.homeDirectoryPathRequest
+                |> Node.interfaceFutureMap
+                    (\homeDirectory ->
+                        WaitingForElmJson { elmHomeDirectory = homeDirectory ++ "/.elm" }
                     )
 
         WaitingForElmJson homeDirectory ->
@@ -98,7 +101,7 @@ interface state =
                                                             |> List.map
                                                                 (\( dependencyName, dependencyVersion ) ->
                                                                     packageSourceDirectoryPath
-                                                                        { homeDirectory = homeDirectory.homeDirectory
+                                                                        { elmHomeDirectory = homeDirectory.elmHomeDirectory
                                                                         , packageName = dependencyName |> Elm.Package.toString
                                                                         , packageVersion = dependencyVersion |> Elm.Version.toString
                                                                         }
