@@ -103,7 +103,7 @@ You will find these types:
   - elm records like `{ a : Float, b : Float }` will be provided as
     constructed type aliases for each field combination: `Elm.Generated_A_B<float, float>`.
     While the type might look weird, values can be created and used like any regular record with uppercase field names, e.g. `{ A = 1.1; B = 2.2 }`
-  - elm tuples/triples like `( float, float )`
+  - elm tuples/triples like `( Float, Float )`
     will be of type `(struct( float * float ))`.
     You can create them with `struct( 1.1, 2.2 )` und destructure them with `struct( a, b )`
   - elm `Maybe.Maybe`s will be of type `ValueOption`.
