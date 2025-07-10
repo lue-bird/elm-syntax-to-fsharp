@@ -6477,7 +6477,7 @@ condenseExpressionCall call =
                         }
 
         FsharpExpressionReference reference ->
-            case callAsArrayFromList reference call.argument0 of
+            case fsharpCallAsArrayOfList reference call.argument0 of
                 Just elements ->
                     FsharpExpressionArrayLiteral elements
 
@@ -6578,13 +6578,13 @@ condenseExpressionCall call =
                 }
 
 
-callAsArrayFromList :
+fsharpCallAsArrayOfList :
     { moduleOrigin : Maybe String, name : String }
     -> FsharpExpression
     -> Maybe (List FsharpExpression)
-callAsArrayFromList reference argument =
+fsharpCallAsArrayOfList reference argument =
     case reference.name of
-        "fromList" ->
+        "ofList" ->
             case reference.moduleOrigin of
                 Nothing ->
                     Nothing
