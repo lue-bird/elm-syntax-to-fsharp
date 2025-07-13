@@ -1131,38 +1131,24 @@ let inline JsonEncode_dict
             dict
     )
 
-let lineSetIndentSizeFrom2To (newIndentSize: int) (line: string) : string =
-    let lineWithoutIndentation: string = line.TrimStart ' '
-
-    let lineIndentation: int =
-        (String.length line - String.length lineWithoutIndentation) / 2
-
-    String.replicate (int newIndentSize * lineIndentation) " "
-    + lineWithoutIndentation
-
-let setIndentSizeFrom2To (newIndentSize: int) (printed: string) : string =
-    if newIndentSize = 2 then
-        printed
-    else
-        String.concat
-            "\n"
-            (Array.map
-                (fun (line: string) -> lineSetIndentSizeFrom2To newIndentSize line)
-                (printed.Split '\n'))
-
 let JsonEncode_encode
     (indentDepth: int64)
     (json: System.Text.Json.Nodes.JsonNode)
     : StringRope =
     let printOptions = System.Text.Json.JsonSerializerOptions()
 
-    if (indentDepth = 0) then
+    if (indentDepth <= 0) then
         StringRope.fromString (json.ToJsonString printOptions)
     else
         printOptions.WriteIndented <- true
         // JsonSerializerOptions.IndentSize is only available since .net9.0
+        // and the default indent size is 2
         StringRope.fromString (
-            setIndentSizeFrom2To (int indentDepth) (json.ToJsonString(printOptions))
+            if indentDepth = 2 then
+                (json.ToJsonString printOptions)
+            else
+                (json.ToJsonString printOptions)
+                    .Replace("\n  ", "\n" + String.replicate (System.Int32.Max(0, int indentDepth)) " ")
         )
 
 type JsonDecode_Error =
