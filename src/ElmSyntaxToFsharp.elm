@@ -2780,6 +2780,9 @@ referenceToCoreFsharp reference =
                 "foldr" ->
                     Just { moduleOrigin = Nothing, name = "Set_foldr" }
 
+                "map" ->
+                    Just { moduleOrigin = Just "Set", name = "map" }
+
                 "filter" ->
                     Just { moduleOrigin = Just "Set", name = "filter" }
 
