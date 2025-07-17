@@ -2104,10 +2104,13 @@ let ElmKernelParser_consumeBase16
 
         if (0x30 <= code && code <= 0x39) then
             total <- 16 * total + code - 0x30
+            offset <- offset + 1
         else if (0x41 <= code && code <= 0x46) then
             total <- 16 * total + code - 55
+            offset <- offset + 1
         else if (0x61 <= code && code <= 0x66) then
             total <- 16 * total + code - 87
+            offset <- offset + 1
         else
             foundNonBase16 <- true
 
