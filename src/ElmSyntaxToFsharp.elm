@@ -3222,6 +3222,32 @@ referenceToCoreFsharp reference =
                 _ ->
                     Nothing
 
+        "Elm.Kernel.Parser" ->
+            case reference.name of
+                "isSubString" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_isSubString" }
+
+                "isSubChar" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_isSubChar" }
+
+                "isAsciiCode" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_isAsciiCode" }
+
+                "chompBase10" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_chompBase10" }
+
+                "consumeBase" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_consumeBase" }
+
+                "consumeBase16" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_consumeBase16" }
+
+                "findSubString" ->
+                    Just { moduleOrigin = Nothing, name = "ElmKernelParser_findSubString" }
+
+                _ ->
+                    Nothing
+
         "Elm.Kernel.VirtualDom" ->
             case reference.name of
                 "property" ->
