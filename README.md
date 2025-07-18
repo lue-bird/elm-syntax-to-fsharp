@@ -22,12 +22,11 @@ plus2 n =
                 |> ElmSyntaxToFsharp.fsharpDeclarationsToModuleString
         )
 -->
-Ok """namespace global
-module Elm =
-    let Sample_plus2 (n: int64) : int64 =
-        (+) n (List.sum [ 2L ])
+Ok """module Elm
+let Sample_plus2 (n: int64) : int64 =
+    (+) n (List.sum [ 2L ])
 
-    ..and some default declarations..
+..and some default declarations..
 """
 ```
 
