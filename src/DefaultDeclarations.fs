@@ -1148,7 +1148,13 @@ let JsonEncode_encode
                 (json.ToJsonString printOptions)
             else
                 (json.ToJsonString printOptions)
-                    .Replace("\n  ", "\n" + String.replicate (System.Int32.Max(0, int indentDepth)) " ")
+                    .Replace(
+                        "\n  ",
+                        "\n"
+                        + String.replicate
+                            (System.Int32.Max(0, int indentDepth))
+                            " "
+                    )
         )
 
 type JsonDecode_Error =
@@ -1873,13 +1879,15 @@ let inline regexMatchToRegex_MatchAtIndex0Based
     : Regex_Match =
     { Match = StringRope.fromString regexMatch.Value
       Index = regexMatch.Index
-      Number = matchNumber0Based + 1L
+      Number = 1L + matchNumber0Based
       Submatches =
         Seq.toList (
             Seq.map
                 (fun (subMatch: System.Text.RegularExpressions.Group) ->
-                    // TODO when does elm return ValueNone?
-                    ValueSome(StringRope.fromString subMatch.Value))
+                    if subMatch.Success then
+                        ValueSome(StringRope.fromString subMatch.Value)
+                    else
+                        ValueNone)
                 regexMatch.Groups
         ) }
 
