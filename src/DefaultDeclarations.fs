@@ -1703,7 +1703,13 @@ let inline JsonDecode_oneOrMore
     ([<InlineIfLambda>] combineHeadTail: 'element -> List<'element> -> 'combined)
     (elementDecoder: JsonDecode_Decoder<'element>)
     : JsonDecode_Decoder<'combined> =
-    JsonDecode_map2 combineHeadTail elementDecoder (JsonDecode_list elementDecoder)
+    JsonDecode_andThen
+        (fun list ->
+            match list with
+            | [] ->
+                JsonDecode_fail(StringRopeOne "an ARRAY with at least ONE element")
+            | head :: tail -> JsonDecode_succeed(combineHeadTail head tail))
+        (JsonDecode_list elementDecoder)
 
 let inline indent (str: string) : string =
     String.concat "\n    " (Array.toList (str.Split "\n"))
