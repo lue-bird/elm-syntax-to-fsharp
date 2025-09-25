@@ -10,7 +10,7 @@ declarations to fsharp (tested to be compatible with .net8.0 and .net9.0).
 @docs FsharpLetDeclaration, FsharpExpression, FsharpPattern, FsharpType
 
 If you need more fine-grained helpers,
-[open an issue](https://github.com/lue-bird/elm-syntax-format/issues/new)
+[open an issue](https://github.com/lue-bird/elm-syntax-to-fsharp/issues/new)
 
 -}
 
